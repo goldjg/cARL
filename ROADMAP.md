@@ -25,6 +25,17 @@ installations. All 32 artefacts are embedded in the binary (no network required)
 are protected from repair. Health status is content-based (byte-comparison against
 embedded canonicals). Build-time version and commit injection via `-ldflags`.
 
+### Release Workflow (CLI Binary Publishing)
+**Status:** Delivered (PR #3)
+**Workflow:** `.github/workflows/release.yml`
+**Description:** GitHub Actions workflow triggered on `v*` semantic version tags.
+Builds the cARL CLI for five platforms (linux/amd64, linux/arm64, darwin/amd64,
+darwin/arm64, windows/amd64) using a matrix strategy. Injects the tag as
+`cliVersion` and the commit SHA as `sourceCommit` via `-ldflags`. Uploads
+per-platform binaries as GitHub Actions artifacts and attaches them to the
+GitHub Release (creating the release if absent, or uploading to an existing one).
+No new secrets or dependencies required — uses `GITHUB_TOKEN` with `contents: write`.
+
 ---
 
 ## Near-Term (Candidate Next Items)
