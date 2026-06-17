@@ -1,0 +1,4 @@
+# Go build artifacts
+/carl
+/carl.exe
+dist/

@@ -14,6 +14,19 @@ This roadmap describes future evolution ideas. None of these items are implement
 
 ---
 
+## Delivered
+
+### cARL CLI v1 Foundation
+**Status:** Delivered (PR #2)
+**Commands:** `carl init`, `carl repair`, `carl version`
+**Description:** Self-contained Go binary that manages repository-local cARL runtime
+installations. All 32 artefacts are embedded in the binary (no network required).
+`runtime.json` is the authoritative runtime state. `memory.md` and `runtime.json`
+are protected from repair. Health status is content-based (byte-comparison against
+embedded canonicals). Build-time version and commit injection via `-ldflags`.
+
+---
+
 ## Near-Term (Candidate Next Items)
 
 ### 1. Repo Map Population Tooling
