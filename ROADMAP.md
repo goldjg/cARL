@@ -1,0 +1,117 @@
+<!-- version: 1.0.0 -->
+# cARL — Roadmap
+
+This roadmap describes future evolution ideas. None of these items are implemented in the current PR. They are recorded here to preserve intent and prevent rediscovery.
+
+---
+
+## Guiding Principles for Roadmap Items
+
+- **Preserve runtime semantics** — new capabilities should extend, not change, existing governance behaviour
+- **One concern per pack** — new instruction packs should remain focused
+- **Version-controlled artefacts** — new governance artefacts belong in `.github/carl/`
+- **Backward compatibility first** — existing users should not need to change their setup
+
+---
+
+## Near-Term (Candidate Next Items)
+
+### 1. Repo Map Population Tooling
+**Status:** Not started  
+**Description:** Provide a script or guidance for populating `repo-map.example.json` for a real repository. Currently the file is an example template.  
+**Value:** Reduces time-to-orientation for agents in large repositories.
+
+### 2. Multi-Repository Governance
+**Status:** Not started  
+**Description:** Guidance for adopting cARL across multiple repositories with shared governance packs. Includes patterns for: central pack repository, fork-and-override, and symlink or CI-copy strategies.  
+**Value:** Teams with many repositories need a scalable adoption model.
+
+### 3. cARL Pack for Rust
+**Status:** Not started  
+**Description:** Rust-specific instruction pack following the same pattern as existing language packs. Should cover: memory safety, unsafe block governance, dependency discipline, testing with `cargo test`, and `clippy` enforcement.
+
+### 4. cARL Pack for Go
+**Status:** Not started  
+**Description:** Go-specific instruction pack. Should cover: error handling discipline, context propagation, goroutine safety, dependency hygiene with `go mod`, and testing with `go test`.
+
+### 5. cARL Pack for C# / .NET
+**Status:** Not started  
+**Description:** C#/.NET instruction pack. Should cover: nullable reference types, async/await discipline, Entity Framework safety, and .NET-specific secret management.
+
+---
+
+## Medium-Term
+
+### 6. Memory Cache Schema
+**Status:** Not started  
+**Description:** Define a structured YAML or JSON schema for `memory.md` to enable programmatic reading and writing. Currently it is a freeform markdown document. A schema would support tooling, validation, and agent-driven updates.  
+**Design question:** Should memory be YAML front-matter + markdown body, or fully structured JSON?
+
+### 7. PR Contract Validation Tooling
+**Status:** Not started  
+**Description:** A lightweight CI check that verifies a PR contract exists and is in `active` status before allowing merge. Optionally validates that tests reference contract assertions.  
+**Design question:** Should this be a GitHub Action or a standalone script?
+
+### 8. Invariant Enforcement in CI
+**Status:** Not started  
+**Description:** Parse `invariants.yml` and run automated checks against a PR. For example: detect hardcoded secrets, detect broad rewrite patterns, or enforce plan-before-execute via PR comment presence.
+
+### 9. cARL Adoption Guide
+**Status:** Not started  
+**Description:** Step-by-step guide for teams adopting cARL into an existing repository. Should cover: minimal adoption (root instructions only), partial adoption (core packs + carl/ artefacts), and full adoption (all packs + plans workflow).
+
+### 10. cARL Pack Health Checks
+**Status:** Not started  
+**Description:** Tooling to detect stale packs (outdated versions), missing artefacts (memory.md not populated), or pack composition gaps (no cloud pack for a cloud-heavy repository).
+
+---
+
+## Long-Term / Exploratory
+
+### 11. cARL Runtime Metrics
+**Status:** Speculative  
+**Description:** Capture structured metrics from agent sessions: correction loops consumed, mode switches, contract escalations, invariant violations. Useful for understanding agent behaviour patterns at scale.  
+**Design question:** Where should metrics be stored? PR metadata? A dedicated artefact? A separate observability service?
+
+### 12. cARL Marketplace
+**Status:** Speculative  
+**Description:** A curated, versioned pack registry where teams can discover and adopt community packs for additional languages, platforms, or cloud providers. Similar to GitHub Actions Marketplace.  
+**Design question:** How are packs versioned and reviewed for quality and security?
+
+### 13. Cross-Session Memory Persistence
+**Status:** Speculative  
+**Description:** Explore mechanisms for memory persistence that survive repository forks, renames, and migrations. Currently `memory.md` is tied to a single repository.
+
+### 14. Agent Capability Profile
+**Status:** Speculative  
+**Description:** A machine-readable declaration of which cARL packs are active in a repository, enabling IDE tooling to surface relevant governance context to developers.
+
+### 15. cARL for Non-Copilot Agents
+**Status:** Speculative  
+**Description:** Adapt cARL governance artefacts for use with other AI coding agents (Cursor, Aider, Claude Code, etc.) that support system-prompt injection from repository files.  
+**Design question:** Each agent has different context injection mechanisms. What is the minimal adaptation needed?
+
+---
+
+## Open Design Questions
+
+These questions should be resolved before implementing related roadmap items:
+
+1. **Memory schema format** — Freeform markdown vs structured YAML/JSON for `memory.md`?
+2. **Pack inheritance** — Should repositories be able to extend a base pack rather than copy it?
+3. **Multi-repo governance** — Central pack repository, fork-and-override, or CI-copy model?
+4. **CI integration depth** — How much should cARL enforce via CI vs rely on agent compliance?
+5. **Community pack quality bar** — What review process should community packs go through before being recommended?
+6. **Version pinning** — Should repositories pin specific pack versions or always use latest?
+7. **Agent compatibility** — Which agent-specific features (e.g. Copilot instruction packs capability) should cARL depend on vs avoid for portability?
+
+---
+
+## Intentionally Deferred
+
+The following were considered for this initial bootstrap PR and explicitly deferred:
+
+- Structured memory schema (deferred — current freeform markdown is sufficient for v1)
+- CI integration tooling (deferred — governance via agent compliance is the v1 model)
+- Community pack registry (deferred — single-repository adoption first)
+- Non-Copilot agent support (deferred — Copilot is the primary target for v1)
