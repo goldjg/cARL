@@ -43,7 +43,7 @@ func newFakeArtifacts() *fakeArtifacts {
 func TestInit_Success(t *testing.T) {
 	dir := t.TempDir()
 	arts := newFakeArtifacts()
-	cmd := install.New(arts)
+	cmd := install.New(arts, "dev")
 
 	if err := cmd.RunInDir(dir); err != nil {
 		t.Fatalf("RunInDir: %v", err)
@@ -78,7 +78,7 @@ func TestInit_Success(t *testing.T) {
 func TestInit_AlreadyInstalled(t *testing.T) {
 	dir := t.TempDir()
 	arts := newFakeArtifacts()
-	cmd := install.New(arts)
+	cmd := install.New(arts, "dev")
 
 	// First init succeeds.
 	if err := cmd.RunInDir(dir); err != nil {
@@ -110,7 +110,7 @@ func TestInit_ConflictingFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmd := install.New(arts)
+	cmd := install.New(arts, "dev")
 	err := cmd.RunInDir(dir)
 	if err == nil {
 		t.Fatal("expected conflict error; got nil")
@@ -133,7 +133,7 @@ func TestInit_Run(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(orig) })
 
 	arts := newFakeArtifacts()
-	cmd := install.New(arts)
+	cmd := install.New(arts, "dev")
 	if err := cmd.Run(context.Background(), nil); err != nil {
 		t.Fatalf("Run: %v", err)
 	}

@@ -30,14 +30,19 @@ import (
 //	go build -ldflags "-X main.cliVersion=1.0.0"
 var cliVersion = "dev"
 
+// sourceCommit is the VCS commit hash baked in at build time via:
+//
+//	go build -ldflags "-X main.sourceCommit=<hash>"
+var sourceCommit = "dev"
+
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	cmds := []cmdutil.Command{
-		install.New(embedded.Assets),
+		install.New(embedded.Assets, sourceCommit),
 		repair.New(embedded.Assets),
-		version.New(cliVersion),
+		version.New(cliVersion, embedded.Assets),
 	}
 
 	if err := run(ctx, os.Args[1:], cmds); err != nil {

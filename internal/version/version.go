@@ -2,6 +2,7 @@
 package version
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -12,15 +13,23 @@ import (
 	"github.com/goldjg/carl/internal/manifest"
 )
 
+// Artifacts provides read access to the embedded canonical runtime files.
+// It is used to byte-compare installed artefacts against their canonical versions.
+type Artifacts interface {
+	Open(targetPath string) ([]byte, error)
+}
+
 // Command implements `carl version`.
 type Command struct {
 	cliVersion string
+	arts       Artifacts
 }
 
 // New returns a new version Command.
 // cliVersion is the CLI binary version set at build time via -ldflags.
-func New(cliVersion string) *Command {
-	return &Command{cliVersion: cliVersion}
+// arts is the embedded asset store used for content-based health checking.
+func New(cliVersion string, arts Artifacts) *Command {
+	return &Command{cliVersion: cliVersion, arts: arts}
 }
 
 // Name returns the command name.
@@ -70,7 +79,7 @@ func (c *Command) RunInDir(rootDir string) error {
 	}
 
 	fmt.Println("Runtime Status:")
-	fmt.Printf("  %s\n", runtimeStatus(rootDir, rt))
+	fmt.Printf("  %s\n", runtimeStatus(rootDir, rt, c.arts))
 	return nil
 }
 
@@ -111,22 +120,38 @@ func extractPacks(artifacts []string) []string {
 }
 
 // runtimeStatus returns a one-line status string.
-// "Healthy" means all non-protected managed artefacts are present.
-func runtimeStatus(rootDir string, rt *manifest.Runtime) string {
-	missing := 0
+// "Healthy" means all non-protected managed artefacts are present and their
+// content matches the embedded canonical versions. Any missing or modified
+// file is reported as drift.
+func runtimeStatus(rootDir string, rt *manifest.Runtime, arts Artifacts) string {
+	drifted := 0
 	for _, f := range rt.ManagedArtifacts {
 		if f == manifest.FileName || f == ".github/carl/memory.md" {
 			continue
 		}
 		target := filepath.Join(rootDir, filepath.FromSlash(f))
-		if _, err := os.Stat(target); os.IsNotExist(err) {
-			missing++
+		installed, err := os.ReadFile(target)
+		if err != nil {
+			// Missing file counts as drift.
+			drifted++
+			continue
+		}
+		if arts != nil {
+			canonical, err := arts.Open(f)
+			if err == nil && !bytes.Equal(canonical, installed) {
+				// Content mismatch counts as drift.
+				drifted++
+			}
+			// If arts.Open returns an error the file has no embedded canonical
+			// (e.g. a future artefact type not yet bundled in this CLI build).
+			// Treat presence as sufficient in that case, consistent with how
+			// `carl repair` skips unrecognised paths.
 		}
 	}
-	if missing == 0 {
+	if drifted == 0 {
 		return "Healthy"
 	}
-	return fmt.Sprintf("Drift detected (%d artefact(s) missing)", missing)
+	return fmt.Sprintf("Drift detected (%d artefact(s) modified or missing)", drifted)
 }
 
 // sortStrings sorts a string slice in place using insertion sort.

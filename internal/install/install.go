@@ -15,7 +15,6 @@ const (
 	runtimeVersion = "1.0.0"
 	source         = "goldjg/cARL"
 	sourceTag      = "v1.0.0"
-	sourceCommit   = "dev"
 )
 
 // Artifacts provides read access to embedded runtime files.
@@ -28,12 +27,15 @@ type Artifacts interface {
 
 // Command implements `carl init`.
 type Command struct {
-	arts Artifacts
+	arts         Artifacts
+	sourceCommit string
 }
 
 // New returns a new init Command backed by the given Artifacts.
-func New(arts Artifacts) *Command {
-	return &Command{arts: arts}
+// sourceCommit is the VCS commit hash recorded in runtime.json; set at build
+// time via -ldflags "-X main.sourceCommit=<hash>" and threaded in from main.
+func New(arts Artifacts, sourceCommit string) *Command {
+	return &Command{arts: arts, sourceCommit: sourceCommit}
 }
 
 // Name returns the command name.
@@ -103,7 +105,7 @@ func (c *Command) RunInDir(rootDir string) error {
 		RuntimeVersion:   runtimeVersion,
 		Source:           source,
 		SourceTag:        sourceTag,
-		SourceCommit:     sourceCommit,
+		SourceCommit:     c.sourceCommit,
 		InstalledAt:      time.Now().UTC(),
 		ManagedArtifacts: files,
 	}
