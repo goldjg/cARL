@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/goldjg/carl/internal/manifest"
@@ -117,7 +118,7 @@ func runtimeStatus(rootDir string, rt *manifest.Runtime) string {
 		if f == manifest.FileName || f == ".github/carl/memory.md" {
 			continue
 		}
-		target := rootDir + "/" + strings.ReplaceAll(f, "\\", "/")
+		target := filepath.Join(rootDir, filepath.FromSlash(f))
 		if _, err := os.Stat(target); os.IsNotExist(err) {
 			missing++
 		}
