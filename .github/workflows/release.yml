@@ -87,6 +87,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: dist
+          # merge-multiple flattens all per-platform artifact directories into
+          # a single dist/ so the release step can glob dist/* in one command.
           merge-multiple: true
 
       - name: Create or update GitHub Release
