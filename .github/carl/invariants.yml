@@ -39,3 +39,8 @@ invariants:
     name: Invariant amendment governance
     rule: Agents must preserve invariants unless the user explicitly amends the invariant or opens a separate governance change.
     severity: high
+
+  - id: durable-artefact-update-on-implementation
+    name: Durable artefact update on implementation
+    rule: Every implementation PR must update durable artefacts (.github/carl/invariants.yml, memory.md, ROADMAP.md, trust-boundaries.md) when behaviour, assumptions, commands, scope, roadmap, or operating model changes.
+    severity: high

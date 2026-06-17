@@ -21,6 +21,15 @@ AI-assisted development.
 packs. `.github/carl/` contains cARLv2 governance artefacts and
 templates, not instruction-pack logic.
 
+The cARL CLI (`cmd/carl`) is a Go binary that manages repository-local
+cARL runtime installations. It embeds all managed artefacts in the
+binary (`//go:embed all:assets`) and requires no network access. The
+runtime manifest (`.github/carl/runtime.json`) is the authoritative
+source of runtime state; no filesystem scanning is used. Commands:
+`carl init` (installs), `carl repair` (restores drifted artefacts),
+`carl version` (reports state + health). `memory.md` and `runtime.json`
+are permanently protected from repair.
+
 ## Core invariants
 - Instruction packs should remain modular and focused on a single
   concern.
@@ -52,9 +61,16 @@ templates, not instruction-pack logic.
 - Non-trivial output-schema-heavy, validation-heavy, trust-boundary, or
   failure-mode-sensitive work should define 3-5 contract assertions
   before implementation and check them during validation.
+- PR2 (CLI v1 Foundation): implementation PRs must update durable
+  artefacts (invariants.yml, memory.md, ROADMAP.md) when behaviour,
+  assumptions, commands, scope, or operating model changes. Presence-only
+  health checks are insufficient; byte-comparison against embedded
+  canonicals is the correct pattern.
 
 ## Canonical validation commands
-<!-- Populate with validated commands that prove expected behavior in this repository. -->
+- Build CLI: `go build ./cmd/carl` (from repo root)
+- Run tests: `go test ./...` (from repo root)
+- Build tagged release: `go build -ldflags "-X main.cliVersion=<tag> -X main.sourceCommit=$(git rev-parse HEAD)" ./cmd/carl`
 
 ## Current operating assumptions
 Model availability is not a stable invariant. The PR contract remains
@@ -64,4 +80,4 @@ the source of truth across model fallback.
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-17 by cARL bootstrap
+2026-06-17 by cARL CLI v1 Foundation PR
