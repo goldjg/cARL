@@ -66,11 +66,16 @@ are permanently protected from repair.
   assumptions, commands, scope, or operating model changes. Presence-only
   health checks are insufficient; byte-comparison against embedded
   canonicals is the correct pattern.
+- PR3 (Release Workflow): CI workflows are not part of the embedded
+  asset set and do not require embedded/assets sync. Only invariants.yml
+  copies must remain byte-identical. memory.md and ROADMAP.md in the
+  repo (not the embedded copies) are updated to document new durable facts.
 
 ## Canonical validation commands
 - Build CLI: `go build ./cmd/carl` (from repo root)
 - Run tests: `go test ./...` (from repo root)
 - Build tagged release: `go build -ldflags "-X main.cliVersion=<tag> -X main.sourceCommit=$(git rev-parse HEAD)" ./cmd/carl`
+- Release workflow: push a `v*` tag; `.github/workflows/release.yml` builds for all five platforms and publishes to GitHub Releases
 
 ## Current operating assumptions
 Model availability is not a stable invariant. The PR contract remains
@@ -80,4 +85,4 @@ the source of truth across model fallback.
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-17 by cARL CLI v1 Foundation PR
+2026-06-17 by Release Workflow PR (PR #3)

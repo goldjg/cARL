@@ -19,107 +19,101 @@ durable invariants.
 
 ## Goal
 
-Bootstrap cARL (`goldjg/cARL`) by importing the complete `.github/`
-governance structure from `goldjg/coding-agent-baselines` and performing
-a full productisation rebrand from AADLC to cARL (Cognitive Agent
-Runtime Layer). Produce supporting documentation (README, VISION,
-ARCHITECTURE, ROADMAP, GLOSSARY). Runtime semantics are unchanged — this
-is a rename and productisation exercise, not a redesign.
+Add a GitHub Actions release workflow (`.github/workflows/release.yml`)
+that builds and publishes cARL CLI binaries for five target platforms
+when a semantic version tag (`v*`) is pushed. Update durable artefacts
+(`ROADMAP.md`, `memory.md`) to reflect the new CI capability.
 
 ## Contract status
 
-closed
+active
 
 ## Non-goals
 
-- Implementing CI invariant enforcement
-- Structured memory schema or YAML-based artefacts beyond what is imported
+- CI invariant enforcement or policy checks
+- Structured memory schema changes
 - Multi-repo governance tooling
-- Non-Copilot agent support
-- Pack marketplace
-- Rust, Go, or C# language packs
-- Any application or infrastructure code changes
+- Changes to existing instruction packs
+- Changes to the embedded asset set
+- Changes to the cARL CLI binary itself
 
 ## Carry-forward rules
 
-The following constraints are promoted to durable invariants and must be
-preserved in all future PRs:
-
-- Agents must operate in Plan-only mode by default; Assisted or Automatic
-  mode requires explicit user approval.
-- No secrets may be committed to the repository.
-- Security baseline (no hard-coded secrets, input validation, least
-  privilege) applies to all future changes.
-- `.github/carl/current-pr-contract.md` is the canonical active-contract
-  slot; agents must read it before implementation.
-- The three-layer model (operating model → instruction packs → governance
-  artefacts) must be preserved in any structural changes.
+Promoted invariants from previous PRs remain in force:
+- No secrets committed to any file.
+- Security baseline (least privilege, no hard-coded credentials) applies.
+- `current-pr-contract.md` must be read before implementation begins.
+- The three-layer model must be preserved in structural changes.
 
 ## Approved scope
 
-- `.github/copilot-instructions.md` — root operating model
-- `.github/carl/` — governance artefacts directory (memory cache, PR
-  contract, invariants, trust boundaries, tool policy, repo map, plans)
-- `.github/instructions/core/` — all instruction pack files
-- `README.md`, `VISION.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `GLOSSARY.md`
-- Rebrand of all `AADLCv2` references to `cARLv2`
-- Path updates: `.github/aadlc/` → `.github/carl/`
+- `.github/workflows/release.yml` — new release workflow
+- `.github/carl/current-pr-contract.md` — this file
+- `.github/carl/memory.md` — durable facts update
+- `ROADMAP.md` — mark release workflow as delivered
 
 ## Intentional amendments
 
-This is the founding PR; there are no prior constraints to amend. All
-durable invariants listed under Carry-forward rules are established here
-for the first time.
+No prior constraints are amended. This PR adds a new CI workflow outside
+the governance artefact layer and CLI binary; both remain unchanged.
 
 ## Forbidden scope
 
-- Changes to application or infrastructure code
-- Implementing any roadmap item deferred in `ROADMAP.md`
-- Adding CI workflows or automated enforcement
-- Changing the runtime semantics of any instruction pack
+- Changes to the cARL CLI source code (`cmd/`, `internal/`, `embedded/`)
+- Changes to instruction packs under `.github/instructions/`
+- Changes to `invariants.yml` (no new invariants are required)
+- Changes to embedded asset copies unless `invariants.yml` changes
 
 ## Architectural constraints
 
-- The three-layer model must be accurately reflected in all documentation.
-- Instruction packs must remain modular and independently loadable.
-- Governance artefacts must stay under `.github/carl/`.
-- No new directories or files outside the approved scope listed above.
+- The workflow must use `GITHUB_TOKEN` with `contents: write` only.
+- No secrets or credentials may be embedded in the workflow file.
+- All GitHub-org actions may be pinned to major version tags;
+  third-party actions must be pinned to a full commit SHA.
+- `CGO_ENABLED=0` required to support cross-compilation on ubuntu-latest.
 
 ## Security constraints
 
-- No secrets, tokens, or credentials may appear in any committed file.
-- Instruction packs must not weaken the security baseline described in
-  `.github/copilot-instructions.md`.
+- `GITHUB_TOKEN` is the only credential used; scoped to the repository.
+- No user-controlled data is passed unsanitised to shell commands.
+- CLI version is injected via ldflags only (no runtime secret exposure).
+
+## Contract assertions
+
+1. Workflow triggers on `v*` tags only (no branch or manual triggers).
+2. Five build matrix entries: linux/amd64, linux/arm64, darwin/amd64,
+   darwin/arm64, windows/amd64.
+3. Each binary embeds the tag as `cliVersion` and commit SHA as
+   `sourceCommit` via `-ldflags "-X main.cliVersion=... -X main.sourceCommit=..."`.
+4. Artifacts are uploaded per-platform and attached to the GitHub Release.
+5. Release is created if absent; artifacts are uploaded if it already exists.
 
 ## Files expected to change
 
-- `.github/copilot-instructions.md`
-- `.github/carl/*.md`, `.github/carl/*.yml`, `.github/carl/*.json`
-- `.github/carl/plans/*.md`
-- `.github/instructions/core/*.instructions.md`
-- `README.md`, `VISION.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `GLOSSARY.md`
+- `.github/workflows/release.yml` (new)
+- `.github/carl/current-pr-contract.md` (this file)
+- `.github/carl/memory.md`
+- `ROADMAP.md`
 
 ## Tests / validation
 
-- Manual review: all `AADLCv2` / `aadlc` references replaced with `cARLv2` / `carl`.
-- Manual review: all `.github/carl/` paths resolve to committed files.
-- Manual review: documentation accurately describes the three-layer model.
-- No automated test suite exists for this documentation-only bootstrap PR.
+- `go build ./cmd/carl` — must succeed (CLI unchanged)
+- `go test ./...` — must pass (no test files changed)
+- YAML lint: workflow indentation and structure manually reviewed
+- Parallel validation (code review + CodeQL) before PR is opened
 
 ## Stop conditions
 
-- Any change that weakens the security baseline.
-- Any change that implements a deferred roadmap item without explicit
-  scope amendment.
+- Any change that embeds a secret or credential.
+- Any change to CLI source, embedded assets, or instruction packs.
+- Any workflow change that grants permissions beyond `contents: write`.
 
 ## Escalation triggers
 
-- Requests to modify instruction pack runtime semantics.
-- Ambiguity about whether a new file falls within approved scope.
+- Request to add a third-party action without a commit SHA.
+- Request to grant additional permissions beyond the approved set.
 
 ## Context reset notes
 
-This contract is **closed**. PR #1 has been merged. Promote the
-carry-forward rules above to `invariants.yml` if not already present.
-For the next PR, copy `current-pr-contract.template.md` into this file
-and populate all sections before implementation begins.
+This contract is active for the release workflow PR. Close it when the
+PR is merged and reset for the next task.
