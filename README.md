@@ -36,7 +36,7 @@ cARL solves this by providing:
 
 Architecture Decision Records (ADRs) are documents written for humans. They record decisions after the fact and are read by developers during onboarding or code review.
 
-cARL is machine-readable governance written for agents. It is loaded before every task, not consulted after the fact. Where an ADR records why a decision was made, cARL enforces what the agent should and should not do as a result.
+cARL is agent-readable, partly structured governance written for agents. It is loaded before every task, not consulted after the fact. Where an ADR records why a decision was made, cARL enforces what the agent should and should not do as a result.
 
 | | ADR | cARL |
 |---|---|---|
@@ -106,7 +106,8 @@ The runtime semantics are unchanged. This is a rename and productisation, not a 
 ├── copilot-instructions.md          # Root operating model — loaded by Copilot automatically
 ├── carl/
 │   ├── memory.md                    # Durable architectural truth cache
-│   ├── current-pr-contract.md       # Active PR contract template for scoped execution
+│   ├── current-pr-contract.md          # Active PR contract (populate before each PR)
+│   ├── current-pr-contract.template.md # Blank template — copy to current-pr-contract.md
 │   ├── invariants.yml               # Machine-readable governance invariants
 │   ├── trust-boundaries.md          # Trust boundary definitions and crossing rules
 │   ├── tool-policy.yml              # Tool permission tier policy (Tier 0/1/2)

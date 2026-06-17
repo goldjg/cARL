@@ -107,6 +107,7 @@ Templates and data artefacts used by cARLv2 packs. These are not instruction-pac
 |---|---|
 | `memory.md` | Durable architectural truth cache: purpose, invariants, trust boundaries, field findings, open questions |
 | `current-pr-contract.md` | Active PR scope contract: goal, approved scope, forbidden scope, constraints, stop conditions |
+| `current-pr-contract.template.md` | Blank template — copy to `current-pr-contract.md` at the start of each new PR |
 | `invariants.yml` | Machine-readable invariant set: secrets policy, scope discipline, security baseline, plan-first, dependency approval |
 | `trust-boundaries.md` | Trust boundary classification table and crossing rules |
 | `tool-policy.yml` | Tier 0/1/2 tool permission policy |
