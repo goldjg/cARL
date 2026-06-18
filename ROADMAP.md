@@ -66,14 +66,25 @@ with interfaces, security (exec, path traversal, SSRF, template injection), and
 testing with `go test`. Embedded in the binary under
 `embedded/assets/.github/instructions/languages/go.instructions.md`.
 
+### `carl map` Command
+**Status:** Delivered (PR #7)
+**Command:** `carl map`
+**Description:** CLI command that derives a cognitive repository map from the
+filesystem and writes `.github/carl/repo-map.json`. Detects programming languages
+from source file extensions; identifies project entry points (`go.mod`,
+`cmd/*/main.go`, `Makefile`, `package.json`, etc.); maps key directories (up to
+3 levels deep) with purpose descriptions derived from Go package/command doc
+comments or known-path heuristics (`.github/**`, common Go package paths);
+lists GitHub Actions workflows, governance artefacts under `.github/carl/`, and
+root-level documentation. Idempotent — re-running updates the file in place.
+Excludes `.git/`, `node_modules/`, and `vendor/` from all scans.
+
 ---
 
 ## Near-Term (Candidate Next Items)
 
 ### 1. Repo Map Population Tooling
-**Status:** Not started  
-**Description:** Provide a script or guidance for populating `repo-map.example.json` for a real repository. Currently the file is an example template.  
-**Value:** Reduces time-to-orientation for agents in large repositories.
+**Status:** Delivered (PR #7) — see Delivered section above.
 
 ### 2. Multi-Repository Governance
 **Status:** Not started  

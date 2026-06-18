@@ -12,18 +12,14 @@ durable invariants.
 
 ---
 
-> **Starting a new PR?** Copy `current-pr-contract.template.md` into
-> this file, fill in each section, and set contract status to `active`.
-
----
-
 ## Goal
 
-Add `carl status` — a new CLI command that reads `.github/carl/runtime.json`
-and reports whether the installed cARL runtime is healthy, missing, or
-drifted. Export `Inspect` from the `repair` package to provide a shared,
-tested drift-classification function. Update durable artefacts (`CLI.md`,
-`ROADMAP.md`, `memory.md`) to reflect the new command.
+Add `carl map` — a new CLI command that derives a cognitive repository map
+from the filesystem and writes it to `.github/carl/repo-map.json`.
+The map includes: languages, entry points, key directories (with Go package
+doc-derived purposes), GitHub Actions workflows, governance artefacts, and
+root-level documentation. Update durable artefacts (`CLI.md`, `ROADMAP.md`,
+`memory.md`) to reflect the new command.
 
 ## Contract status
 
@@ -31,11 +27,11 @@ active
 
 ## Non-goals
 
-- Repair changes (no files written)
-- Upgrade or remote downloads
-- GitHub API integration
+- Parsing existing `repo-map.json` to preserve user edits
+- Remote downloads, GitHub API calls, or git log inspection
 - Pack install/remove
-- Changes to existing instruction packs or embedded assets
+- Changes to embedded assets or existing instruction packs
+- Changes to `invariants.yml` (no new invariants required)
 
 ## Carry-forward rules
 
@@ -43,58 +39,58 @@ Promoted invariants from previous PRs remain in force:
 - No secrets committed to any file.
 - Security baseline (least privilege, no hard-coded credentials) applies.
 - `current-pr-contract.md` must be read before implementation begins.
-- The three-layer model must be preserved in structural changes.
 
 ## Approved scope
 
-- `internal/repair/repair.go` — export `Inspect` function
-- `internal/status/status.go` — new `carl status` command
-- `internal/status/status_test.go` — tests
-- `cmd/carl/main.go` — register `status` command
-- `CLI.md` — document `carl status`
+- `internal/repomap/repomap.go` — new `carl map` command implementation
+- `internal/repomap/repomap_test.go` — tests
+- `cmd/carl/main.go` — register `map` command
+- `CLI.md` — document `carl map`
 - `.github/carl/current-pr-contract.md` — this file
 - `.github/carl/memory.md` — durable facts update
-- `ROADMAP.md` — mark `carl status` as delivered
+- `ROADMAP.md` — mark repo map tooling as delivered
 
 ## Intentional amendments
 
-No prior constraints are amended. The `repair` package gains a new exported
-function (`Inspect`) but its existing behaviour is preserved. No existing
-command output changes.
+No prior constraints are amended. No existing command behaviour changes.
 
 ## Forbidden scope
 
 - Changes to instruction packs under `.github/instructions/`
-- Changes to `invariants.yml` (no new invariants required)
+- Changes to `invariants.yml`
 - Changes to embedded assets
-- Any command that modifies files on disk
+- Modifying `repair`, `status`, `doctor`, `version`, or `init` commands
 
 ## Architectural constraints
 
-- `carl status` must be read-only: no file writes.
-- `memory.md` and `runtime.json` must never appear in missing/drifted output.
-- `Inspect` must behave consistently with `detectDrift` for repair parity.
+- `carl map` writes only `.github/carl/repo-map.json`; no other files.
 - Output written to stdout only; errors to stderr via returned error.
+- No network access; filesystem scan only.
+- All path strings in JSON output use forward slashes.
+- Repeated invocation must produce valid JSON (idempotent).
+- `.git/`, `node_modules/`, `vendor/` are always excluded from scans.
 
 ## Security constraints
 
 - No credentials, tokens, or secrets in any new file.
 - No user-controlled data passed to shell commands.
+- Filesystem walk is bounded to rootDir; no path traversal outside it.
 
 ## Contract assertions
 
-1. When no runtime is installed, output is "No cARL runtime installed." and no error.
-2. Healthy runtime: output includes CLI version, runtime version, source, tag,
-   commit, installed packs, "none" for both artefact lists, and "Status: Healthy".
-3. Missing artefact: listed under "Missing Artefacts:" and "Status: Incomplete".
-4. Drifted (content-modified) artefact: listed under "Drifted Artefacts:" and "Status: Drifted".
-5. `memory.md` and `runtime.json` never appear in artefact lists regardless of content.
+1. Running `carl map` creates `.github/carl/repo-map.json` with valid JSON.
+2. The JSON contains `generated_by: "carl map"`, a non-empty `last_updated`, and `_note`.
+3. Go source files in the repo cause "Go" to appear in `languages`.
+4. `.github/workflows/*.yml` files are listed in `workflows`.
+5. Files directly under `.github/carl/` are listed in `governance`.
+6. Root-level `*.md` files are listed in `documentation`.
+7. Running twice (idempotent) still produces valid JSON.
+8. `.git/` is never included in `directories` or `languages`.
 
 ## Files expected to change
 
-- `internal/repair/repair.go`
-- `internal/status/status.go` (new)
-- `internal/status/status_test.go` (new)
+- `internal/repomap/repomap.go` (new)
+- `internal/repomap/repomap_test.go` (new)
 - `cmd/carl/main.go`
 - `CLI.md`
 - `.github/carl/current-pr-contract.md` (this file)
@@ -104,21 +100,20 @@ command output changes.
 ## Tests / validation
 
 - `go build ./cmd/carl` — must succeed
-- `go test ./...` — must pass with new status package tests
+- `go test ./...` — must pass with new repomap package tests
 - Parallel validation (code review + CodeQL) before PR is opened
 
 ## Stop conditions
 
-- Any file write in the `status` command.
-- Any change that exposes protected artefacts (memory.md, runtime.json) as drift.
+- Any file writes other than `.github/carl/repo-map.json`.
+- Any network or GitHub API access.
 - Any change to embedded assets or instruction packs.
 
 ## Escalation triggers
 
-- Request to add a remote download or GitHub API call.
-- Request to change the repair or version command output.
+- Request to add remote download or GitHub API call.
+- Request to preserve user edits in repo-map.json across runs.
 
 ## Context reset notes
 
-This contract is active for the `carl status` PR. Close it when the PR
-is merged and reset for the next task.
+This contract is active for the `carl map` PR. Close it when merged.

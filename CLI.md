@@ -276,7 +276,83 @@ No cARL runtime installed.
 
 ---
 
-### `carl version`
+### `carl map`
+
+Generates and updates `.github/carl/repo-map.json` by deriving the repository
+structure from the filesystem.
+
+**Usage**
+
+```
+carl map
+```
+
+**What it does**
+
+1. Walks the repository filesystem from the current working directory.
+2. Detects programming languages from source file extensions.
+3. Identifies project entry points (`go.mod`, `cmd/*/main.go`, `Makefile`, etc.).
+4. Maps key directories (up to three levels deep) with human-readable purpose
+   descriptions derived from Go package doc comments or known-path heuristics.
+5. Lists GitHub Actions workflows from `.github/workflows/`.
+6. Lists governance artefacts from `.github/carl/`.
+7. Lists root-level documentation files.
+8. Writes the result to `.github/carl/repo-map.json`.
+
+The command is idempotent — running it again updates the file in place.
+`.git/`, `node_modules/`, and `vendor/` are always excluded from the scan.
+
+**Output**
+
+```
+Repo map updated: .github/carl/repo-map.json
+  Languages:     Go
+  Entry points:  2
+  Directories:   22
+  Workflows:     1
+  Governance:    8
+  Documentation: 7
+```
+
+**Generated file structure**
+
+```json
+{
+  "_note": "Repository map derived by `carl map`. Re-run to update after structural changes.",
+  "generated_by": "carl map",
+  "last_updated": "2026-06-18",
+  "languages": ["Go"],
+  "entry_points": [
+    { "path": "go.mod", "purpose": "Go module definition: github.com/org/repo" },
+    { "path": "cmd/myapp/main.go", "purpose": "myapp CLI entry point" }
+  ],
+  "directories": {
+    ".github/carl": "cARLv2 governance artefacts and templates",
+    "internal/mylib": "Implements the mylib subsystem."
+  },
+  "workflows": [
+    { "path": ".github/workflows/release.yml", "purpose": "release workflow" }
+  ],
+  "governance": [
+    { "path": ".github/carl/invariants.yml", "purpose": "Runtime invariants enforced by all implementation PRs" }
+  ],
+  "documentation": [
+    { "path": "README.md", "purpose": "Repository overview and pack catalogue" }
+  ]
+}
+```
+
+**Notes**
+
+- Directory purpose descriptions are derived from Go `// Package ...` or
+  `// Command ...` doc comments, well-known path heuristics, or left blank.
+- The generated file itself appears in the `governance` section on subsequent runs.
+- Run `carl map` after adding new packages, workflows, or documentation to keep
+  the map current.
+
+---
+
+## carl version
 
 Shows CLI and installed runtime version information, including installed packs
 and a health status.
