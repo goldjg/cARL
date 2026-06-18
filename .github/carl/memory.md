@@ -50,17 +50,21 @@ structure; always exits 0; never modifies files). `memory.md` and `runtime.json`
 protected from repair and status drift.
 
 `carl harness` (manages and inspects harness adapters for AI coding
-agents; subcommands: `list` and `status`; always exits 0; never modifies
-files). Harness adapters bridge cARL canonical artefacts to agent context
-injection mechanisms — cARL artefacts are the canonical source of truth,
-harness files are adapters, not authorities. `carl harness list` shows
-all known adapters — all five are now supported: copilot, claude, codex,
-cursor, antigravity. `carl harness status` detects active harnesses in
-the current repo by checking adapter DetectionFile presence (os.Stat).
+agents; subcommands: `list`, `status`, and `sync`). Harness adapters
+bridge cARL canonical artefacts to agent context injection mechanisms —
+cARL artefacts are the canonical source of truth, harness files are
+adapters, not authorities. `carl harness list` shows all known adapters
+— all five are now supported: copilot, claude, codex, cursor, antigravity.
+`carl harness status` detects active harnesses in the current repo by
+checking adapter DetectionFile presence (os.Stat). `carl harness sync
+[<harness-id>...]` generates adapter files for all supported (or named)
+harnesses from the canonical embedded artefact (`.github/copilot-instructions.md`
+is the SourceFile for all adapters); adapter files are disposable and
+always overwritten. Sync is idempotent and does not require `carl init`.
 Detection files: copilot → `.github/copilot-instructions.md`;
 claude → `CLAUDE.md`; codex → `AGENTS.md`; cursor → `.cursorrules`;
-antigravity → `ANTIGRAVITY.md`. Adapter file content generation and sync
-are not yet implemented.
+antigravity → `ANTIGRAVITY.md`. `harness.Command` accepts an `Artifacts`
+dependency (same interface pattern as `repair`, `doctor`, `status`).
 
 The `repair` package exports `Inspect(rootDir, managed, arts)` which
 returns separate missing and drifted slices, skipping protected paths.
@@ -127,4 +131,4 @@ the source of truth across model fallback.
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-18 by harness adapter implementation PR (PR #10)
+2026-06-18 by harness sync implementation (PR #11)

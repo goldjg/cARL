@@ -13,6 +13,14 @@ import (
 	"path/filepath"
 )
 
+// Artifacts provides read access to embedded canonical runtime files.
+// Implementations are expected to be backed by the binary-embedded assets.
+type Artifacts interface {
+	// Open returns the content of an embedded file at the given target path.
+	// targetPath is relative to the repository root.
+	Open(targetPath string) ([]byte, error)
+}
+
 // Adapter describes a harness adapter — the bridge between cARL canonical
 // artefacts and a specific AI coding agent's context injection mechanism.
 type Adapter struct {
@@ -22,9 +30,7 @@ type Adapter struct {
 	Name string
 	// Support indicates implementation maturity: "supported" or "planned".
 	// A "supported" adapter has its DetectionFile and AdapterFiles defined,
-	// enabling detection and status reporting. Content generation/sync
-	// (populating adapter files from cARL artefacts) is available for
-	// the copilot adapter and deferred for other adapters pending a future release.
+	// enabling detection and status reporting.
 	Support string
 	// DetectionFile is the repo-relative path whose presence indicates this
 	// harness is active in the repository. Empty for planned adapters.
@@ -33,6 +39,10 @@ type Adapter struct {
 	// for this harness. These files are managed by cARL; the harness is the
 	// consumer. Empty for planned adapters.
 	AdapterFiles []string
+	// SourceFile is the repo-relative path of the embedded canonical artefact
+	// used as the content source when generating this adapter's files via
+	// `carl harness sync`. Empty for planned adapters.
+	SourceFile string
 }
 
 // knownAdapters is the canonical ordered registry of all harnesses cARL
@@ -44,6 +54,7 @@ var knownAdapters = []Adapter{
 		Support:       "supported",
 		DetectionFile: ".github/copilot-instructions.md",
 		AdapterFiles:  []string{".github/copilot-instructions.md"},
+		SourceFile:    ".github/copilot-instructions.md",
 	},
 	{
 		ID:            "claude",
@@ -51,6 +62,7 @@ var knownAdapters = []Adapter{
 		Support:       "supported",
 		DetectionFile: "CLAUDE.md",
 		AdapterFiles:  []string{"CLAUDE.md"},
+		SourceFile:    ".github/copilot-instructions.md",
 	},
 	{
 		ID:            "codex",
@@ -58,6 +70,7 @@ var knownAdapters = []Adapter{
 		Support:       "supported",
 		DetectionFile: "AGENTS.md",
 		AdapterFiles:  []string{"AGENTS.md"},
+		SourceFile:    ".github/copilot-instructions.md",
 	},
 	{
 		ID:            "cursor",
@@ -65,6 +78,7 @@ var knownAdapters = []Adapter{
 		Support:       "supported",
 		DetectionFile: ".cursorrules",
 		AdapterFiles:  []string{".cursorrules"},
+		SourceFile:    ".github/copilot-instructions.md",
 	},
 	{
 		ID:            "antigravity",
@@ -72,6 +86,7 @@ var knownAdapters = []Adapter{
 		Support:       "supported",
 		DetectionFile: "ANTIGRAVITY.md",
 		AdapterFiles:  []string{"ANTIGRAVITY.md"},
+		SourceFile:    ".github/copilot-instructions.md",
 	},
 }
 
@@ -95,10 +110,13 @@ func isDetected(a Adapter, rootDir string) bool {
 }
 
 // Command implements `carl harness`.
-type Command struct{}
+type Command struct {
+	arts Artifacts
+}
 
-// New returns a new harness Command.
-func New() *Command { return &Command{} }
+// New returns a new harness Command backed by the given Artifacts.
+// arts is used by the sync subcommand to read canonical adapter content.
+func New(arts Artifacts) *Command { return &Command{arts: arts} }
 
 // Name returns the command name.
 func (c *Command) Name() string { return "harness" }
@@ -108,7 +126,7 @@ func (c *Command) Synopsis() string {
 	return "Manage and inspect harness adapters for AI coding agents"
 }
 
-// Run dispatches to the list or status subcommand, or prints usage.
+// Run dispatches to the list, status, or sync subcommand, or prints usage.
 // An unknown subcommand returns a non-nil error.
 func (c *Command) Run(_ context.Context, args []string) error {
 	if len(args) == 0 || args[0] == "--help" || args[0] == "-h" {
@@ -126,6 +144,8 @@ func (c *Command) Run(_ context.Context, args []string) error {
 		return c.RunListInDir(cwd)
 	case "status":
 		return c.RunStatusInDir(cwd)
+	case "sync":
+		return c.RunSyncInDir(cwd, args[1:])
 	default:
 		return fmt.Errorf("unknown subcommand %q\n\nRun 'carl harness --help' for usage", args[0])
 	}
@@ -138,6 +158,7 @@ func printUsage() {
 	fmt.Println("Subcommands:")
 	fmt.Println("  list    List known harness adapters and their support status")
 	fmt.Println("  status  Report harness adapter detection status in the current repository")
+	fmt.Println("  sync    Generate adapter files for supported harnesses from canonical cARL artefacts")
 	fmt.Println()
 	fmt.Println("Run 'carl harness <subcommand> --help' for more information.")
 }
@@ -191,4 +212,84 @@ func (c *Command) RunStatusInDir(rootDir string) error {
 	fmt.Println()
 	fmt.Printf("%d of %d harness(es) active.\n", active, len(knownAdapters))
 	return nil
+}
+
+// RunSyncInDir generates adapter files for supported harnesses in rootDir.
+// It reads the canonical content from embedded artefacts and writes each
+// adapter's file(s) to disk. Existing files are overwritten — adapter files
+// are disposable and always regenerated from the canonical source.
+//
+// harnessIDs restricts the operation to the named harnesses. If empty, all
+// supported harnesses are synced. An unknown harness ID returns an error.
+//
+// Exported for testing without changing the process working directory.
+func (c *Command) RunSyncInDir(rootDir string, harnessIDs []string) error {
+	// Validate and resolve target adapters.
+	targets, err := resolveAdapters(harnessIDs)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Syncing harness adapters...")
+	fmt.Println()
+
+	written := 0
+	for _, a := range targets {
+		// resolveAdapters returns only supported adapters; this guard is a
+		// belt-and-suspenders check against malformed registry entries.
+		if len(a.AdapterFiles) == 0 || a.SourceFile == "" {
+			continue
+		}
+
+		content, err := c.arts.Open(a.SourceFile)
+		if err != nil {
+			return fmt.Errorf("read canonical source for harness %q: %w", a.ID, err)
+		}
+
+		for _, af := range a.AdapterFiles {
+			target := filepath.Join(rootDir, filepath.FromSlash(af))
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				return fmt.Errorf("create directory for %s: %w", af, err)
+			}
+			if err := os.WriteFile(target, content, 0644); err != nil {
+				return fmt.Errorf("write adapter file %s: %w", af, err)
+			}
+			fmt.Printf("  %-13s  %s\n", a.ID, af)
+			written++
+		}
+	}
+
+	fmt.Println()
+	fmt.Printf("%d adapter file(s) synced.\n", written)
+	return nil
+}
+
+// resolveAdapters returns the list of adapters to sync. If ids is empty, all
+// supported adapters are returned. If ids is non-empty, only the named adapters
+// are returned; an error is returned if any id is unrecognised.
+func resolveAdapters(ids []string) ([]Adapter, error) {
+	if len(ids) == 0 {
+		result := make([]Adapter, 0, len(knownAdapters))
+		for _, a := range knownAdapters {
+			if a.Support == "supported" {
+				result = append(result, a)
+			}
+		}
+		return result, nil
+	}
+
+	index := make(map[string]Adapter, len(knownAdapters))
+	for _, a := range knownAdapters {
+		index[a.ID] = a
+	}
+
+	result := make([]Adapter, 0, len(ids))
+	for _, id := range ids {
+		a, ok := index[id]
+		if !ok {
+			return nil, fmt.Errorf("unknown harness %q — run 'carl harness list' to see available adapters", id)
+		}
+		result = append(result, a)
+	}
+	return result, nil
 }

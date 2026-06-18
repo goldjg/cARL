@@ -433,6 +433,7 @@ carl harness <subcommand> [arguments]
 |---|---|
 | `list` | List known harness adapters and their support status |
 | `status` | Report harness adapter detection status in the current repository |
+| `sync` | Generate adapter files for supported harnesses from canonical cARL artefacts |
 
 Run `carl harness --help` to print subcommand usage.
 
@@ -477,7 +478,7 @@ Harness Adapters:
 | `supported` | Detection file and adapter files are defined; detection and status reporting are active |
 | `planned` | Adapter is declared for discoverability; not yet implemented |
 
-> **Note:** Content generation and sync (populating adapter files from cARL artefacts) is available for `copilot` and deferred for other adapters in a future release. `supported` in the current release means detection and status reporting are active.
+> **Note:** Content generation and sync (populating adapter files from cARL artefacts) is now available for all supported adapters via `carl harness sync`.
 
 ---
 
@@ -542,6 +543,66 @@ Harness Adapter Status:
 | `codex` | `AGENTS.md` |
 | `cursor` | `.cursorrules` |
 | `antigravity` | `ANTIGRAVITY.md` |
+
+---
+
+### `carl harness sync`
+
+Generates adapter files for supported harnesses from the canonical cARL artefacts
+embedded in the CLI binary. Adapter files are disposable — they are always
+regenerated from the canonical source and should not be edited manually.
+
+**Usage**
+
+```
+carl harness sync [<harness-id>...]
+```
+
+**What it does**
+
+1. Resolves the set of target harnesses: all supported harnesses if no IDs are
+   given, or only the named harnesses if one or more IDs are provided.
+2. For each target harness, reads the canonical content from the embedded
+   artefacts (`.github/copilot-instructions.md`).
+3. Writes the content to each harness's adapter file(s), creating parent
+   directories as needed. Existing files are overwritten.
+4. Reports each file written and a summary count.
+
+**Output (sync all harnesses)**
+
+```
+Syncing harness adapters...
+
+  copilot        .github/copilot-instructions.md
+  claude         CLAUDE.md
+  codex          AGENTS.md
+  cursor         .cursorrules
+  antigravity    ANTIGRAVITY.md
+
+5 adapter file(s) synced.
+```
+
+**Output (sync a specific harness)**
+
+```
+Syncing harness adapters...
+
+  claude         CLAUDE.md
+
+1 adapter file(s) synced.
+```
+
+**Errors**
+
+| Error | Cause | Resolution |
+|---|---|---|
+| `unknown harness "<id>"` | The given harness ID is not in the registry | Run `carl harness list` to see valid IDs |
+
+**Notes**
+
+- Sync is idempotent — running it multiple times produces the same result.
+- The command does not require `carl init` to have been run first.
+- To activate a harness after sync, simply commit the generated adapter file.
 
 ---
 
