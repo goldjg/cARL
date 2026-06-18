@@ -215,6 +215,8 @@ No cARL runtime installed.
 
 ---
 
+### `carl version`
+
 Shows CLI and installed runtime version information, including installed packs
 and a health status.
 
