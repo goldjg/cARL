@@ -154,6 +154,7 @@ func printFindings(findings []Finding) {
 	}
 
 	for _, f := range findings {
+		// %-7s pads to 7 characters — the width of "WARNING", the longest level.
 		fmt.Printf("%-7s %s\n", string(f.Level), f.Message)
 		if f.Action != "" {
 			fmt.Printf("        Action: %s\n", f.Action)
