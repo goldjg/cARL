@@ -6,6 +6,7 @@
 //
 // Available commands:
 //
+//	doctor   Diagnose runtime issues and provide actionable remediation guidance
 //	init     Install the cARL runtime into the current repository
 //	repair   Restore modified managed cARL artefacts to their canonical state
 //	status   Report whether the installed cARL runtime is healthy, missing, or drifted
@@ -21,6 +22,7 @@ import (
 
 	"github.com/goldjg/carl/embedded"
 	"github.com/goldjg/carl/internal/cmdutil"
+	"github.com/goldjg/carl/internal/doctor"
 	"github.com/goldjg/carl/internal/install"
 	"github.com/goldjg/carl/internal/repair"
 	"github.com/goldjg/carl/internal/status"
@@ -42,6 +44,7 @@ func main() {
 	defer stop()
 
 	cmds := []cmdutil.Command{
+		doctor.New(embedded.Assets),
 		install.New(embedded.Assets, sourceCommit),
 		repair.New(embedded.Assets),
 		status.New(cliVersion, embedded.Assets),

@@ -139,7 +139,68 @@ Done.
 
 ---
 
-### `carl status`
+### `carl doctor`
+
+Diagnoses runtime issues and provides actionable remediation guidance.
+
+**Usage**
+
+```
+carl doctor
+```
+
+**What it does**
+
+1. Reads `runtime.json` to discover the installed runtime state. If the manifest
+   is absent, reports it as an ERROR and suggests `carl init`.
+2. Detects and categorises findings as ERROR, WARNING, or INFO:
+   - **ERROR** — missing runtime manifest, unreadable manifest, artefact absent from disk
+   - **WARNING** — artefact content differs from its canonical version (drifted)
+   - **INFO** — no issues found; runtime is healthy
+3. For each finding, provides a suggested remediation action.
+4. Exits with code `0` regardless of whether issues are found — the command is
+   diagnostic only and never modifies any files.
+
+**Protected files** — the following are never inspected for drift:
+
+- `.github/carl/memory.md` — per-repository state managed by humans and agents
+- `.github/carl/runtime.json` — managed exclusively by `carl init`
+
+**Output (no runtime installed)**
+
+```
+ERROR   missing runtime manifest (.github/carl/runtime.json)
+        Action: run `carl init`
+
+1 error(s), 0 warning(s), 0 info(s) found.
+```
+
+**Output (healthy runtime)**
+
+```
+INFO    runtime is healthy — all managed artefacts are present and canonical
+```
+
+**Output (missing and drifted artefacts)**
+
+```
+ERROR   .github/carl/invariants.yml — artefact is missing from disk
+        Action: run `carl repair`
+WARNING .github/copilot-instructions.md — artefact has drifted from its canonical version
+        Action: run `carl repair`
+
+1 error(s), 1 warning(s), 0 info(s) found.
+```
+
+**Finding levels**
+
+| Level | Meaning |
+|---|---|
+| `ERROR` | Condition that prevents normal operation; immediate action required |
+| `WARNING` | Condition that should be addressed; runtime still functional |
+| `INFO` | Neutral observation; no action required |
+
+---
 
 Reports whether the installed cARL runtime is healthy, missing, or drifted.
 
