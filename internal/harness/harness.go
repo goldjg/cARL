@@ -235,13 +235,15 @@ func (c *Command) RunSyncInDir(rootDir string, harnessIDs []string) error {
 
 	written := 0
 	for _, a := range targets {
-		if a.Support != "supported" || len(a.AdapterFiles) == 0 || a.SourceFile == "" {
+		// resolveAdapters returns only supported adapters; this guard is a
+		// belt-and-suspenders check against malformed registry entries.
+		if len(a.AdapterFiles) == 0 || a.SourceFile == "" {
 			continue
 		}
 
 		content, err := c.arts.Open(a.SourceFile)
 		if err != nil {
-			return fmt.Errorf("read canonical source for %s (%s): %w", a.ID, a.SourceFile, err)
+			return fmt.Errorf("read canonical source for harness %q: %w", a.ID, err)
 		}
 
 		for _, af := range a.AdapterFiles {

@@ -541,7 +541,10 @@ func TestHarness_Sync_UnknownHarness_ReturnsError(t *testing.T) {
 }
 
 // Contract assertion S4: sync writes the canonical content from embedded
-// artefacts to the adapter file.
+// artefacts to the adapter file. This test uses its own testArts fixture
+// (distinct from newTestArts) to verify that whatever content the Artifacts
+// implementation returns is written verbatim — the content itself is the
+// contract, not the placeholder string used by other tests.
 func TestHarness_Sync_WritesCanonicalContent(t *testing.T) {
 	const wantContent = "# Test canonical content for sync\n"
 	arts := &testArts{
@@ -568,7 +571,7 @@ func TestHarness_Sync_WritesCanonicalContent(t *testing.T) {
 }
 
 // Contract assertion S5: sync is idempotent — running it twice produces the
-// same file state and no error.
+// same file state and no error across all synced adapter files.
 func TestHarness_Sync_Idempotent(t *testing.T) {
 	dir := t.TempDir()
 	cmd := harness.New(newTestArts())
@@ -583,21 +586,34 @@ func TestHarness_Sync_Idempotent(t *testing.T) {
 
 	run()
 
-	// Capture state after first run.
-	firstContent, err := os.ReadFile(filepath.Join(dir, "CLAUDE.md"))
-	if err != nil {
-		t.Fatalf("read CLAUDE.md after first sync: %v", err)
+	// Capture content of all adapter files after first run.
+	adapterPaths := map[string]string{
+		"copilot":     filepath.Join(dir, ".github", "copilot-instructions.md"),
+		"claude":      filepath.Join(dir, "CLAUDE.md"),
+		"codex":       filepath.Join(dir, "AGENTS.md"),
+		"cursor":      filepath.Join(dir, ".cursorrules"),
+		"antigravity": filepath.Join(dir, "ANTIGRAVITY.md"),
+	}
+	firstContents := make(map[string][]byte, len(adapterPaths))
+	for id, path := range adapterPaths {
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s after first sync: %v", id, err)
+		}
+		firstContents[id] = content
 	}
 
 	run()
 
-	// Content must be identical after second run.
-	secondContent, err := os.ReadFile(filepath.Join(dir, "CLAUDE.md"))
-	if err != nil {
-		t.Fatalf("read CLAUDE.md after second sync: %v", err)
-	}
-	if string(firstContent) != string(secondContent) {
-		t.Errorf("sync is not idempotent: content changed between runs")
+	// Content must be identical after the second run.
+	for id, path := range adapterPaths {
+		second, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s after second sync: %v", id, err)
+		}
+		if string(firstContents[id]) != string(second) {
+			t.Errorf("sync is not idempotent for %s: content changed between runs", id)
+		}
 	}
 }
 
