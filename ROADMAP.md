@@ -128,6 +128,21 @@ surfaces missing or drifted harness adapters as `WARNING` findings with
 section (active, missing, drifted, healthy) without changing overall runtime
 status semantics.
 
+### `carl reconcile` Command
+**Status:** Delivered
+**Command:** `carl reconcile`
+**Description:** Reconciles repository-specific durable artefacts so `memory.md`
+reflects the current repository rather than only the upstream default runtime.
+Reads `.github/carl/repo-map.json` and updates the generated snapshot section in
+`.github/carl/memory.md` — covering languages, entry points, key directories,
+workflows, governance artefacts, documentation files, and a last-reconciled date.
+Human-authored content outside the generated block (delimited by
+`<!-- BEGIN GENERATED: reconcile -->` / `<!-- END GENERATED: reconcile -->`) is
+never overwritten. If the generated content is unchanged, reports
+`No reconciliation needed.` without writing any files. Idempotent. Does not
+modify `runtime.json`, harness adapter files, or any other managed artefact.
+No network access required.
+
 ---
 
 ## Near-Term (Candidate Next Items)
