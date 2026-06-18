@@ -51,7 +51,7 @@ func main() {
 
 	cmds := []cmdutil.Command{
 		doctor.New(embedded.Assets),
-		harness.New(),
+		harness.New(embedded.Assets),
 		install.New(embedded.Assets, sourceCommit),
 		repomap.New(),
 		plan.New(),
