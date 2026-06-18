@@ -14,13 +14,11 @@ durable invariants.
 
 ## Goal
 
-Extend the harness adapter model introduced in PR #9 by promoting the
-four planned adapters (Claude Code, Codex, Cursor, Antigravity) to
-`supported` status. Add DetectionFile and AdapterFiles for each using
-current known conventions. Implement only registry/status/list support
-(no adapter file content generation or sync). Preserve all existing
-Copilot adapter behaviour unchanged. Update tests, CLI docs, roadmap,
-memory, and current PR contract.
+Implement harness health awareness across cARL so harness adapters are
+treated as managed disposable artefacts. Extend `carl harness status`
+with presence and sync-health reporting, surface missing/drifted harness
+adapters in `carl doctor`, add a harness summary to `carl status`, and
+update durable artefacts and CLI documentation.
 
 ## Contract status
 
@@ -28,13 +26,11 @@ active
 
 ## Non-goals
 
-- Changes to embedded assets or instruction packs
-- Changes to `invariants.yml` (no new invariants required)
-- Modifying any existing command behaviour
-- Generating or syncing adapter file contents
-- Writing harness adapter files on disk (read-only command)
-- Adapter file content generation or injection
-- Network or GitHub API access
+- Changes to `carl init`, `carl repair`, `carl map`, or `carl plan`
+- Automatic harness repair or sync from `doctor` or `status`
+- Network access or remote canonical sources
+- Changes to instruction packs or embedded governance content
+- Changing runtime status exit semantics
 
 ## Carry-forward rules
 
@@ -45,81 +41,91 @@ Promoted invariants from previous PRs remain in force:
 
 ## Approved scope
 
-- `internal/harness/harness.go` — promote claude/codex/cursor/antigravity to supported; add DetectionFile and AdapterFiles
-- `internal/harness/harness_test.go` — add detection tests for new adapters; update SupportStatus test
-- `CLI.md` — update list/status output examples and detection file table
-- `ROADMAP.md` — mark item 15 (cARL for Non-Copilot Agents) as delivered
+- `internal/repair/repair.go` — expose shared canonical comparison helper
+- `internal/harness/*.go` — add harness health inspection and richer status output
+- `internal/doctor/*.go` — add harness health findings and remediation guidance
+- `internal/status/*.go` — add harness summary section
+- `CLI.md` — document new harness/doctor/status output
+- `ROADMAP.md` — record harness health awareness as delivered
 - `.github/carl/current-pr-contract.md` — this file
-- `.github/carl/memory.md` — durable facts update (new supported adapters)
+- `.github/carl/memory.md` — durable facts update for harness health
 
 ## Intentional amendments
 
-No prior constraints are amended. No existing command behaviour changes.
-The only change to `harness.go` registry is promoting four adapters from
-`planned` to `supported` and adding their detection/adapter file fields.
+This PR amends prior harness work by promoting adapter files from
+presence-only detection artefacts to managed disposable outputs with
+canonical drift awareness. Runtime `Status:` remains defined only by
+managed runtime artefacts; harness health is surfaced separately.
 
 ## Forbidden scope
 
 - Changes to instruction packs under `.github/instructions/`
 - Changes to `invariants.yml` or either embedded/assets copy
-- Modifying `repair`, `status`, `doctor`, `version`, `init`, `map`, or `plan` commands
-- Creating or modifying harness adapter files on disk (harness command is read-only)
-- Adapter file content generation or sync
+- Automatic file repair outside explicit `carl harness sync`
+- New external dependencies
+- Network or GitHub API access
 
 ## Architectural constraints
 
-- `carl harness list` and `carl harness status` remain read-only; they never write files.
-- All output to stdout; errors to stderr via returned error.
-- No network access; filesystem check only (os.Stat for detection).
-- Detection files: copilot → `.github/copilot-instructions.md`; claude → `CLAUDE.md`; codex → `AGENTS.md`; cursor → `.cursorrules`; antigravity → `ANTIGRAVITY.md`.
-- Adapter registry is the canonical source of harness metadata; not read from disk.
+- Harness sync health must compare adapter file bytes to the embedded
+  canonical source, reusing the existing byte-comparison model.
+- Shared comparison logic should not be duplicated across harness,
+  doctor, status, and repair code paths.
+- Harness adapters remain disposable generated outputs.
+- `doctor` stays diagnostic-only and always exits 0 when findings are emitted.
+- `status` keeps its existing runtime health semantics while adding a
+  separate harness summary section.
 
 ## Security constraints
 
 - No credentials, tokens, or secrets in any new file.
 - No user-controlled data passed to shell commands.
-- Filesystem check bounded to rootDir; no path traversal outside it.
-- `os.Stat` is the only filesystem operation; no file reads.
+- Filesystem reads remain bounded to the repository root.
+- No automatic writes from read-only commands.
 
 ## Contract assertions
 
-1. `carl harness list` lists all 5 known adapters (copilot, claude, codex, cursor, antigravity).
-2. `carl harness list` identifies all 5 adapters as "supported".
-3. `carl harness status` shows "active" for copilot when `.github/copilot-instructions.md` exists.
-4. `carl harness status` shows "active" for claude when `CLAUDE.md` exists.
-5. `carl harness status` shows "active" for codex when `AGENTS.md` exists.
-6. `carl harness status` shows "active" for cursor when `.cursorrules` exists.
-7. `carl harness status` shows "active" for antigravity when `ANTIGRAVITY.md` exists.
-8. `carl harness status` shows "active" for all 5 when all detection files are present.
-9. All supported adapters have a non-empty DetectionFile in the registry.
+1. H1: a synced harness adapter is reported as healthy (`Present` + `Synced`) by `carl harness status`.
+2. H2: a modified harness adapter is reported as drifted by `carl harness status`.
+3. H3: a deleted harness adapter is reported as missing by `carl harness status`.
+4. H4: `carl doctor` reports missing or drifted harness adapters as `WARNING` findings with `carl harness sync` remediation.
+5. H5: `carl status` reports accurate active, missing, drifted, and healthy harness summary counts.
 
 ## Files expected to change
 
+- `internal/repair/repair.go`
 - `internal/harness/harness.go`
+- `internal/harness/health.go`
 - `internal/harness/harness_test.go`
+- `internal/doctor/doctor.go`
+- `internal/doctor/doctor_test.go`
+- `internal/status/status.go`
+- `internal/status/status_test.go`
 - `CLI.md`
 - `ROADMAP.md`
-- `.github/carl/current-pr-contract.md` (this file)
+- `.github/carl/current-pr-contract.md`
 - `.github/carl/memory.md`
 
 ## Tests / validation
 
-- `go build ./cmd/carl` — must succeed
-- `go test ./...` — must pass with updated and new harness package tests
-- Parallel validation (code review + CodeQL) before PR is opened
+- `go build ./cmd/carl`
+- `go test ./...`
+- Secret scan on modified files before final commit
+- Parallel validation (code review + CodeQL) before completion
 
 ## Stop conditions
 
-- Any file write in harness commands.
-- Any network or GitHub API access.
-- Any change to embedded assets or instruction packs.
-- Any change to `invariants.yml`.
+- Any change that adds automatic repair behaviour to `doctor` or `status`
+- Any request to alter `init`, `repair`, `map`, or `plan`
+- Any need for network access
+- Any change to embedded instruction content
 
 ## Escalation triggers
 
-- Request to modify existing command behaviour.
-- Request to add remote download or GitHub API call.
+- Requirement to change overall runtime status semantics based on harness health
+- Requirement to support harness-specific canonical sources beyond embedded cARL artefacts
 
 ## Context reset notes
 
-This contract is active for the harness adapter implementation PR (PR #10). Close it when merged.
+This contract is active for the harness health awareness PR. Close it
+when merged.

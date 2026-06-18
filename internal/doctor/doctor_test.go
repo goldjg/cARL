@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/goldjg/carl/internal/doctor"
+	"github.com/goldjg/carl/internal/harness"
 	"github.com/goldjg/carl/internal/manifest"
 )
 
@@ -74,6 +75,21 @@ func writeRuntime(t *testing.T, dir string, rt *manifest.Runtime, arts *fakeArts
 	}
 }
 
+func writeHarnessAdapters(t *testing.T, dir string, content []byte) {
+	t.Helper()
+	for _, a := range harness.Adapters() {
+		for _, f := range a.AdapterFiles {
+			target := filepath.Join(dir, filepath.FromSlash(f))
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(target, content, 0644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+}
+
 // Contract assertion 1: no runtime installed → ERROR finding with `carl init` action,
 // return nil (success).
 func TestDoctor_NoRuntime(t *testing.T) {
@@ -103,6 +119,7 @@ func TestDoctor_Healthy(t *testing.T) {
 	arts := &fakeArts{files: map[string][]byte{
 		".github/carl/invariants.yml":                    []byte("invariants: []"),
 		".github/instructions/core/carl.instructions.md": []byte("# carl pack"),
+		".github/copilot-instructions.md":                []byte("# canonical harness content\n"),
 	}}
 	rt := &manifest.Runtime{
 		RuntimeVersion: "1.0.0",
@@ -116,6 +133,7 @@ func TestDoctor_Healthy(t *testing.T) {
 		},
 	}
 	writeRuntime(t, dir, rt, arts)
+	writeHarnessAdapters(t, dir, arts.files[".github/copilot-instructions.md"])
 
 	cmd := doctor.New(arts)
 	var runErr error
@@ -142,7 +160,8 @@ func TestDoctor_Healthy(t *testing.T) {
 func TestDoctor_MissingArtefact(t *testing.T) {
 	dir := t.TempDir()
 	arts := &fakeArts{files: map[string][]byte{
-		".github/carl/invariants.yml": []byte("invariants: []"),
+		".github/carl/invariants.yml":     []byte("invariants: []"),
+		".github/copilot-instructions.md": []byte("# canonical harness content\n"),
 	}}
 	rt := &manifest.Runtime{
 		RuntimeVersion:   "1.0.0",
@@ -182,7 +201,8 @@ func TestDoctor_MissingArtefact(t *testing.T) {
 func TestDoctor_DriftedArtefact(t *testing.T) {
 	dir := t.TempDir()
 	arts := &fakeArts{files: map[string][]byte{
-		".github/carl/invariants.yml": []byte("canonical content"),
+		".github/carl/invariants.yml":     []byte("canonical content"),
+		".github/copilot-instructions.md": []byte("# canonical harness content\n"),
 	}}
 	rt := &manifest.Runtime{
 		RuntimeVersion:   "1.0.0",
@@ -229,7 +249,8 @@ func TestDoctor_DriftedArtefact(t *testing.T) {
 func TestDoctor_AlwaysReturnsSuccess(t *testing.T) {
 	dir := t.TempDir()
 	arts := &fakeArts{files: map[string][]byte{
-		".github/carl/invariants.yml": []byte("canonical content"),
+		".github/carl/invariants.yml":     []byte("canonical content"),
+		".github/copilot-instructions.md": []byte("# canonical harness content\n"),
 	}}
 	rt := &manifest.Runtime{
 		RuntimeVersion:   "1.0.0",
@@ -247,6 +268,45 @@ func TestDoctor_AlwaysReturnsSuccess(t *testing.T) {
 			t.Errorf("RunInDir returned non-nil error; want nil; got: %v", err)
 		}
 	})
+}
+
+// Contract assertion H4: a drifted harness adapter produces a WARNING with
+// `carl harness sync` remediation guidance.
+func TestDoctor_DriftedHarnessAdapter(t *testing.T) {
+	dir := t.TempDir()
+	arts := &fakeArts{files: map[string][]byte{
+		".github/carl/invariants.yml":     []byte("canonical content"),
+		".github/copilot-instructions.md": []byte("# canonical harness content\n"),
+	}}
+	rt := &manifest.Runtime{
+		RuntimeVersion:   "1.0.0",
+		Source:           "goldjg/cARL",
+		SourceTag:        "v1.0.0",
+		SourceCommit:     "abc123",
+		InstalledAt:      time.Now(),
+		ManagedArtifacts: []string{".github/carl/invariants.yml"},
+	}
+	writeRuntime(t, dir, rt, arts)
+	writeHarnessAdapters(t, dir, arts.files[".github/copilot-instructions.md"])
+	if err := os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte("modified harness"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := doctor.New(arts)
+	var runErr error
+	output := captureStdout(t, func() {
+		runErr = cmd.RunInDir(dir)
+	})
+
+	if runErr != nil {
+		t.Fatalf("RunInDir returned error; want nil; got: %v", runErr)
+	}
+	if !strings.Contains(output, "WARNING") || !strings.Contains(output, "claude (CLAUDE.md)") {
+		t.Errorf("expected drifted harness warning; got: %q", output)
+	}
+	if !strings.Contains(output, "carl harness sync") {
+		t.Errorf("expected `carl harness sync` action; got: %q", output)
+	}
 }
 
 // TestDoctor_Run exercises the Run method via the command interface.

@@ -8,6 +8,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/goldjg/carl/internal/harness"
 	"github.com/goldjg/carl/internal/manifest"
 	"github.com/goldjg/carl/internal/repair"
 )
@@ -101,6 +102,19 @@ func (c *Command) RunInDir(rootDir string) error {
 			fmt.Printf("  %s\n", f)
 		}
 	}
+	fmt.Println()
+
+	harnessHealth, err := harness.Inspect(rootDir, c.arts)
+	if err != nil {
+		return fmt.Errorf("inspect harness adapters: %w", err)
+	}
+	harnessSummary := harness.Summarize(harnessHealth)
+
+	fmt.Println("Harness Summary:")
+	fmt.Printf("  Active adapters:  %d\n", harnessSummary.Active)
+	fmt.Printf("  Missing adapters: %d\n", harnessSummary.Missing)
+	fmt.Printf("  Drifted adapters: %d\n", harnessSummary.Drifted)
+	fmt.Printf("  Healthy adapters: %d\n", harnessSummary.Healthy)
 	fmt.Println()
 
 	fmt.Printf("Status:           %s\n", overallStatus(missing, drifted))

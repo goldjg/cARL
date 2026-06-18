@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/goldjg/carl/internal/harness"
 	"github.com/goldjg/carl/internal/manifest"
 	"github.com/goldjg/carl/internal/status"
 )
@@ -43,6 +44,21 @@ func writeRuntime(t *testing.T, dir string, rt *manifest.Runtime, arts *fakeArts
 				if data, err := arts.Open(f); err == nil {
 					content = data
 				}
+			}
+			if err := os.WriteFile(target, content, 0644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+}
+
+func writeHarnessAdapters(t *testing.T, dir string, content []byte) {
+	t.Helper()
+	for _, a := range harness.Adapters() {
+		for _, f := range a.AdapterFiles {
+			target := filepath.Join(dir, filepath.FromSlash(f))
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				t.Fatal(err)
 			}
 			if err := os.WriteFile(target, content, 0644); err != nil {
 				t.Fatal(err)
@@ -92,9 +108,10 @@ func TestStatus_NoRuntime(t *testing.T) {
 func TestStatus_Healthy(t *testing.T) {
 	dir := t.TempDir()
 	arts := &fakeArts{files: map[string][]byte{
-		".github/carl/invariants.yml":                              []byte("invariants: []"),
-		".github/instructions/core/carl.instructions.md":           []byte("# carl pack"),
-		".github/instructions/core/memory-cache.instructions.md":   []byte("# memory-cache pack"),
+		".github/carl/invariants.yml":                            []byte("invariants: []"),
+		".github/instructions/core/carl.instructions.md":         []byte("# carl pack"),
+		".github/instructions/core/memory-cache.instructions.md": []byte("# memory-cache pack"),
+		".github/copilot-instructions.md":                        []byte("# canonical harness content\n"),
 	}}
 	rt := &manifest.Runtime{
 		RuntimeVersion: "1.0.0",
@@ -110,6 +127,7 @@ func TestStatus_Healthy(t *testing.T) {
 		},
 	}
 	writeRuntime(t, dir, rt, arts)
+	writeHarnessAdapters(t, dir, arts.files[".github/copilot-instructions.md"])
 
 	output := captureStdout(t, func() {
 		cmd := status.New("1.0.0", arts)
@@ -129,6 +147,11 @@ func TestStatus_Healthy(t *testing.T) {
 		"core/memory-cache",
 		"Missing Artefacts:",
 		"Drifted Artefacts:",
+		"Harness Summary:",
+		"Active adapters:  5",
+		"Missing adapters: 0",
+		"Drifted adapters: 0",
+		"Healthy adapters: 5",
 		"Status:           Healthy",
 	} {
 		if !strings.Contains(output, want) {
@@ -142,7 +165,8 @@ func TestStatus_Healthy(t *testing.T) {
 func TestStatus_MissingArtefact(t *testing.T) {
 	dir := t.TempDir()
 	arts := &fakeArts{files: map[string][]byte{
-		".github/carl/invariants.yml": []byte("invariants: []"),
+		".github/carl/invariants.yml":     []byte("invariants: []"),
+		".github/copilot-instructions.md": []byte("# canonical harness content\n"),
 	}}
 	rt := &manifest.Runtime{
 		RuntimeVersion:   "1.0.0",
@@ -177,7 +201,8 @@ func TestStatus_MissingArtefact(t *testing.T) {
 func TestStatus_DriftedArtefact(t *testing.T) {
 	dir := t.TempDir()
 	arts := &fakeArts{files: map[string][]byte{
-		".github/carl/invariants.yml": []byte("canonical content"),
+		".github/carl/invariants.yml":     []byte("canonical content"),
+		".github/copilot-instructions.md": []byte("# canonical harness content\n"),
 	}}
 	rt := &manifest.Runtime{
 		RuntimeVersion:   "1.0.0",
@@ -219,7 +244,8 @@ func TestStatus_DriftedArtefact(t *testing.T) {
 func TestStatus_ProtectedArtefactsIgnored(t *testing.T) {
 	dir := t.TempDir()
 	arts := &fakeArts{files: map[string][]byte{
-		".github/carl/memory.md": []byte("canonical memory"),
+		".github/carl/memory.md":          []byte("canonical memory"),
+		".github/copilot-instructions.md": []byte("# canonical harness content\n"),
 	}}
 	rt := &manifest.Runtime{
 		RuntimeVersion: "1.0.0",
@@ -261,6 +287,52 @@ func TestStatus_ProtectedArtefactsIgnored(t *testing.T) {
 	// With no repairable artefacts to check, the runtime is Healthy.
 	if !strings.Contains(output, "Status:           Healthy") {
 		t.Errorf("expected 'Status: Healthy' when only protected artefacts exist; got: %q", output)
+	}
+}
+
+// Contract assertion H5: harness summary counts distinguish active, missing,
+// drifted, and healthy adapters accurately.
+func TestStatus_HarnessSummaryCounts(t *testing.T) {
+	dir := t.TempDir()
+	arts := &fakeArts{files: map[string][]byte{
+		".github/carl/invariants.yml":     []byte("invariants: []"),
+		".github/copilot-instructions.md": []byte("# canonical harness content\n"),
+	}}
+	rt := &manifest.Runtime{
+		RuntimeVersion:   "1.0.0",
+		Source:           "goldjg/cARL",
+		SourceTag:        "v1.0.0",
+		SourceCommit:     "abc123",
+		InstalledAt:      time.Now(),
+		ManagedArtifacts: []string{".github/carl/invariants.yml"},
+	}
+	writeRuntime(t, dir, rt, arts)
+	writeHarnessAdapters(t, dir, arts.files[".github/copilot-instructions.md"])
+	if err := os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte("modified harness"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(dir, "AGENTS.md")); err != nil {
+		t.Fatal(err)
+	}
+
+	output := captureStdout(t, func() {
+		cmd := status.New("1.0.0", arts)
+		if err := cmd.RunInDir(dir); err != nil {
+			t.Fatalf("RunInDir: %v", err)
+		}
+	})
+
+	for _, want := range []string{
+		"Harness Summary:",
+		"Active adapters:  4",
+		"Missing adapters: 1",
+		"Drifted adapters: 1",
+		"Healthy adapters: 3",
+		"Status:           Healthy",
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("output missing %q\nfull output:\n%s", want, output)
+		}
 	}
 }
 

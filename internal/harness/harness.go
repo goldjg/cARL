@@ -157,7 +157,7 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("Subcommands:")
 	fmt.Println("  list    List known harness adapters and their support status")
-	fmt.Println("  status  Report harness adapter detection status in the current repository")
+	fmt.Println("  status  Report harness adapter presence and sync health in the current repository")
 	fmt.Println("  sync    Generate adapter files for supported harnesses from canonical cARL artefacts")
 	fmt.Println()
 	fmt.Println("Run 'carl harness <subcommand> --help' for more information.")
@@ -184,33 +184,28 @@ func (c *Command) RunListInDir(_ string) error {
 	return nil
 }
 
-// RunStatusInDir reports the detection status of all known harness adapters
-// in rootDir. Detection is based on the presence of each adapter's DetectionFile.
+// RunStatusInDir reports the presence and sync health of all known harness
+// adapters in rootDir. Detection is based on DetectionFile presence; sync
+// health compares adapter file content against the canonical embedded source.
 // Exported for testing without changing the process working directory.
 func (c *Command) RunStatusInDir(rootDir string) error {
+	health, err := Inspect(rootDir, c.arts)
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("Harness Adapter Status:")
 	fmt.Println()
 
-	active := 0
-	for _, a := range knownAdapters {
-		detected := isDetected(a, rootDir)
-		if detected {
-			active++
-		}
-		// "supported" adapters report "active" or "not active".
-		// "planned" adapters report "-" — no detection is attempted.
-		detectionStatus := "-"
-		if a.Support == "supported" {
-			if detected {
-				detectionStatus = "active"
-			} else {
-				detectionStatus = "not active"
-			}
-		}
-		fmt.Printf("  %-13s %-20s %-11s %s\n", a.ID, a.Name, a.Support, detectionStatus)
+	for _, h := range health {
+		fmt.Printf("  %-13s %-20s %-11s %-8s %s\n",
+			h.Adapter.ID, h.Adapter.Name, h.Adapter.Support, h.Presence, h.Sync)
 	}
 	fmt.Println()
-	fmt.Printf("%d of %d harness(es) active.\n", active, len(knownAdapters))
+
+	summary := Summarize(health)
+	fmt.Printf("%d active, %d missing, %d drifted, %d healthy.\n",
+		summary.Active, summary.Missing, summary.Drifted, summary.Healthy)
 	return nil
 }
 

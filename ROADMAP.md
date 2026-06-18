@@ -116,6 +116,18 @@ artefact provides the content for each harness. The `harness.Command` now accept
 an `Artifacts` dependency consistent with other write commands (`repair`, `doctor`,
 `status`). Sync is idempotent and does not require `carl init` to have been run first.
 
+### Harness Health Awareness
+**Status:** Delivered
+**Commands:** `carl harness status`, `carl doctor`, `carl status`
+**Description:** Promotes harness adapters to managed disposable artefacts with
+content-based health checks. `carl harness status` now reports detection-file
+presence plus sync health (`Present`, `Missing`, `Drifted`, `Synced`) by
+comparing adapter bytes against the embedded canonical source. `carl doctor`
+surfaces missing or drifted harness adapters as `WARNING` findings with
+`carl harness sync` remediation. `carl status` adds a dedicated harness summary
+section (active, missing, drifted, healthy) without changing overall runtime
+status semantics.
+
 ---
 
 ## Near-Term (Candidate Next Items)

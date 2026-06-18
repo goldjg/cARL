@@ -5,7 +5,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/goldjg/carl/internal/harness"
 	"github.com/goldjg/carl/internal/manifest"
 	"github.com/goldjg/carl/internal/repair"
 )
@@ -125,6 +127,27 @@ func (c *Command) diagnose(rootDir string) ([]Finding, error) {
 			Message: fmt.Sprintf("%s — artefact has drifted from its canonical version", f),
 			Action:  "run `carl repair`",
 		})
+	}
+
+	harnessHealth, err := harness.Inspect(rootDir, c.arts)
+	if err != nil {
+		return nil, fmt.Errorf("inspect harness adapters: %w", err)
+	}
+	for _, h := range harnessHealth {
+		switch h.Sync {
+		case harness.SyncMissing:
+			findings = append(findings, Finding{
+				Level:   LevelWarning,
+				Message: fmt.Sprintf("%s (%s) — harness adapter file is missing", h.Adapter.ID, strings.Join(h.MissingFiles, ", ")),
+				Action:  "run `carl harness sync`",
+			})
+		case harness.SyncDrifted:
+			findings = append(findings, Finding{
+				Level:   LevelWarning,
+				Message: fmt.Sprintf("%s (%s) — harness adapter file has drifted from its canonical version", h.Adapter.ID, strings.Join(h.DriftedFiles, ", ")),
+				Action:  "run `carl harness sync`",
+			})
+		}
 	}
 
 	if len(findings) == 0 {
