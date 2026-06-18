@@ -90,6 +90,19 @@ the first level-1 heading), status/lifecycle state (from the `Status:` field in
 template structure and emits inline warnings for: missing `## Plan metadata` section
 and empty `Status:` field. Always exits 0 — read-only, never modifies files.
 
+### Harness Adapter Support
+**Status:** Delivered (PR #9)
+**Commands:** `carl harness`, `carl harness list`, `carl harness status`
+**Description:** Introduces the harness adapter concept: a bridge between cARL
+canonical artefacts and AI coding agent context injection mechanisms. cARL artefacts
+are the canonical source of truth; harness files are adapters, not authorities.
+Supports GitHub Copilot as the first implemented adapter (detection via
+`.github/copilot-instructions.md`). Registers Claude Code, Codex, Cursor, and
+Antigravity as planned adapters for future implementation. `carl harness list` shows
+all known adapters with support status (static, no filesystem check). `carl harness
+status` detects which harnesses are active in the current repository. Both subcommands
+are read-only and always exit 0. Designed for extensibility as new agents are supported.
+
 ---
 
 ## Near-Term (Candidate Next Items)
@@ -162,9 +175,9 @@ and empty `Status:` field. Always exits 0 — read-only, never modifies files.
 **Description:** A machine-readable declaration of which cARL packs are active in a repository, enabling IDE tooling to surface relevant governance context to developers.
 
 ### 15. cARL for Non-Copilot Agents
-**Status:** Speculative  
+**Status:** In progress — harness adapter framework delivered (PR #9); Claude Code, Codex, Cursor, and Antigravity registered as planned adapters.
 **Description:** Adapt cARL governance artefacts for use with other AI coding agents (Cursor, Aider, Claude Code, etc.) that support system-prompt injection from repository files.  
-**Design question:** Each agent has different context injection mechanisms. What is the minimal adaptation needed?
+**Design question:** Each agent has different context injection mechanisms. What is the minimal adaptation needed per agent?
 
 ---
 

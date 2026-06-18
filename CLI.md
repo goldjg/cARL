@@ -413,6 +413,136 @@ Plans in .github/carl/plans/
 
 ---
 
+### `carl harness`
+
+Manages and inspects harness adapters for AI coding agents.
+
+Harness adapters bridge cARL canonical artefacts to the context injection
+mechanisms of specific AI coding agents. cARL artefacts (`.github/carl/`) are
+the canonical source of truth; harness files are adapters, not authorities.
+
+**Usage**
+
+```
+carl harness <subcommand> [arguments]
+```
+
+**Subcommands**
+
+| Subcommand | Description |
+|---|---|
+| `list` | List known harness adapters and their support status |
+| `status` | Report harness adapter detection status in the current repository |
+
+Run `carl harness --help` to print subcommand usage.
+
+---
+
+### `carl harness list`
+
+Lists all known harness adapters and their support status.
+
+**Usage**
+
+```
+carl harness list
+```
+
+**What it does**
+
+1. Prints the canonical adapter registry — all harnesses cARL knows about.
+2. For each adapter shows: ID, display name, and support status (`supported` or `planned`).
+3. Prints a summary line with the count of supported adapters.
+
+This subcommand is purely informational — it does not check the filesystem.
+
+**Output**
+
+```
+Harness Adapters:
+
+  copilot       GitHub Copilot       supported
+  claude        Claude Code          planned
+  codex         Codex                planned
+  cursor        Cursor               planned
+  antigravity   Antigravity          planned
+
+1 of 5 adapter(s) supported.
+```
+
+**Support status values**
+
+| Status | Meaning |
+|---|---|
+| `supported` | Adapter is fully implemented; detection and adapter files are defined |
+| `planned` | Adapter is declared for discoverability; not yet implemented |
+
+---
+
+### `carl harness status`
+
+Reports the detection status of all known harness adapters in the current repository.
+
+**Usage**
+
+```
+carl harness status
+```
+
+**What it does**
+
+1. For each known adapter, checks whether its detection file is present in the repository.
+2. Reports each adapter as `active`, `not active`, or `-` (planned — no detection attempted).
+3. Prints a summary line with the count of active harnesses.
+
+**Output (Copilot active)**
+
+```
+Harness Adapter Status:
+
+  copilot       GitHub Copilot       supported    active
+  claude        Claude Code          planned      -
+  codex         Codex                planned      -
+  cursor        Cursor               planned      -
+  antigravity   Antigravity          planned      -
+
+1 of 5 harness(es) active.
+```
+
+**Output (none active)**
+
+```
+Harness Adapter Status:
+
+  copilot       GitHub Copilot       supported    not active
+  claude        Claude Code          planned      -
+  codex         Codex                planned      -
+  cursor        Cursor               planned      -
+  antigravity   Antigravity          planned      -
+
+0 of 5 harness(es) active.
+```
+
+**Detection status values**
+
+| Status | Meaning |
+|---|---|
+| `active` | Detection file is present; harness is in use |
+| `not active` | Detection file is absent; supported harness not currently in use |
+| `-` | Planned adapter — no detection file defined yet |
+
+**Detection file by adapter**
+
+| Adapter | Detection file |
+|---|---|
+| `copilot` | `.github/copilot-instructions.md` |
+| `claude` | (not yet defined — planned) |
+| `codex` | (not yet defined — planned) |
+| `cursor` | (not yet defined — planned) |
+| `antigravity` | (not yet defined — planned) |
+
+---
+
 ## carl version
 
 Shows CLI and installed runtime version information, including installed packs

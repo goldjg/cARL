@@ -14,10 +14,13 @@ durable invariants.
 
 ## Goal
 
-Add `carl plan` — a new CLI command that discovers, validates, and
-summarises plan files in `.github/carl/plans/`. For each `.md` file it
-shows title, status (lifecycle state), and purpose extracted from
-standard template sections. Update durable artefacts (`CLI.md`,
+Add `carl harness` — a new CLI command with two subcommands (`list`,
+`status`) that introduce harness adapter support. Harness adapters bridge
+cARL canonical artefacts to AI coding agent context injection mechanisms.
+cARL artefacts are the canonical source of truth; harness files are
+adapters, not authorities. Support GitHub Copilot as the first adapter
+without changing existing behaviour. Register Claude Code, Codex, Cursor,
+and Antigravity as planned adapters. Update durable artefacts (`CLI.md`,
 `ROADMAP.md`, `memory.md`) to reflect the new command.
 
 ## Contract status
@@ -26,11 +29,12 @@ active
 
 ## Non-goals
 
-- Writing or modifying plan files
-- GitHub API calls or network access
 - Changes to embedded assets or instruction packs
 - Changes to `invariants.yml` (no new invariants required)
-- Subcommands for creating or archiving plans
+- Modifying any existing command behaviour
+- Writing harness adapter files (read-only command)
+- Adapter file content generation or injection
+- Network or GitHub API access
 
 ## Carry-forward rules
 
@@ -41,13 +45,13 @@ Promoted invariants from previous PRs remain in force:
 
 ## Approved scope
 
-- `internal/plan/plan.go` — new `carl plan` command implementation
-- `internal/plan/plan_test.go` — tests
-- `cmd/carl/main.go` — register `plan` command
-- `CLI.md` — document `carl plan`
+- `internal/harness/harness.go` — new package: Adapter registry, Command, list/status subcommands
+- `internal/harness/harness_test.go` — tests
+- `cmd/carl/main.go` — register `harness` command
+- `CLI.md` — document `carl harness`, `carl harness list`, `carl harness status`
 - `.github/carl/current-pr-contract.md` — this file
 - `.github/carl/memory.md` — durable facts update
-- `ROADMAP.md` — mark `carl plan` as delivered
+- `ROADMAP.md` — mark harness support as delivered
 
 ## Intentional amendments
 
@@ -56,40 +60,41 @@ No prior constraints are amended. No existing command behaviour changes.
 ## Forbidden scope
 
 - Changes to instruction packs under `.github/instructions/`
-- Changes to `invariants.yml`
-- Changes to embedded assets
-- Modifying `repair`, `status`, `doctor`, `version`, `init`, or `map` commands
-- Writing plan files or creating plans directory
+- Changes to `invariants.yml` or either embedded/assets copy
+- Modifying `repair`, `status`, `doctor`, `version`, `init`, `map`, or `plan` commands
+- Creating or modifying harness adapter files (harness command is read-only)
 
 ## Architectural constraints
 
-- `carl plan` is read-only; it never writes files.
+- `carl harness list` and `carl harness status` are read-only; they never write files.
 - All output to stdout; errors to stderr via returned error.
-- No network access; filesystem scan only.
-- Always returns nil (exit 0) even when validation warnings are present.
-- Plans directory is `.github/carl/plans/`; only `.md` files are scanned.
-- Sorted lexicographically by filename.
+- No network access; filesystem check only (os.Stat for detection).
+- `carl harness` (no args) prints usage and returns nil.
+- Unknown subcommand returns a non-nil error.
+- Adapter registry is the canonical source of harness metadata; not read from disk.
+- Detection is by presence of a single detection file per supported adapter.
 
 ## Security constraints
 
 - No credentials, tokens, or secrets in any new file.
 - No user-controlled data passed to shell commands.
-- Filesystem scan is bounded to rootDir; no path traversal outside it.
+- Filesystem check bounded to rootDir; no path traversal outside it.
+- `os.Stat` is the only filesystem operation; no file reads.
 
 ## Contract assertions
 
-1. No plans directory or empty directory → output "No plans found." and return nil.
-2. Plan with all metadata fields is parsed with correct title, status, and purpose.
-3. Plan missing `## Plan metadata` section → inline Warning line in output.
-4. Plan with empty `Status:` field → inline Warning line in output.
-5. Plans are listed sorted lexicographically by filename.
-6. `carl plan` always returns nil (read-only).
-7. Non-.md files in the plans directory are silently ignored.
+1. `carl harness list` lists all 5 known adapters (copilot, claude, codex, cursor, antigravity).
+2. `carl harness list` identifies copilot as "supported"; others as "planned".
+3. `carl harness status` shows "active" for copilot when `.github/copilot-instructions.md` exists.
+4. `carl harness status` shows "not active" for copilot when detection file is absent.
+5. `carl harness` with no args (or --help) prints usage and returns nil.
+6. Unknown subcommand returns a non-nil error containing "unknown subcommand".
+7. Both `list` and `status` are read-only and always return nil.
 
 ## Files expected to change
 
-- `internal/plan/plan.go` (new)
-- `internal/plan/plan_test.go` (new)
+- `internal/harness/harness.go` (new)
+- `internal/harness/harness_test.go` (new)
 - `cmd/carl/main.go`
 - `CLI.md`
 - `.github/carl/current-pr-contract.md` (this file)
@@ -99,20 +104,21 @@ No prior constraints are amended. No existing command behaviour changes.
 ## Tests / validation
 
 - `go build ./cmd/carl` — must succeed
-- `go test ./...` — must pass with new plan package tests
+- `go test ./...` — must pass with new harness package tests
 - Parallel validation (code review + CodeQL) before PR is opened
 
 ## Stop conditions
 
-- Any file write other than displaying plan summaries.
+- Any file write in harness commands.
 - Any network or GitHub API access.
 - Any change to embedded assets or instruction packs.
+- Any change to `invariants.yml`.
 
 ## Escalation triggers
 
-- Request to create, modify, or delete plan files.
+- Request to modify existing command behaviour.
 - Request to add remote download or GitHub API call.
 
 ## Context reset notes
 
-This contract is active for the `carl plan` PR. Close it when merged.
+This contract is active for the `carl harness` PR. Close it when merged.

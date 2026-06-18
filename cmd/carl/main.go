@@ -7,6 +7,7 @@
 // Available commands:
 //
 //	doctor   Diagnose runtime issues and provide actionable remediation guidance
+//	harness  Manage and inspect harness adapters for AI coding agents
 //	init     Install the cARL runtime into the current repository
 //	map      Generate and update .github/carl/repo-map.json from repository structure
 //	plan     Discover, validate, and summarise plans in .github/carl/plans/
@@ -25,6 +26,7 @@ import (
 	"github.com/goldjg/carl/embedded"
 	"github.com/goldjg/carl/internal/cmdutil"
 	"github.com/goldjg/carl/internal/doctor"
+	"github.com/goldjg/carl/internal/harness"
 	"github.com/goldjg/carl/internal/install"
 	"github.com/goldjg/carl/internal/plan"
 	"github.com/goldjg/carl/internal/repair"
@@ -49,6 +51,7 @@ func main() {
 
 	cmds := []cmdutil.Command{
 		doctor.New(embedded.Assets),
+		harness.New(),
 		install.New(embedded.Assets, sourceCommit),
 		repomap.New(),
 		plan.New(),
