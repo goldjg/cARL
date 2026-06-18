@@ -232,6 +232,19 @@ carl repair
 
 > `memory.md` and `runtime.json` are protected and are never overwritten by `repair`.
 
+### 5. Diagnose issues
+
+Run a health check with actionable guidance for any issues found:
+
+```sh
+carl doctor
+```
+
+Expected output when healthy:
+```
+INFO    runtime is healthy — all managed artefacts are present and canonical
+```
+
 See [CLI.md](CLI.md) for the full command reference.
 
 ---

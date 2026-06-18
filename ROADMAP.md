@@ -46,6 +46,16 @@ missing and drifted artefacts, and an overall status of Healthy, Drifted, or
 Incomplete. `memory.md` and `runtime.json` are protected and never reported as
 drift. Exports `repair.Inspect` for shared, tested drift classification.
 
+### `carl doctor` Command
+**Status:** Delivered (PR #5)
+**Command:** `carl doctor`
+**Description:** Diagnostic command. Reads `runtime.json`, inspects all managed
+artefacts using `repair.Inspect`, and emits categorised findings (ERROR, WARNING,
+INFO) with per-finding remediation actions. Missing artefacts produce an ERROR with
+`carl repair` as the action; drifted artefacts produce a WARNING with `carl repair`;
+missing manifest produces an ERROR with `carl init`. Always returns exit code 0 —
+diagnostics complete successfully even when issues are present. Never modifies files.
+
 ---
 
 ## Near-Term (Candidate Next Items)

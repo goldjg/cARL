@@ -29,8 +29,11 @@ source of runtime state; no filesystem scanning is used. Commands:
 `carl init` (installs), `carl repair` (restores drifted artefacts),
 `carl status` (detailed health report: lists missing and drifted
 artefacts separately, reports Healthy/Drifted/Incomplete),
-`carl version` (reports state + health summary). `memory.md` and
-`runtime.json` are permanently protected from repair and status drift.
+`carl version` (reports state + health summary),
+`carl doctor` (diagnoses runtime issues; emits findings categorised as
+ERROR/WARNING/INFO with per-finding remediation actions; always exits 0;
+never modifies files). `memory.md` and `runtime.json` are permanently
+protected from repair and status drift.
 
 The `repair` package exports `Inspect(rootDir, managed, arts)` which
 returns separate missing and drifted slices, skipping protected paths.
@@ -91,4 +94,4 @@ the source of truth across model fallback.
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-18 by carl status PR (PR #4)
+2026-06-18 by carl doctor PR (PR #5)
