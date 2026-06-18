@@ -54,11 +54,13 @@ agents; subcommands: `list` and `status`; always exits 0; never modifies
 files). Harness adapters bridge cARL canonical artefacts to agent context
 injection mechanisms — cARL artefacts are the canonical source of truth,
 harness files are adapters, not authorities. `carl harness list` shows
-all known adapters (copilot/supported; claude/codex/cursor/antigravity
-as planned) — purely static, no filesystem check. `carl harness status`
-detects active harnesses in the current repo by checking adapter
-DetectionFile presence (os.Stat). Copilot detected via
-`.github/copilot-instructions.md`.
+all known adapters — all five are now supported: copilot, claude, codex,
+cursor, antigravity. `carl harness status` detects active harnesses in
+the current repo by checking adapter DetectionFile presence (os.Stat).
+Detection files: copilot → `.github/copilot-instructions.md`;
+claude → `CLAUDE.md`; codex → `AGENTS.md`; cursor → `.cursorrules`;
+antigravity → `ANTIGRAVITY.md`. Adapter file content generation and sync
+are not yet implemented.
 
 The `repair` package exports `Inspect(rootDir, managed, arts)` which
 returns separate missing and drifted slices, skipping protected paths.
@@ -125,4 +127,4 @@ the source of truth across model fallback.
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-18 by `carl harness` command PR (PR #9)
+2026-06-18 by harness adapter implementation PR (PR #10)

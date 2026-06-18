@@ -14,14 +14,13 @@ durable invariants.
 
 ## Goal
 
-Add `carl harness` — a new CLI command with two subcommands (`list`,
-`status`) that introduce harness adapter support. Harness adapters bridge
-cARL canonical artefacts to AI coding agent context injection mechanisms.
-cARL artefacts are the canonical source of truth; harness files are
-adapters, not authorities. Support GitHub Copilot as the first adapter
-without changing existing behaviour. Register Claude Code, Codex, Cursor,
-and Antigravity as planned adapters. Update durable artefacts (`CLI.md`,
-`ROADMAP.md`, `memory.md`) to reflect the new command.
+Extend the harness adapter model introduced in PR #9 by promoting the
+four planned adapters (Claude Code, Codex, Cursor, Antigravity) to
+`supported` status. Add DetectionFile and AdapterFiles for each using
+current known conventions. Implement only registry/status/list support
+(no adapter file content generation or sync). Preserve all existing
+Copilot adapter behaviour unchanged. Update tests, CLI docs, roadmap,
+memory, and current PR contract.
 
 ## Contract status
 
@@ -32,7 +31,8 @@ active
 - Changes to embedded assets or instruction packs
 - Changes to `invariants.yml` (no new invariants required)
 - Modifying any existing command behaviour
-- Writing harness adapter files (read-only command)
+- Generating or syncing adapter file contents
+- Writing harness adapter files on disk (read-only command)
 - Adapter file content generation or injection
 - Network or GitHub API access
 
@@ -45,34 +45,34 @@ Promoted invariants from previous PRs remain in force:
 
 ## Approved scope
 
-- `internal/harness/harness.go` — new package: Adapter registry, Command, list/status subcommands
-- `internal/harness/harness_test.go` — tests
-- `cmd/carl/main.go` — register `harness` command
-- `CLI.md` — document `carl harness`, `carl harness list`, `carl harness status`
+- `internal/harness/harness.go` — promote claude/codex/cursor/antigravity to supported; add DetectionFile and AdapterFiles
+- `internal/harness/harness_test.go` — add detection tests for new adapters; update SupportStatus test
+- `CLI.md` — update list/status output examples and detection file table
+- `ROADMAP.md` — mark item 15 (cARL for Non-Copilot Agents) as delivered
 - `.github/carl/current-pr-contract.md` — this file
-- `.github/carl/memory.md` — durable facts update
-- `ROADMAP.md` — mark harness support as delivered
+- `.github/carl/memory.md` — durable facts update (new supported adapters)
 
 ## Intentional amendments
 
 No prior constraints are amended. No existing command behaviour changes.
+The only change to `harness.go` registry is promoting four adapters from
+`planned` to `supported` and adding their detection/adapter file fields.
 
 ## Forbidden scope
 
 - Changes to instruction packs under `.github/instructions/`
 - Changes to `invariants.yml` or either embedded/assets copy
 - Modifying `repair`, `status`, `doctor`, `version`, `init`, `map`, or `plan` commands
-- Creating or modifying harness adapter files (harness command is read-only)
+- Creating or modifying harness adapter files on disk (harness command is read-only)
+- Adapter file content generation or sync
 
 ## Architectural constraints
 
-- `carl harness list` and `carl harness status` are read-only; they never write files.
+- `carl harness list` and `carl harness status` remain read-only; they never write files.
 - All output to stdout; errors to stderr via returned error.
 - No network access; filesystem check only (os.Stat for detection).
-- `carl harness` (no args) prints usage and returns nil.
-- Unknown subcommand returns a non-nil error.
+- Detection files: copilot → `.github/copilot-instructions.md`; claude → `CLAUDE.md`; codex → `AGENTS.md`; cursor → `.cursorrules`; antigravity → `ANTIGRAVITY.md`.
 - Adapter registry is the canonical source of harness metadata; not read from disk.
-- Detection is by presence of a single detection file per supported adapter.
 
 ## Security constraints
 
@@ -84,27 +84,28 @@ No prior constraints are amended. No existing command behaviour changes.
 ## Contract assertions
 
 1. `carl harness list` lists all 5 known adapters (copilot, claude, codex, cursor, antigravity).
-2. `carl harness list` identifies copilot as "supported"; others as "planned".
+2. `carl harness list` identifies all 5 adapters as "supported".
 3. `carl harness status` shows "active" for copilot when `.github/copilot-instructions.md` exists.
-4. `carl harness status` shows "not active" for copilot when detection file is absent.
-5. `carl harness` with no args (or --help) prints usage and returns nil.
-6. Unknown subcommand returns a non-nil error containing "unknown subcommand".
-7. Both `list` and `status` are read-only and always return nil.
+4. `carl harness status` shows "active" for claude when `CLAUDE.md` exists.
+5. `carl harness status` shows "active" for codex when `AGENTS.md` exists.
+6. `carl harness status` shows "active" for cursor when `.cursorrules` exists.
+7. `carl harness status` shows "active" for antigravity when `ANTIGRAVITY.md` exists.
+8. `carl harness status` shows "active" for all 5 when all detection files are present.
+9. All supported adapters have a non-empty DetectionFile in the registry.
 
 ## Files expected to change
 
-- `internal/harness/harness.go` (new)
-- `internal/harness/harness_test.go` (new)
-- `cmd/carl/main.go`
+- `internal/harness/harness.go`
+- `internal/harness/harness_test.go`
 - `CLI.md`
+- `ROADMAP.md`
 - `.github/carl/current-pr-contract.md` (this file)
 - `.github/carl/memory.md`
-- `ROADMAP.md`
 
 ## Tests / validation
 
 - `go build ./cmd/carl` — must succeed
-- `go test ./...` — must pass with new harness package tests
+- `go test ./...` — must pass with updated and new harness package tests
 - Parallel validation (code review + CodeQL) before PR is opened
 
 ## Stop conditions
@@ -121,4 +122,4 @@ No prior constraints are amended. No existing command behaviour changes.
 
 ## Context reset notes
 
-This contract is active for the `carl harness` PR. Close it when merged.
+This contract is active for the harness adapter implementation PR (PR #10). Close it when merged.

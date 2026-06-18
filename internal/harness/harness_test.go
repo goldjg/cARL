@@ -71,7 +71,7 @@ func TestHarness_List_ShowsAllAdapters(t *testing.T) {
 	}
 }
 
-// Contract assertion 2: copilot is "supported"; others are "planned".
+// Contract assertion 2: copilot is "supported"; all known adapters are supported.
 // Also verifies count summary line.
 func TestHarness_List_SupportStatus(t *testing.T) {
 	dir := t.TempDir()
@@ -85,9 +85,6 @@ func TestHarness_List_SupportStatus(t *testing.T) {
 
 	if !strings.Contains(output, "supported") {
 		t.Errorf("expected 'supported' in list output; got:\n%s", output)
-	}
-	if !strings.Contains(output, "planned") {
-		t.Errorf("expected 'planned' in list output; got:\n%s", output)
 	}
 
 	// Derive expected counts from the registry itself for robustness.
@@ -277,6 +274,16 @@ func TestHarness_Adapters_CopilotIsSupported(t *testing.T) {
 	}
 }
 
+// TestHarness_Adapters_SupportedHaveDetectionFile verifies all supported adapters
+// have a non-empty DetectionFile defined.
+func TestHarness_Adapters_SupportedHaveDetectionFile(t *testing.T) {
+	for _, a := range harness.Adapters() {
+		if a.Support == "supported" && a.DetectionFile == "" {
+			t.Errorf("supported adapter %q has no DetectionFile; all supported adapters must define one", a.ID)
+		}
+	}
+}
+
 // TestHarness_Adapters_PlannedHaveNoDetectionFile verifies planned adapters
 // have no detection file defined (they cannot be detected).
 func TestHarness_Adapters_PlannedHaveNoDetectionFile(t *testing.T) {
@@ -296,5 +303,133 @@ func TestHarness_Name(t *testing.T) {
 	}
 	if cmd.Synopsis() == "" {
 		t.Error("Synopsis() must not be empty")
+	}
+}
+
+// TestHarness_Status_ClaudeDetected verifies Claude Code detection via CLAUDE.md.
+func TestHarness_Status_ClaudeDetected(t *testing.T) {
+	dir := t.TempDir()
+	createFile(t, filepath.Join(dir, "CLAUDE.md"))
+
+	cmd := harness.New()
+	output := captureStdout(t, func() {
+		if err := cmd.RunStatusInDir(dir); err != nil {
+			t.Fatalf("RunStatusInDir: %v", err)
+		}
+	})
+
+	if !strings.Contains(output, "claude") {
+		t.Errorf("expected 'claude' in status output; got:\n%s", output)
+	}
+	// The active-count line must reflect at least 1 active harness.
+	if !strings.Contains(output, "active") {
+		t.Errorf("expected 'active' for claude with CLAUDE.md present; got:\n%s", output)
+	}
+}
+
+// TestHarness_Status_CodexDetected verifies Codex detection via AGENTS.md.
+func TestHarness_Status_CodexDetected(t *testing.T) {
+	dir := t.TempDir()
+	createFile(t, filepath.Join(dir, "AGENTS.md"))
+
+	cmd := harness.New()
+	output := captureStdout(t, func() {
+		if err := cmd.RunStatusInDir(dir); err != nil {
+			t.Fatalf("RunStatusInDir: %v", err)
+		}
+	})
+
+	if !strings.Contains(output, "codex") {
+		t.Errorf("expected 'codex' in status output; got:\n%s", output)
+	}
+	if !strings.Contains(output, "active") {
+		t.Errorf("expected 'active' for codex with AGENTS.md present; got:\n%s", output)
+	}
+}
+
+// TestHarness_Status_CursorDetected verifies Cursor detection via .cursorrules.
+func TestHarness_Status_CursorDetected(t *testing.T) {
+	dir := t.TempDir()
+	createFile(t, filepath.Join(dir, ".cursorrules"))
+
+	cmd := harness.New()
+	output := captureStdout(t, func() {
+		if err := cmd.RunStatusInDir(dir); err != nil {
+			t.Fatalf("RunStatusInDir: %v", err)
+		}
+	})
+
+	if !strings.Contains(output, "cursor") {
+		t.Errorf("expected 'cursor' in status output; got:\n%s", output)
+	}
+	if !strings.Contains(output, "active") {
+		t.Errorf("expected 'active' for cursor with .cursorrules present; got:\n%s", output)
+	}
+}
+
+// TestHarness_Status_AntigravityDetected verifies Antigravity detection via ANTIGRAVITY.md.
+func TestHarness_Status_AntigravityDetected(t *testing.T) {
+	dir := t.TempDir()
+	createFile(t, filepath.Join(dir, "ANTIGRAVITY.md"))
+
+	cmd := harness.New()
+	output := captureStdout(t, func() {
+		if err := cmd.RunStatusInDir(dir); err != nil {
+			t.Fatalf("RunStatusInDir: %v", err)
+		}
+	})
+
+	if !strings.Contains(output, "antigravity") {
+		t.Errorf("expected 'antigravity' in status output; got:\n%s", output)
+	}
+	if !strings.Contains(output, "active") {
+		t.Errorf("expected 'active' for antigravity with ANTIGRAVITY.md present; got:\n%s", output)
+	}
+}
+
+// TestHarness_Status_AllDetected verifies all 5 adapters report active when
+// all detection files are present.
+func TestHarness_Status_AllDetected(t *testing.T) {
+	dir := t.TempDir()
+	createFile(t, filepath.Join(dir, ".github", "copilot-instructions.md"))
+	createFile(t, filepath.Join(dir, "CLAUDE.md"))
+	createFile(t, filepath.Join(dir, "AGENTS.md"))
+	createFile(t, filepath.Join(dir, ".cursorrules"))
+	createFile(t, filepath.Join(dir, "ANTIGRAVITY.md"))
+
+	cmd := harness.New()
+	output := captureStdout(t, func() {
+		if err := cmd.RunStatusInDir(dir); err != nil {
+			t.Fatalf("RunStatusInDir: %v", err)
+		}
+	})
+
+	adapters := harness.Adapters()
+	wantLine := fmt.Sprintf("%d of %d harness(es) active.", len(adapters), len(adapters))
+	if !strings.Contains(output, wantLine) {
+		t.Errorf("expected %q in status output; got:\n%s", wantLine, output)
+	}
+}
+
+// TestHarness_Adapters_DetectionFiles verifies the expected detection files
+// for each known adapter.
+func TestHarness_Adapters_DetectionFiles(t *testing.T) {
+	wantDetectionFiles := map[string]string{
+		"copilot":     ".github/copilot-instructions.md",
+		"claude":      "CLAUDE.md",
+		"codex":       "AGENTS.md",
+		"cursor":      ".cursorrules",
+		"antigravity": "ANTIGRAVITY.md",
+	}
+
+	for _, a := range harness.Adapters() {
+		want, ok := wantDetectionFiles[a.ID]
+		if !ok {
+			t.Errorf("adapter %q has no expected detection file entry in test table; update the test", a.ID)
+			continue
+		}
+		if a.DetectionFile != want {
+			t.Errorf("adapter %q DetectionFile = %q; want %q", a.ID, a.DetectionFile, want)
+		}
 	}
 }
