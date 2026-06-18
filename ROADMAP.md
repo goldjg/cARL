@@ -84,7 +84,7 @@ Excludes `.git/`, `node_modules/`, and `vendor/` from all scans.
 ## Near-Term (Candidate Next Items)
 
 ### 1. Repo Map Population Tooling
-**Status:** Delivered (PR #7) — see `carl map` in Near-Term below.
+**Status:** Delivered (PR #7) — see Delivered section above.
 
 ### 2. Multi-Repository Governance
 **Status:** Not started  
@@ -97,17 +97,6 @@ Excludes `.git/`, `node_modules/`, and `vendor/` from all scans.
 
 ### 4. cARL Pack for Go
 **Status:** Delivered (PR #6) — see Delivered section above.
-
-### `carl map` Command (Repo Map Population Tooling)
-**Status:** Delivered (PR #7)
-**Command:** `carl map`
-**Description:** CLI command that derives a cognitive repository map from the
-filesystem and writes `.github/carl/repo-map.json`. Detects programming languages
-from file extensions; identifies entry points (`go.mod`, `cmd/*/main.go`, `Makefile`,
-etc.); maps key directories (up to 3 levels deep) with purpose descriptions derived
-from Go package/command doc comments or known-path heuristics; lists GitHub Actions
-workflows, governance artefacts, and root-level documentation. Idempotent.
-Excludes `.git/`, `node_modules/`, `vendor/`.
 
 ### 5. cARL Pack for C# / .NET
 **Status:** Not started  

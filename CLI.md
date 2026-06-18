@@ -352,6 +352,8 @@ Repo map updated: .github/carl/repo-map.json
 
 ---
 
+## carl version
+
 Shows CLI and installed runtime version information, including installed packs
 and a health status.
 
