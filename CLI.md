@@ -462,20 +462,22 @@ This subcommand is purely informational — it does not check the filesystem.
 Harness Adapters:
 
   copilot       GitHub Copilot       supported
-  claude        Claude Code          planned
-  codex         Codex                planned
-  cursor        Cursor               planned
-  antigravity   Antigravity          planned
+  claude        Claude Code          supported
+  codex         Codex                supported
+  cursor        Cursor               supported
+  antigravity   Antigravity          supported
 
-1 of 5 adapter(s) supported.
+5 of 5 adapter(s) supported.
 ```
 
 **Support status values**
 
 | Status | Meaning |
 |---|---|
-| `supported` | Adapter is fully implemented; detection and adapter files are defined |
+| `supported` | Detection file and adapter files are defined; detection and status reporting are active |
 | `planned` | Adapter is declared for discoverability; not yet implemented |
+
+> **Note:** Content generation and sync (populating adapter files from cARL artefacts) is available for `copilot` and deferred for other adapters in a future release. `supported` in the current release means detection and status reporting are active.
 
 ---
 
@@ -501,10 +503,10 @@ carl harness status
 Harness Adapter Status:
 
   copilot       GitHub Copilot       supported    active
-  claude        Claude Code          planned      -
-  codex         Codex                planned      -
-  cursor        Cursor               planned      -
-  antigravity   Antigravity          planned      -
+  claude        Claude Code          supported    not active
+  codex         Codex                supported    not active
+  cursor        Cursor               supported    not active
+  antigravity   Antigravity          supported    not active
 
 1 of 5 harness(es) active.
 ```
@@ -515,10 +517,10 @@ Harness Adapter Status:
 Harness Adapter Status:
 
   copilot       GitHub Copilot       supported    not active
-  claude        Claude Code          planned      -
-  codex         Codex                planned      -
-  cursor        Cursor               planned      -
-  antigravity   Antigravity          planned      -
+  claude        Claude Code          supported    not active
+  codex         Codex                supported    not active
+  cursor        Cursor               supported    not active
+  antigravity   Antigravity          supported    not active
 
 0 of 5 harness(es) active.
 ```
@@ -536,10 +538,10 @@ Harness Adapter Status:
 | Adapter | Detection file |
 |---|---|
 | `copilot` | `.github/copilot-instructions.md` |
-| `claude` | (not yet defined — planned) |
-| `codex` | (not yet defined — planned) |
-| `cursor` | (not yet defined — planned) |
-| `antigravity` | (not yet defined — planned) |
+| `claude` | `CLAUDE.md` |
+| `codex` | `AGENTS.md` |
+| `cursor` | `.cursorrules` |
+| `antigravity` | `ANTIGRAVITY.md` |
 
 ---
 

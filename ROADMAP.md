@@ -175,9 +175,9 @@ are read-only and always exit 0. Designed for extensibility as new agents are su
 **Description:** A machine-readable declaration of which cARL packs are active in a repository, enabling IDE tooling to surface relevant governance context to developers.
 
 ### 15. cARL for Non-Copilot Agents
-**Status:** In progress — harness adapter framework delivered (PR #9); Claude Code, Codex, Cursor, and Antigravity registered as planned adapters.
-**Description:** Adapt cARL governance artefacts for use with other AI coding agents (Cursor, Aider, Claude Code, etc.) that support system-prompt injection from repository files.  
-**Design question:** Each agent has different context injection mechanisms. What is the minimal adaptation needed per agent?
+**Status:** Delivered (PR #10) — harness adapter framework and all five adapters implemented.
+**Description:** Adapt cARL governance artefacts for use with other AI coding agents (Cursor, Aider, Claude Code, etc.) that support system-prompt injection from repository files. Harness adapters bridge cARL canonical artefacts to each agent's context injection mechanism. All five adapters (copilot, claude, codex, cursor, antigravity) are supported with detection files and adapter file definitions. Detection: `CLAUDE.md` (Claude Code), `AGENTS.md` (Codex), `.cursorrules` (Cursor), `ANTIGRAVITY.md` (Antigravity), `.github/copilot-instructions.md` (Copilot). Adapter file content generation and sync are deferred to a future PR.
+**Design question:** ~~Each agent has different context injection mechanisms. What is the minimal adaptation needed per agent?~~
 
 ---
 

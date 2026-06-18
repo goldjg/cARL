@@ -21,6 +21,10 @@ type Adapter struct {
 	// Name is the human-readable display name (e.g. "GitHub Copilot").
 	Name string
 	// Support indicates implementation maturity: "supported" or "planned".
+	// A "supported" adapter has its DetectionFile and AdapterFiles defined,
+	// enabling detection and status reporting. Content generation/sync
+	// (populating adapter files from cARL artefacts) is available for
+	// the copilot adapter and deferred for other adapters pending a future release.
 	Support string
 	// DetectionFile is the repo-relative path whose presence indicates this
 	// harness is active in the repository. Empty for planned adapters.
@@ -42,24 +46,32 @@ var knownAdapters = []Adapter{
 		AdapterFiles:  []string{".github/copilot-instructions.md"},
 	},
 	{
-		ID:      "claude",
-		Name:    "Claude Code",
-		Support: "planned",
+		ID:            "claude",
+		Name:          "Claude Code",
+		Support:       "supported",
+		DetectionFile: "CLAUDE.md",
+		AdapterFiles:  []string{"CLAUDE.md"},
 	},
 	{
-		ID:      "codex",
-		Name:    "Codex",
-		Support: "planned",
+		ID:            "codex",
+		Name:          "Codex",
+		Support:       "supported",
+		DetectionFile: "AGENTS.md",
+		AdapterFiles:  []string{"AGENTS.md"},
 	},
 	{
-		ID:      "cursor",
-		Name:    "Cursor",
-		Support: "planned",
+		ID:            "cursor",
+		Name:          "Cursor",
+		Support:       "supported",
+		DetectionFile: ".cursorrules",
+		AdapterFiles:  []string{".cursorrules"},
 	},
 	{
-		ID:      "antigravity",
-		Name:    "Antigravity",
-		Support: "planned",
+		ID:            "antigravity",
+		Name:          "Antigravity",
+		Support:       "supported",
+		DetectionFile: "ANTIGRAVITY.md",
+		AdapterFiles:  []string{"ANTIGRAVITY.md"},
 	},
 }
 
