@@ -49,6 +49,17 @@ purpose from each `.md` file; validates against standard template
 structure; always exits 0; never modifies files). `memory.md` and `runtime.json` are permanently
 protected from repair and status drift.
 
+`carl harness` (manages and inspects harness adapters for AI coding
+agents; subcommands: `list` and `status`; always exits 0; never modifies
+files). Harness adapters bridge cARL canonical artefacts to agent context
+injection mechanisms — cARL artefacts are the canonical source of truth,
+harness files are adapters, not authorities. `carl harness list` shows
+all known adapters (copilot/supported; claude/codex/cursor/antigravity
+as planned) — purely static, no filesystem check. `carl harness status`
+detects active harnesses in the current repo by checking adapter
+DetectionFile presence (os.Stat). Copilot detected via
+`.github/copilot-instructions.md`.
+
 The `repair` package exports `Inspect(rootDir, managed, arts)` which
 returns separate missing and drifted slices, skipping protected paths.
 `repair.Command.detectDrift` delegates to `Inspect` internally.
@@ -114,4 +125,4 @@ the source of truth across model fallback.
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-18 by `carl plan` command PR (PR #8)
+2026-06-18 by `carl harness` command PR (PR #9)
