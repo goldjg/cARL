@@ -37,12 +37,23 @@ artefacts separately, reports Healthy/Drifted/Incomplete),
 `carl version` (reports state + health summary),
 `carl doctor` (diagnoses runtime issues; emits findings categorised as
 ERROR/WARNING/INFO with per-finding remediation actions; always exits 0;
-never modifies files). `memory.md` and `runtime.json` are permanently
+never modifies files),
+`carl map` (derives a cognitive repository map from the filesystem and
+writes `.github/carl/repo-map.json`; detects languages, entry points,
+key directories with Go doc-comment purposes, workflows, governance
+artefacts, and documentation; idempotent; excludes .git/,
+node_modules/, vendor/). `memory.md` and `runtime.json` are permanently
 protected from repair and status drift.
 
 The `repair` package exports `Inspect(rootDir, managed, arts)` which
 returns separate missing and drifted slices, skipping protected paths.
 `repair.Command.detectDrift` delegates to `Inspect` internally.
+
+The `repomap` package (`internal/repomap`) implements `carl map`. Its
+`Build(rootDir)` function derives all map sections from the filesystem
+using `filepath.WalkDir`. It exports `RunInDir(rootDir)` for testability
+(same pattern as all other command packages). `OutputFile` constant is
+`.github/carl/repo-map.json`.
 
 ## Core invariants
 - Instruction packs should remain modular and focused on a single
@@ -99,4 +110,4 @@ the source of truth across model fallback.
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-18 by Go language pack PR (PR #6)
+2026-06-18 by `carl map` command PR (PR #7)
