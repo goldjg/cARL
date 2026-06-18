@@ -21,6 +21,10 @@ type Adapter struct {
 	// Name is the human-readable display name (e.g. "GitHub Copilot").
 	Name string
 	// Support indicates implementation maturity: "supported" or "planned".
+	// A "supported" adapter has its DetectionFile and AdapterFiles defined,
+	// enabling detection and status reporting. Content generation/sync
+	// (populating adapter files from cARL artefacts) is available for
+	// the copilot adapter and deferred for other adapters pending a future release.
 	Support string
 	// DetectionFile is the repo-relative path whose presence indicates this
 	// harness is active in the repository. Empty for planned adapters.

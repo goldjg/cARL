@@ -474,8 +474,10 @@ Harness Adapters:
 
 | Status | Meaning |
 |---|---|
-| `supported` | Adapter is fully implemented; detection and adapter files are defined |
+| `supported` | Detection file and adapter files are defined; detection and status reporting are active |
 | `planned` | Adapter is declared for discoverability; not yet implemented |
+
+> **Note:** Content generation and sync (populating adapter files from cARL artefacts) is available for `copilot` and deferred for other adapters in a future release. `supported` in the current release means detection and status reporting are active.
 
 ---
 
