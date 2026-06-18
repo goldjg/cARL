@@ -6,14 +6,15 @@
 //
 // Available commands:
 //
-//	doctor   Diagnose runtime issues and provide actionable remediation guidance
-//	harness  Manage and inspect harness adapters for AI coding agents
-//	init     Install the cARL runtime into the current repository
-//	map      Generate and update .github/carl/repo-map.json from repository structure
-//	plan     Discover, validate, and summarise plans in .github/carl/plans/
-//	repair   Restore modified managed cARL artefacts to their canonical state
-//	status   Report whether the installed cARL runtime is healthy, missing, or drifted
-//	version  Show CLI and installed runtime version information
+//	doctor     Diagnose runtime issues and provide actionable remediation guidance
+//	harness    Manage and inspect harness adapters for AI coding agents
+//	init       Install the cARL runtime into the current repository
+//	map        Generate and update .github/carl/repo-map.json from repository structure
+//	plan       Discover, validate, and summarise plans in .github/carl/plans/
+//	reconcile  Update repository-specific memory sections from current repo-map data
+//	repair     Restore modified managed cARL artefacts to their canonical state
+//	status     Report whether the installed cARL runtime is healthy, missing, or drifted
+//	version    Show CLI and installed runtime version information
 package main
 
 import (
@@ -29,6 +30,7 @@ import (
 	"github.com/goldjg/carl/internal/harness"
 	"github.com/goldjg/carl/internal/install"
 	"github.com/goldjg/carl/internal/plan"
+	"github.com/goldjg/carl/internal/reconcile"
 	"github.com/goldjg/carl/internal/repair"
 	"github.com/goldjg/carl/internal/repomap"
 	"github.com/goldjg/carl/internal/status"
@@ -55,6 +57,7 @@ func main() {
 		install.New(embedded.Assets, sourceCommit),
 		repomap.New(),
 		plan.New(),
+		reconcile.New(),
 		repair.New(embedded.Assets),
 		status.New(cliVersion, embedded.Assets),
 		version.New(cliVersion, embedded.Assets),
