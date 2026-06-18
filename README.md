@@ -1,6 +1,6 @@
 <!-- version: 1.0.0 -->
 
- [](cARL.png)
+![](cARL.png)
 
 # cARL — Cognitive Agent Runtime Layer
 
