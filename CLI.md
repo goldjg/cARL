@@ -155,7 +155,7 @@ carl doctor
    is absent, reports it as an ERROR and suggests `carl init`.
 2. Detects and categorises findings as ERROR, WARNING, or INFO:
    - **ERROR** — missing runtime manifest, unreadable manifest, artefact absent from disk
-   - **WARNING** — artefact content differs from its canonical version (drifted)
+   - **WARNING** — artefact content differs from its canonical version (drifted), or a harness adapter is missing/drifted
    - **INFO** — no issues found; runtime is healthy
 3. For each finding, provides a suggested remediation action.
 4. Exits with code `0` regardless of whether issues are found — the command is
@@ -188,8 +188,10 @@ ERROR   .github/carl/invariants.yml — artefact is missing from disk
         Action: run `carl repair`
 WARNING .github/copilot-instructions.md — artefact has drifted from its canonical version
         Action: run `carl repair`
+WARNING claude (CLAUDE.md) — harness adapter file has drifted from its canonical version
+        Action: run `carl harness sync`
 
-1 error(s), 1 warning(s), 0 info(s) found.
+1 error(s), 2 warning(s), 0 info(s) found.
 ```
 
 **Finding levels**
@@ -217,7 +219,9 @@ carl status
 3. Compares each managed repairable artefact against its embedded canonical
    version (byte-for-byte), classifying files as missing (absent from disk) or
    drifted (present but content differs).
-4. Reports overall status: `Healthy`, `Drifted`, or `Incomplete`.
+4. Inspects harness adapters and reports a separate summary of active, missing,
+   drifted, and healthy adapters.
+5. Reports overall runtime status: `Healthy`, `Drifted`, or `Incomplete`.
 
 **Protected files** — the following are never reported as missing or drifted:
 
@@ -244,6 +248,12 @@ Missing Artefacts:
 Drifted Artefacts:
   none
 
+Harness Summary:
+  Active adapters:  5
+  Missing adapters: 0
+  Drifted adapters: 0
+  Healthy adapters: 5
+
 Status:           Healthy
 ```
 
@@ -256,6 +266,12 @@ Missing Artefacts:
 
 Drifted Artefacts:
   .github/copilot-instructions.md
+
+Harness Summary:
+  Active adapters:  4
+  Missing adapters: 1
+  Drifted adapters: 1
+  Healthy adapters: 3
 
 Status:           Incomplete
 ```
@@ -432,7 +448,7 @@ carl harness <subcommand> [arguments]
 | Subcommand | Description |
 |---|---|
 | `list` | List known harness adapters and their support status |
-| `status` | Report harness adapter detection status in the current repository |
+| `status` | Report harness adapter presence and sync health in the current repository |
 | `sync` | Generate adapter files for supported harnesses from canonical cARL artefacts |
 
 Run `carl harness --help` to print subcommand usage.
@@ -484,7 +500,7 @@ Harness Adapters:
 
 ### `carl harness status`
 
-Reports the detection status of all known harness adapters in the current repository.
+Reports the detection and sync status of all known harness adapters in the current repository.
 
 **Usage**
 
@@ -495,44 +511,47 @@ carl harness status
 **What it does**
 
 1. For each known adapter, checks whether its detection file is present in the repository.
-2. Reports each adapter as `active`, `not active`, or `-` (planned — no detection attempted).
-3. Prints a summary line with the count of active harnesses.
+2. For supported adapters, compares adapter file bytes against the canonical embedded source.
+3. Reports presence as `Present` or `Missing`, and sync health as `Synced`, `Drifted`, `Missing`, or `-`.
+4. Prints a summary line with active, missing, drifted, and healthy adapter counts.
 
-**Output (Copilot active)**
-
-```
-Harness Adapter Status:
-
-  copilot       GitHub Copilot       supported    active
-  claude        Claude Code          supported    not active
-  codex         Codex                supported    not active
-  cursor        Cursor               supported    not active
-  antigravity   Antigravity          supported    not active
-
-1 of 5 harness(es) active.
-```
-
-**Output (none active)**
+**Output (Copilot synced)**
 
 ```
 Harness Adapter Status:
 
-  copilot       GitHub Copilot       supported    not active
-  claude        Claude Code          supported    not active
-  codex         Codex                supported    not active
-  cursor        Cursor               supported    not active
-  antigravity   Antigravity          supported    not active
+  copilot       GitHub Copilot       supported    Present  Synced
+  claude        Claude Code          supported    Missing  Missing
+  codex         Codex                supported    Missing  Missing
+  cursor        Cursor               supported    Missing  Missing
+  antigravity   Antigravity          supported    Missing  Missing
 
-0 of 5 harness(es) active.
+1 active, 4 missing, 0 drifted, 1 healthy.
 ```
 
-**Detection status values**
+**Output (drifted adapter)**
+
+```
+Harness Adapter Status:
+
+  copilot       GitHub Copilot       supported    Present  Synced
+  claude        Claude Code          supported    Present  Drifted
+  codex         Codex                supported    Missing  Missing
+  cursor        Cursor               supported    Missing  Missing
+  antigravity   Antigravity          supported    Missing  Missing
+
+2 active, 3 missing, 1 drifted, 1 healthy.
+```
+
+**Presence and sync values**
 
 | Status | Meaning |
 |---|---|
-| `active` | Detection file is present; harness is in use |
-| `not active` | Detection file is absent; supported harness not currently in use |
-| `-` | Planned adapter — no detection file defined yet |
+| `Present` | Detection file is present; harness is active in the repository |
+| `Missing` | Detection file or managed adapter file is absent |
+| `Drifted` | Adapter file exists but differs from the canonical embedded source |
+| `Synced` | Adapter file exists and matches the canonical embedded source |
+| `-` | No presence or sync check is available for this adapter |
 
 **Detection file by adapter**
 

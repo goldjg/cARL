@@ -55,13 +55,17 @@ bridge cARL canonical artefacts to agent context injection mechanisms —
 cARL artefacts are the canonical source of truth, harness files are
 adapters, not authorities. `carl harness list` shows all known adapters
 — all five are now supported: copilot, claude, codex, cursor, antigravity.
-`carl harness status` detects active harnesses in the current repo by
-checking adapter DetectionFile presence (os.Stat). `carl harness sync
+`carl harness status` reports both detection-file presence and sync
+health (`Present`, `Missing`, `Drifted`, `Synced`) by comparing adapter
+file bytes against the canonical embedded source. `carl harness sync
 [<harness-id>...]` generates adapter files for all supported (or named)
 harnesses from the canonical embedded artefact (`.github/copilot-instructions.md`
 is the SourceFile for all adapters); adapter files are disposable and
 always overwritten. Sync is idempotent and does not require `carl init`.
-Detection files: copilot → `.github/copilot-instructions.md`;
+`carl doctor` surfaces missing or drifted harness adapters as WARNING
+findings with `carl harness sync` remediation. `carl status` includes a
+separate harness summary (active, missing, drifted, healthy) without
+changing overall runtime status semantics. Detection files: copilot → `.github/copilot-instructions.md`;
 claude → `CLAUDE.md`; codex → `AGENTS.md`; cursor → `.cursorrules`;
 antigravity → `ANTIGRAVITY.md`. `harness.Command` accepts an `Artifacts`
 dependency (same interface pattern as `repair`, `doctor`, `status`).
@@ -69,6 +73,9 @@ dependency (same interface pattern as `repair`, `doctor`, `status`).
 The `repair` package exports `Inspect(rootDir, managed, arts)` which
 returns separate missing and drifted slices, skipping protected paths.
 `repair.Command.detectDrift` delegates to `Inspect` internally.
+`repair.CompareFile(rootDir, targetPath, canonicalPath, arts)` is the
+shared byte-comparison helper used by both runtime artefact inspection
+and harness adapter health checks.
 
 The `repomap` package (`internal/repomap`) implements `carl map`. Its
 `Build(rootDir)` function derives all map sections from the filesystem
@@ -131,4 +138,4 @@ the source of truth across model fallback.
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-18 by harness sync implementation (PR #11)
+2026-06-18 by harness health awareness implementation

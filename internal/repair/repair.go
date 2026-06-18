@@ -14,8 +14,8 @@ import (
 // protectedArtifacts lists paths that must never be overwritten by repair.
 // memory.md is per-repository state; runtime.json is managed by init.
 var protectedArtifacts = map[string]bool{
-	".github/carl/memory.md":      true,
-	manifest.FileName:             true,
+	".github/carl/memory.md": true,
+	manifest.FileName:        true,
 }
 
 // Artifacts provides read access to the embedded canonical runtime files.
@@ -101,22 +101,44 @@ func Inspect(rootDir string, managed []string, arts Artifacts) (missing, drifted
 		if protectedArtifacts[f] {
 			continue
 		}
-		canonical, canonErr := arts.Open(f)
-		if canonErr != nil {
-			// Not in embedded FS — skip (future artefact type).
-			continue
+		fileMissing, fileDrifted, compareErr := CompareFile(rootDir, f, f, arts)
+		if compareErr != nil {
+			if os.IsNotExist(compareErr) {
+				continue
+			}
+			return nil, nil, compareErr
 		}
-		target := filepath.Join(rootDir, filepath.FromSlash(f))
-		installed, readErr := os.ReadFile(target)
-		if readErr != nil {
+		if fileMissing {
 			missing = append(missing, f)
 			continue
 		}
-		if !bytes.Equal(canonical, installed) {
+		if fileDrifted {
 			drifted = append(drifted, f)
 		}
 	}
 	return missing, drifted, nil
+}
+
+// CompareFile compares targetPath on disk against canonicalPath in the embedded
+// artefact store. It returns whether targetPath is missing from disk or drifted
+// from the canonical bytes. If canonicalPath is not present in the embedded
+// artefact store, os.ErrNotExist is returned so callers can intentionally skip
+// non-embedded artefact types.
+func CompareFile(rootDir, targetPath, canonicalPath string, arts Artifacts) (missing, drifted bool, err error) {
+	canonical, canonErr := arts.Open(canonicalPath)
+	if canonErr != nil {
+		if os.IsNotExist(canonErr) {
+			// Not in embedded FS — skip (future artefact type).
+			return false, false, canonErr
+		}
+		return false, false, canonErr
+	}
+	target := filepath.Join(rootDir, filepath.FromSlash(targetPath))
+	installed, readErr := os.ReadFile(target)
+	if readErr != nil {
+		return true, false, nil
+	}
+	return false, !bytes.Equal(canonical, installed), nil
 }
 
 // detectDrift returns the combined list of managed artefacts that are missing

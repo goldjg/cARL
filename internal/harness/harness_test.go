@@ -72,6 +72,16 @@ func createFile(t *testing.T, path string) {
 	}
 }
 
+func syncHarnesses(t *testing.T, dir string, ids ...string) {
+	t.Helper()
+	cmd := harness.New(newTestArts())
+	_ = captureStdout(t, func() {
+		if err := cmd.RunSyncInDir(dir, ids); err != nil {
+			t.Fatalf("RunSyncInDir: %v", err)
+		}
+	})
+}
+
 // Contract assertion 1: carl harness list lists all known adapters.
 func TestHarness_List_ShowsAllAdapters(t *testing.T) {
 	dir := t.TempDir()
@@ -127,11 +137,10 @@ func TestHarness_List_SupportStatus(t *testing.T) {
 	}
 }
 
-// Contract assertion 3: harness status shows "active" for copilot when
-// the detection file is present.
-func TestHarness_Status_CopilotDetected(t *testing.T) {
+// Contract assertion H1: a synced adapter is reported as Present + Synced.
+func TestHarness_Status_CopilotSynced(t *testing.T) {
 	dir := t.TempDir()
-	createFile(t, filepath.Join(dir, ".github", "copilot-instructions.md"))
+	syncHarnesses(t, dir, "copilot")
 
 	cmd := harness.New(newTestArts())
 	output := captureStdout(t, func() {
@@ -140,22 +149,23 @@ func TestHarness_Status_CopilotDetected(t *testing.T) {
 		}
 	})
 
-	if !strings.Contains(output, "active") {
-		t.Errorf("expected 'active' for copilot with detection file present; got:\n%s", output)
+	if !strings.Contains(output, "copilot") || !strings.Contains(output, "Present") || !strings.Contains(output, "Synced") {
+		t.Errorf("expected synced copilot adapter in status output; got:\n%s", output)
 	}
 
-	adapters := harness.Adapters()
-	wantLine := fmt.Sprintf("1 of %d harness(es) active.", len(adapters))
+	wantLine := "1 active, 4 missing, 0 drifted, 1 healthy."
 	if !strings.Contains(output, wantLine) {
 		t.Errorf("expected %q in status output; got:\n%s", wantLine, output)
 	}
 }
 
-// Contract assertion 4: harness status shows "not active" for copilot when
-// the detection file is absent.
-func TestHarness_Status_CopilotNotDetected(t *testing.T) {
+// Contract assertion H3: a deleted adapter is reported as Missing.
+func TestHarness_Status_CopilotMissing(t *testing.T) {
 	dir := t.TempDir()
-	// Do NOT create the detection file.
+	syncHarnesses(t, dir, "copilot")
+	if err := os.Remove(filepath.Join(dir, ".github", "copilot-instructions.md")); err != nil {
+		t.Fatalf("remove adapter file: %v", err)
+	}
 
 	cmd := harness.New(newTestArts())
 	output := captureStdout(t, func() {
@@ -164,12 +174,11 @@ func TestHarness_Status_CopilotNotDetected(t *testing.T) {
 		}
 	})
 
-	if !strings.Contains(output, "not active") {
-		t.Errorf("expected 'not active' for copilot without detection file; got:\n%s", output)
+	if !strings.Contains(output, "copilot") || strings.Count(output, "Missing") < 2 {
+		t.Errorf("expected missing copilot adapter in status output; got:\n%s", output)
 	}
 
-	adapters := harness.Adapters()
-	wantLine := fmt.Sprintf("0 of %d harness(es) active.", len(adapters))
+	wantLine := "0 active, 5 missing, 0 drifted, 0 healthy."
 	if !strings.Contains(output, wantLine) {
 		t.Errorf("expected %q in status output; got:\n%s", wantLine, output)
 	}
@@ -331,10 +340,10 @@ func TestHarness_Name(t *testing.T) {
 	}
 }
 
-// TestHarness_Status_ClaudeDetected verifies Claude Code detection via CLAUDE.md.
-func TestHarness_Status_ClaudeDetected(t *testing.T) {
+// Contract assertion H1 variant: Claude is reported healthy after sync.
+func TestHarness_Status_ClaudeSynced(t *testing.T) {
 	dir := t.TempDir()
-	createFile(t, filepath.Join(dir, "CLAUDE.md"))
+	syncHarnesses(t, dir, "claude")
 
 	cmd := harness.New(newTestArts())
 	output := captureStdout(t, func() {
@@ -346,16 +355,38 @@ func TestHarness_Status_ClaudeDetected(t *testing.T) {
 	if !strings.Contains(output, "claude") {
 		t.Errorf("expected 'claude' in status output; got:\n%s", output)
 	}
-	// The active-count line must reflect at least 1 active harness.
-	if !strings.Contains(output, "active") {
-		t.Errorf("expected 'active' for claude with CLAUDE.md present; got:\n%s", output)
+	if !strings.Contains(output, "Present") || !strings.Contains(output, "Synced") {
+		t.Errorf("expected claude adapter to be Present + Synced; got:\n%s", output)
 	}
 }
 
-// TestHarness_Status_CodexDetected verifies Codex detection via AGENTS.md.
-func TestHarness_Status_CodexDetected(t *testing.T) {
+// Contract assertion H2: a modified adapter is reported as Drifted.
+func TestHarness_Status_ClaudeDrifted(t *testing.T) {
 	dir := t.TempDir()
-	createFile(t, filepath.Join(dir, "AGENTS.md"))
+	syncHarnesses(t, dir, "claude")
+	if err := os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte("modified"), 0644); err != nil {
+		t.Fatalf("modify adapter file: %v", err)
+	}
+
+	cmd := harness.New(newTestArts())
+	output := captureStdout(t, func() {
+		if err := cmd.RunStatusInDir(dir); err != nil {
+			t.Fatalf("RunStatusInDir: %v", err)
+		}
+	})
+
+	if !strings.Contains(output, "claude") {
+		t.Errorf("expected 'claude' in status output; got:\n%s", output)
+	}
+	if !strings.Contains(output, "Present") || !strings.Contains(output, "Drifted") {
+		t.Errorf("expected claude adapter to be Present + Drifted; got:\n%s", output)
+	}
+}
+
+// TestHarness_Status_CodexSynced verifies Codex is reported healthy after sync.
+func TestHarness_Status_CodexSynced(t *testing.T) {
+	dir := t.TempDir()
+	syncHarnesses(t, dir, "codex")
 
 	cmd := harness.New(newTestArts())
 	output := captureStdout(t, func() {
@@ -367,15 +398,15 @@ func TestHarness_Status_CodexDetected(t *testing.T) {
 	if !strings.Contains(output, "codex") {
 		t.Errorf("expected 'codex' in status output; got:\n%s", output)
 	}
-	if !strings.Contains(output, "active") {
-		t.Errorf("expected 'active' for codex with AGENTS.md present; got:\n%s", output)
+	if !strings.Contains(output, "Present") || !strings.Contains(output, "Synced") {
+		t.Errorf("expected codex adapter to be Present + Synced; got:\n%s", output)
 	}
 }
 
-// TestHarness_Status_CursorDetected verifies Cursor detection via .cursorrules.
-func TestHarness_Status_CursorDetected(t *testing.T) {
+// TestHarness_Status_CursorSynced verifies Cursor is reported healthy after sync.
+func TestHarness_Status_CursorSynced(t *testing.T) {
 	dir := t.TempDir()
-	createFile(t, filepath.Join(dir, ".cursorrules"))
+	syncHarnesses(t, dir, "cursor")
 
 	cmd := harness.New(newTestArts())
 	output := captureStdout(t, func() {
@@ -387,15 +418,15 @@ func TestHarness_Status_CursorDetected(t *testing.T) {
 	if !strings.Contains(output, "cursor") {
 		t.Errorf("expected 'cursor' in status output; got:\n%s", output)
 	}
-	if !strings.Contains(output, "active") {
-		t.Errorf("expected 'active' for cursor with .cursorrules present; got:\n%s", output)
+	if !strings.Contains(output, "Present") || !strings.Contains(output, "Synced") {
+		t.Errorf("expected cursor adapter to be Present + Synced; got:\n%s", output)
 	}
 }
 
-// TestHarness_Status_AntigravityDetected verifies Antigravity detection via ANTIGRAVITY.md.
-func TestHarness_Status_AntigravityDetected(t *testing.T) {
+// TestHarness_Status_AntigravitySynced verifies Antigravity is reported healthy after sync.
+func TestHarness_Status_AntigravitySynced(t *testing.T) {
 	dir := t.TempDir()
-	createFile(t, filepath.Join(dir, "ANTIGRAVITY.md"))
+	syncHarnesses(t, dir, "antigravity")
 
 	cmd := harness.New(newTestArts())
 	output := captureStdout(t, func() {
@@ -407,20 +438,16 @@ func TestHarness_Status_AntigravityDetected(t *testing.T) {
 	if !strings.Contains(output, "antigravity") {
 		t.Errorf("expected 'antigravity' in status output; got:\n%s", output)
 	}
-	if !strings.Contains(output, "active") {
-		t.Errorf("expected 'active' for antigravity with ANTIGRAVITY.md present; got:\n%s", output)
+	if !strings.Contains(output, "Present") || !strings.Contains(output, "Synced") {
+		t.Errorf("expected antigravity adapter to be Present + Synced; got:\n%s", output)
 	}
 }
 
-// TestHarness_Status_AllDetected verifies all 5 adapters report active when
-// all detection files are present.
+// TestHarness_Status_AllSynced verifies all 5 adapters report synced when
+// all adapter files are present and canonical.
 func TestHarness_Status_AllDetected(t *testing.T) {
 	dir := t.TempDir()
-	createFile(t, filepath.Join(dir, ".github", "copilot-instructions.md"))
-	createFile(t, filepath.Join(dir, "CLAUDE.md"))
-	createFile(t, filepath.Join(dir, "AGENTS.md"))
-	createFile(t, filepath.Join(dir, ".cursorrules"))
-	createFile(t, filepath.Join(dir, "ANTIGRAVITY.md"))
+	syncHarnesses(t, dir)
 
 	cmd := harness.New(newTestArts())
 	output := captureStdout(t, func() {
@@ -429,8 +456,7 @@ func TestHarness_Status_AllDetected(t *testing.T) {
 		}
 	})
 
-	adapters := harness.Adapters()
-	wantLine := fmt.Sprintf("%d of %d harness(es) active.", len(adapters), len(adapters))
+	wantLine := "5 active, 0 missing, 0 drifted, 5 healthy."
 	if !strings.Contains(output, wantLine) {
 		t.Errorf("expected %q in status output; got:\n%s", wantLine, output)
 	}
