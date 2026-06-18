@@ -42,7 +42,11 @@ never modifies files),
 writes `.github/carl/repo-map.json`; detects languages, entry points,
 key directories with Go doc-comment purposes, workflows, governance
 artefacts, and documentation; idempotent; excludes .git/,
-node_modules/, vendor/). `memory.md` and `runtime.json` are permanently
+node_modules/, vendor/).
+`carl plan` (discovers, validates, and summarises plan files in
+`.github/carl/plans/`; extracts title, status/lifecycle state, and
+purpose from each `.md` file; validates against standard template
+structure; always exits 0; never modifies files). `memory.md` and `runtime.json` are permanently
 protected from repair and status drift.
 
 The `repair` package exports `Inspect(rootDir, managed, arts)` which
@@ -110,4 +114,4 @@ the source of truth across model fallback.
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-18 by `carl map` command PR (PR #7)
+2026-06-18 by `carl plan` command PR (PR #8)

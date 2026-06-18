@@ -14,12 +14,11 @@ durable invariants.
 
 ## Goal
 
-Add `carl map` — a new CLI command that derives a cognitive repository map
-from the filesystem and writes it to `.github/carl/repo-map.json`.
-The map includes: languages, entry points, key directories (with Go package
-doc-derived purposes), GitHub Actions workflows, governance artefacts, and
-root-level documentation. Update durable artefacts (`CLI.md`, `ROADMAP.md`,
-`memory.md`) to reflect the new command.
+Add `carl plan` — a new CLI command that discovers, validates, and
+summarises plan files in `.github/carl/plans/`. For each `.md` file it
+shows title, status (lifecycle state), and purpose extracted from
+standard template sections. Update durable artefacts (`CLI.md`,
+`ROADMAP.md`, `memory.md`) to reflect the new command.
 
 ## Contract status
 
@@ -27,11 +26,11 @@ active
 
 ## Non-goals
 
-- Parsing existing `repo-map.json` to preserve user edits
-- Remote downloads, GitHub API calls, or git log inspection
-- Pack install/remove
-- Changes to embedded assets or existing instruction packs
+- Writing or modifying plan files
+- GitHub API calls or network access
+- Changes to embedded assets or instruction packs
 - Changes to `invariants.yml` (no new invariants required)
+- Subcommands for creating or archiving plans
 
 ## Carry-forward rules
 
@@ -42,13 +41,13 @@ Promoted invariants from previous PRs remain in force:
 
 ## Approved scope
 
-- `internal/repomap/repomap.go` — new `carl map` command implementation
-- `internal/repomap/repomap_test.go` — tests
-- `cmd/carl/main.go` — register `map` command
-- `CLI.md` — document `carl map`
+- `internal/plan/plan.go` — new `carl plan` command implementation
+- `internal/plan/plan_test.go` — tests
+- `cmd/carl/main.go` — register `plan` command
+- `CLI.md` — document `carl plan`
 - `.github/carl/current-pr-contract.md` — this file
 - `.github/carl/memory.md` — durable facts update
-- `ROADMAP.md` — mark repo map tooling as delivered
+- `ROADMAP.md` — mark `carl plan` as delivered
 
 ## Intentional amendments
 
@@ -59,38 +58,38 @@ No prior constraints are amended. No existing command behaviour changes.
 - Changes to instruction packs under `.github/instructions/`
 - Changes to `invariants.yml`
 - Changes to embedded assets
-- Modifying `repair`, `status`, `doctor`, `version`, or `init` commands
+- Modifying `repair`, `status`, `doctor`, `version`, `init`, or `map` commands
+- Writing plan files or creating plans directory
 
 ## Architectural constraints
 
-- `carl map` writes only `.github/carl/repo-map.json`; no other files.
-- Output written to stdout only; errors to stderr via returned error.
+- `carl plan` is read-only; it never writes files.
+- All output to stdout; errors to stderr via returned error.
 - No network access; filesystem scan only.
-- All path strings in JSON output use forward slashes.
-- Repeated invocation must produce valid JSON (idempotent).
-- `.git/`, `node_modules/`, `vendor/` are always excluded from scans.
+- Always returns nil (exit 0) even when validation warnings are present.
+- Plans directory is `.github/carl/plans/`; only `.md` files are scanned.
+- Sorted lexicographically by filename.
 
 ## Security constraints
 
 - No credentials, tokens, or secrets in any new file.
 - No user-controlled data passed to shell commands.
-- Filesystem walk is bounded to rootDir; no path traversal outside it.
+- Filesystem scan is bounded to rootDir; no path traversal outside it.
 
 ## Contract assertions
 
-1. Running `carl map` creates `.github/carl/repo-map.json` with valid JSON.
-2. The JSON contains `generated_by: "carl map"`, a non-empty `last_updated`, and `_note`.
-3. Go source files in the repo cause "Go" to appear in `languages`.
-4. `.github/workflows/*.yml` files are listed in `workflows`.
-5. Files directly under `.github/carl/` are listed in `governance`.
-6. Root-level `*.md` files are listed in `documentation`.
-7. Running twice (idempotent) still produces valid JSON.
-8. `.git/` is never included in `directories` or `languages`.
+1. No plans directory or empty directory → output "No plans found." and return nil.
+2. Plan with all metadata fields is parsed with correct title, status, and purpose.
+3. Plan missing `## Plan metadata` section → inline Warning line in output.
+4. Plan with empty `Status:` field → inline Warning line in output.
+5. Plans are listed sorted lexicographically by filename.
+6. `carl plan` always returns nil (read-only).
+7. Non-.md files in the plans directory are silently ignored.
 
 ## Files expected to change
 
-- `internal/repomap/repomap.go` (new)
-- `internal/repomap/repomap_test.go` (new)
+- `internal/plan/plan.go` (new)
+- `internal/plan/plan_test.go` (new)
 - `cmd/carl/main.go`
 - `CLI.md`
 - `.github/carl/current-pr-contract.md` (this file)
@@ -100,20 +99,20 @@ No prior constraints are amended. No existing command behaviour changes.
 ## Tests / validation
 
 - `go build ./cmd/carl` — must succeed
-- `go test ./...` — must pass with new repomap package tests
+- `go test ./...` — must pass with new plan package tests
 - Parallel validation (code review + CodeQL) before PR is opened
 
 ## Stop conditions
 
-- Any file writes other than `.github/carl/repo-map.json`.
+- Any file write other than displaying plan summaries.
 - Any network or GitHub API access.
 - Any change to embedded assets or instruction packs.
 
 ## Escalation triggers
 
+- Request to create, modify, or delete plan files.
 - Request to add remote download or GitHub API call.
-- Request to preserve user edits in repo-map.json across runs.
 
 ## Context reset notes
 
-This contract is active for the `carl map` PR. Close it when merged.
+This contract is active for the `carl plan` PR. Close it when merged.

@@ -79,6 +79,17 @@ lists GitHub Actions workflows, governance artefacts under `.github/carl/`, and
 root-level documentation. Idempotent — re-running updates the file in place.
 Excludes `.git/`, `node_modules/`, and `vendor/` from all scans.
 
+### `carl plan` Command
+**Status:** Delivered (PR #8)
+**Command:** `carl plan`
+**Description:** Read-only CLI command that discovers, validates, and summarises
+plan files in `.github/carl/plans/`. For each `.md` file it extracts title (from
+the first level-1 heading), status/lifecycle state (from the `Status:` field in
+`## Plan metadata`), and purpose (from the first paragraph of `## Task summary`,
+`## Task`, or `## Goal`, in that order). Validates each plan against the standard
+template structure and emits inline warnings for: missing `## Plan metadata` section
+and empty `Status:` field. Always exits 0 — read-only, never modifies files.
+
 ---
 
 ## Near-Term (Candidate Next Items)
