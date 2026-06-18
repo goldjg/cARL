@@ -171,15 +171,16 @@ It is a single self-contained binary — no dependencies, no network required af
 ### 1. Install the CLI
 
 Download the latest binary for your platform from the
-[releases page](https://github.com/goldjg/cARL/releases/latest):
+[releases page](https://github.com/goldjg/cARL/releases/latest).
+Replace `v1.0.0` in the commands below with the desired release tag:
 
 ```sh
 # Linux (amd64)
-curl -L https://github.com/goldjg/cARL/releases/latest/download/carl-<tag>-linux-amd64 \
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl-v1.0.0-linux-amd64 \
   -o carl && chmod +x carl && sudo mv carl /usr/local/bin/carl
 
 # macOS (Apple Silicon)
-curl -L https://github.com/goldjg/cARL/releases/latest/download/carl-<tag>-darwin-arm64 \
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl-v1.0.0-darwin-arm64 \
   -o carl && chmod +x carl && sudo mv carl /usr/local/bin/carl
 ```
 

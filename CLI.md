@@ -13,31 +13,30 @@ are embedded at build time.
 
 Pre-built binaries for Linux, macOS, and Windows are attached to every
 [GitHub Release](https://github.com/goldjg/cARL/releases/latest).
+Replace `v1.0.0` in the commands below with the desired release tag.
 
 **Linux (amd64)**
 ```sh
-curl -L https://github.com/goldjg/cARL/releases/latest/download/carl-<tag>-linux-amd64 \
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl-v1.0.0-linux-amd64 \
   -o carl && chmod +x carl && sudo mv carl /usr/local/bin/carl
 ```
 
 **macOS (Apple Silicon)**
 ```sh
-curl -L https://github.com/goldjg/cARL/releases/latest/download/carl-<tag>-darwin-arm64 \
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl-v1.0.0-darwin-arm64 \
   -o carl && chmod +x carl && sudo mv carl /usr/local/bin/carl
 ```
 
 **macOS (Intel)**
 ```sh
-curl -L https://github.com/goldjg/cARL/releases/latest/download/carl-<tag>-darwin-amd64 \
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl-v1.0.0-darwin-amd64 \
   -o carl && chmod +x carl && sudo mv carl /usr/local/bin/carl
 ```
 
 **Windows (amd64)**
 
-Download `carl-<tag>-windows-amd64.exe` from the
+Download `carl-v1.0.0-windows-amd64.exe` from the
 [releases page](https://github.com/goldjg/cARL/releases/latest) and add it to your `PATH`.
-
-Replace `<tag>` with the release tag, for example `v1.0.0`.
 
 ### Build from source
 
