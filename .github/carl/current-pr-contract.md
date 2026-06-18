@@ -19,10 +19,11 @@ durable invariants.
 
 ## Goal
 
-Add a GitHub Actions release workflow (`.github/workflows/release.yml`)
-that builds and publishes cARL CLI binaries for five target platforms
-when a semantic version tag (`v*`) is pushed. Update durable artefacts
-(`ROADMAP.md`, `memory.md`) to reflect the new CI capability.
+Add `carl status` — a new CLI command that reads `.github/carl/runtime.json`
+and reports whether the installed cARL runtime is healthy, missing, or
+drifted. Export `Inspect` from the `repair` package to provide a shared,
+tested drift-classification function. Update durable artefacts (`CLI.md`,
+`ROADMAP.md`, `memory.md`) to reflect the new command.
 
 ## Contract status
 
@@ -30,12 +31,11 @@ active
 
 ## Non-goals
 
-- CI invariant enforcement or policy checks
-- Structured memory schema changes
-- Multi-repo governance tooling
-- Changes to existing instruction packs
-- Changes to the embedded asset set
-- Changes to the cARL CLI binary itself
+- Repair changes (no files written)
+- Upgrade or remote downloads
+- GitHub API integration
+- Pack install/remove
+- Changes to existing instruction packs or embedded assets
 
 ## Carry-forward rules
 
@@ -47,73 +47,78 @@ Promoted invariants from previous PRs remain in force:
 
 ## Approved scope
 
-- `.github/workflows/release.yml` — new release workflow
+- `internal/repair/repair.go` — export `Inspect` function
+- `internal/status/status.go` — new `carl status` command
+- `internal/status/status_test.go` — tests
+- `cmd/carl/main.go` — register `status` command
+- `CLI.md` — document `carl status`
 - `.github/carl/current-pr-contract.md` — this file
 - `.github/carl/memory.md` — durable facts update
-- `ROADMAP.md` — mark release workflow as delivered
+- `ROADMAP.md` — mark `carl status` as delivered
 
 ## Intentional amendments
 
-No prior constraints are amended. This PR adds a new CI workflow outside
-the governance artefact layer and CLI binary; both remain unchanged.
+No prior constraints are amended. The `repair` package gains a new exported
+function (`Inspect`) but its existing behaviour is preserved. No existing
+command output changes.
 
 ## Forbidden scope
 
-- Changes to the cARL CLI source code (`cmd/`, `internal/`, `embedded/`)
 - Changes to instruction packs under `.github/instructions/`
-- Changes to `invariants.yml` (no new invariants are required)
-- Changes to embedded asset copies unless `invariants.yml` changes
+- Changes to `invariants.yml` (no new invariants required)
+- Changes to embedded assets
+- Any command that modifies files on disk
 
 ## Architectural constraints
 
-- The workflow must use `GITHUB_TOKEN` with `contents: write` only.
-- No secrets or credentials may be embedded in the workflow file.
-- All GitHub-org actions may be pinned to major version tags;
-  third-party actions must be pinned to a full commit SHA.
-- `CGO_ENABLED=0` required to support cross-compilation on ubuntu-latest.
+- `carl status` must be read-only: no file writes.
+- `memory.md` and `runtime.json` must never appear in missing/drifted output.
+- `Inspect` must behave consistently with `detectDrift` for repair parity.
+- Output written to stdout only; errors to stderr via returned error.
 
 ## Security constraints
 
-- `GITHUB_TOKEN` is the only credential used; scoped to the repository.
-- No user-controlled data is passed unsanitised to shell commands.
-- CLI version is injected via ldflags only (no runtime secret exposure).
+- No credentials, tokens, or secrets in any new file.
+- No user-controlled data passed to shell commands.
 
 ## Contract assertions
 
-1. Workflow triggers on `v*` tags only (no branch or manual triggers).
-2. Five build matrix entries: linux/amd64, linux/arm64, darwin/amd64,
-   darwin/arm64, windows/amd64.
-3. Each binary embeds the tag as `cliVersion` and commit SHA as
-   `sourceCommit` via `-ldflags "-X main.cliVersion=... -X main.sourceCommit=..."`.
-4. Artifacts are uploaded per-platform and attached to the GitHub Release.
-5. Release is created if absent; artifacts are uploaded if it already exists.
+1. When no runtime is installed, output is "No cARL runtime installed." and no error.
+2. Healthy runtime: output includes CLI version, runtime version, source, tag,
+   commit, installed packs, "none" for both artefact lists, and "Status: Healthy".
+3. Missing artefact: listed under "Missing Artefacts:" and "Status: Incomplete".
+4. Drifted (content-modified) artefact: listed under "Drifted Artefacts:" and "Status: Drifted".
+5. `memory.md` and `runtime.json` never appear in artefact lists regardless of content.
 
 ## Files expected to change
 
-- `.github/workflows/release.yml` (new)
+- `internal/repair/repair.go`
+- `internal/status/status.go` (new)
+- `internal/status/status_test.go` (new)
+- `cmd/carl/main.go`
+- `CLI.md`
 - `.github/carl/current-pr-contract.md` (this file)
 - `.github/carl/memory.md`
 - `ROADMAP.md`
 
 ## Tests / validation
 
-- `go build ./cmd/carl` — must succeed (CLI unchanged)
-- `go test ./...` — must pass (no test files changed)
-- YAML lint: workflow indentation and structure manually reviewed
+- `go build ./cmd/carl` — must succeed
+- `go test ./...` — must pass with new status package tests
 - Parallel validation (code review + CodeQL) before PR is opened
 
 ## Stop conditions
 
-- Any change that embeds a secret or credential.
-- Any change to CLI source, embedded assets, or instruction packs.
-- Any workflow change that grants permissions beyond `contents: write`.
+- Any file write in the `status` command.
+- Any change that exposes protected artefacts (memory.md, runtime.json) as drift.
+- Any change to embedded assets or instruction packs.
 
 ## Escalation triggers
 
-- Request to add a third-party action without a commit SHA.
-- Request to grant additional permissions beyond the approved set.
+- Request to add a remote download or GitHub API call.
+- Request to change the repair or version command output.
 
 ## Context reset notes
 
-This contract is active for the release workflow PR. Close it when the
-PR is merged and reset for the next task.
+This contract is active for the `carl status` PR. Close it when the PR
+is merged and reset for the next task.

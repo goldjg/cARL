@@ -27,8 +27,14 @@ binary (`//go:embed all:assets`) and requires no network access. The
 runtime manifest (`.github/carl/runtime.json`) is the authoritative
 source of runtime state; no filesystem scanning is used. Commands:
 `carl init` (installs), `carl repair` (restores drifted artefacts),
-`carl version` (reports state + health). `memory.md` and `runtime.json`
-are permanently protected from repair.
+`carl status` (detailed health report: lists missing and drifted
+artefacts separately, reports Healthy/Drifted/Incomplete),
+`carl version` (reports state + health summary). `memory.md` and
+`runtime.json` are permanently protected from repair and status drift.
+
+The `repair` package exports `Inspect(rootDir, managed, arts)` which
+returns separate missing and drifted slices, skipping protected paths.
+`repair.Command.detectDrift` delegates to `Inspect` internally.
 
 ## Core invariants
 - Instruction packs should remain modular and focused on a single
@@ -85,4 +91,4 @@ the source of truth across model fallback.
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-17 by Release Workflow PR (PR #3)
+2026-06-18 by carl status PR (PR #4)

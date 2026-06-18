@@ -139,7 +139,81 @@ Done.
 
 ---
 
-### `carl version`
+### `carl status`
+
+Reports whether the installed cARL runtime is healthy, missing, or drifted.
+
+**Usage**
+
+```
+carl status
+```
+
+**What it does**
+
+1. Reads `runtime.json` to discover the installed runtime state.
+2. Derives installed pack names from the managed artefact paths.
+3. Compares each managed repairable artefact against its embedded canonical
+   version (byte-for-byte), classifying files as missing (absent from disk) or
+   drifted (present but content differs).
+4. Reports overall status: `Healthy`, `Drifted`, or `Incomplete`.
+
+**Protected files** — the following are never reported as missing or drifted:
+
+- `.github/carl/memory.md` — per-repository state managed by humans and agents
+- `.github/carl/runtime.json` — managed exclusively by `carl init`
+
+**Output (runtime installed, healthy)**
+
+```
+CLI Version:      1.0.0
+Runtime Version:  1.0.0
+Source:           goldjg/cARL
+Tag:              v1.0.0
+Commit:           abc1234
+
+Installed Packs:
+  cloud/azure
+  core/carl
+  ...
+
+Missing Artefacts:
+  none
+
+Drifted Artefacts:
+  none
+
+Status:           Healthy
+```
+
+**Output (missing and drifted artefacts)**
+
+```
+...
+Missing Artefacts:
+  .github/carl/invariants.yml
+
+Drifted Artefacts:
+  .github/copilot-instructions.md
+
+Status:           Incomplete
+```
+
+**Output (no runtime installed)**
+
+```
+No cARL runtime installed.
+```
+
+**Status values**
+
+| Status | Meaning |
+|---|---|
+| `Healthy` | All managed repairable artefacts are present and match their canonical versions |
+| `Drifted` | All artefacts present, but one or more differ from their canonical versions; run `carl repair` |
+| `Incomplete` | One or more managed artefacts are absent from disk; run `carl repair` |
+
+---
 
 Shows CLI and installed runtime version information, including installed packs
 and a health status.

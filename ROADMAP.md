@@ -36,6 +36,16 @@ per-platform binaries as GitHub Actions artifacts and attaches them to the
 GitHub Release (creating the release if absent, or uploading to an existing one).
 No new secrets or dependencies required — uses `GITHUB_TOKEN` with `contents: write`.
 
+### `carl status` Command
+**Status:** Delivered (PR #4)
+**Command:** `carl status`
+**Description:** Read-only health report command. Reads `runtime.json`, compares
+managed repairable artefacts against embedded canonical versions, and outputs CLI
+version, runtime version, source, tag, commit, installed packs, separate lists of
+missing and drifted artefacts, and an overall status of Healthy, Drifted, or
+Incomplete. `memory.md` and `runtime.json` are protected and never reported as
+drift. Exports `repair.Inspect` for shared, tested drift classification.
+
 ---
 
 ## Near-Term (Candidate Next Items)
