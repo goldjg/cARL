@@ -89,32 +89,49 @@ func (c *Command) RunInDir(rootDir string) error {
 	return nil
 }
 
-// detectDrift returns the list of managed artefacts that differ from the
-// embedded canonical versions, skipping protected paths.
-func (c *Command) detectDrift(rootDir string, managed []string) ([]string, error) {
-	var drifted []string
+// Inspect classifies managed artefacts for the given rootDir.
+// It skips protected paths (memory.md, runtime.json) and paths that have no
+// embedded canonical (future artefact types the current CLI does not bundle).
+// missing contains paths that are absent from disk.
+// drifted contains paths that exist but whose content differs from the embedded
+// canonical.
+// Callers that only need a combined list (e.g. repair) should use detectDrift.
+func Inspect(rootDir string, managed []string, arts Artifacts) (missing, drifted []string, err error) {
 	for _, f := range managed {
 		if protectedArtifacts[f] {
 			continue
 		}
-		embedded, err := c.arts.Open(f)
-		if err != nil {
-			// If the file is not in the embedded FS, skip it — it may be a
-			// future artefact type we don't recognise yet.
+		canonical, canonErr := arts.Open(f)
+		if canonErr != nil {
+			// Not in embedded FS — skip (future artefact type).
 			continue
 		}
 		target := filepath.Join(rootDir, filepath.FromSlash(f))
-		installed, err := os.ReadFile(target)
-		if err != nil {
-			// Missing file counts as drift.
-			drifted = append(drifted, f)
+		installed, readErr := os.ReadFile(target)
+		if readErr != nil {
+			missing = append(missing, f)
 			continue
 		}
-		if !bytes.Equal(embedded, installed) {
+		if !bytes.Equal(canonical, installed) {
 			drifted = append(drifted, f)
 		}
 	}
-	return drifted, nil
+	return missing, drifted, nil
+}
+
+// detectDrift returns the combined list of managed artefacts that are missing
+// from disk or differ from the embedded canonical versions, skipping protected
+// paths. The returned slice preserves the order in which managed is iterated:
+// missing entries come before drifted entries within each scan.
+func (c *Command) detectDrift(rootDir string, managed []string) ([]string, error) {
+	missing, drifted, err := Inspect(rootDir, managed, c.arts)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]string, 0, len(missing)+len(drifted))
+	result = append(result, missing...)
+	result = append(result, drifted...)
+	return result, nil
 }
 
 // restoreFile writes the embedded canonical version of f to rootDir.

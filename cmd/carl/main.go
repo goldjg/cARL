@@ -8,6 +8,7 @@
 //
 //	init     Install the cARL runtime into the current repository
 //	repair   Restore modified managed cARL artefacts to their canonical state
+//	status   Report whether the installed cARL runtime is healthy, missing, or drifted
 //	version  Show CLI and installed runtime version information
 package main
 
@@ -22,6 +23,7 @@ import (
 	"github.com/goldjg/carl/internal/cmdutil"
 	"github.com/goldjg/carl/internal/install"
 	"github.com/goldjg/carl/internal/repair"
+	"github.com/goldjg/carl/internal/status"
 	"github.com/goldjg/carl/internal/version"
 )
 
@@ -42,6 +44,7 @@ func main() {
 	cmds := []cmdutil.Command{
 		install.New(embedded.Assets, sourceCommit),
 		repair.New(embedded.Assets),
+		status.New(cliVersion, embedded.Assets),
 		version.New(cliVersion, embedded.Assets),
 	}
 
