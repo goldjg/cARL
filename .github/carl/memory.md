@@ -21,6 +21,11 @@ AI-assisted development.
 packs. `.github/carl/` contains cARLv2 governance artefacts and
 templates, not instruction-pack logic.
 
+Language packs live in `.github/instructions/languages/` and their
+byte-identical copies in `embedded/assets/.github/instructions/languages/`.
+Delivered language packs: html, javascript, powershell, python,
+terraform, typescript, go.
+
 The cARL CLI (`cmd/carl`) is a Go binary that manages repository-local
 cARL runtime installations. It embeds all managed artefacts in the
 binary (`//go:embed all:assets`) and requires no network access. The
@@ -94,4 +99,4 @@ the source of truth across model fallback.
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-18 by carl doctor PR (PR #5)
+2026-06-18 by Go language pack PR (PR #6)

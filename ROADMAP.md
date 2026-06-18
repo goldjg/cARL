@@ -56,6 +56,16 @@ INFO) with per-finding remediation actions. Missing artefacts produce an ERROR w
 missing manifest produces an ERROR with `carl init`. Always returns exit code 0 —
 diagnostics complete successfully even when issues are present. Never modifies files.
 
+### cARL Pack for Go
+**Status:** Delivered (PR #6)
+**Pack:** `.github/instructions/languages/go.instructions.md`
+**Description:** Go-specific instruction pack following the same pattern as existing
+language packs. Covers: error handling discipline, context propagation, goroutine
+safety, standard-library preference, dependency hygiene with `go mod`, type safety
+with interfaces, security (exec, path traversal, SSRF, template injection), and
+testing with `go test`. Embedded in the binary under
+`embedded/assets/.github/instructions/languages/go.instructions.md`.
+
 ---
 
 ## Near-Term (Candidate Next Items)
@@ -75,8 +85,7 @@ diagnostics complete successfully even when issues are present. Never modifies f
 **Description:** Rust-specific instruction pack following the same pattern as existing language packs. Should cover: memory safety, unsafe block governance, dependency discipline, testing with `cargo test`, and `clippy` enforcement.
 
 ### 4. cARL Pack for Go
-**Status:** Not started  
-**Description:** Go-specific instruction pack. Should cover: error handling discipline, context propagation, goroutine safety, dependency hygiene with `go mod`, and testing with `go test`.
+**Status:** Delivered (PR #6) — see Delivered section above.
 
 ### 5. cARL Pack for C# / .NET
 **Status:** Not started  
