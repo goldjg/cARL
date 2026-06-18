@@ -1,4 +1,7 @@
 <!-- version: 1.0.0 -->
+
+ [](cARL.png)
+
 # cARL — Cognitive Agent Runtime Layer
 
 > **"cARL remembers why you made that decision three months ago, because neither you nor your coding agent will."**
