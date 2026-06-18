@@ -2,6 +2,7 @@ package reconcile_test
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,9 +28,11 @@ func captureStdout(t *testing.T, fn func()) string {
 	_ = w.Close()
 	os.Stdout = old
 
-	buf := make([]byte, 32768)
-	n, _ := r.Read(buf)
-	return string(buf[:n])
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(out)
 }
 
 // writeRepoMap writes a minimal repo-map.json into dir/.github/carl/.
