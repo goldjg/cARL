@@ -276,66 +276,7 @@ No cARL runtime installed.
 
 ---
 
-### `carl plan`
-
-Discovers, validates, and summarises plan files in `.github/carl/plans/`.
-
-**Usage**
-
-```
-carl plan
-```
-
-**What it does**
-
-1. Scans `.github/carl/plans/` for `.md` files.
-2. Parses each file to extract:
-   - **Title** — the first level-1 heading (`# …`).
-   - **Status** (lifecycle state) — the `Status:` field in the `## Plan metadata`
-     list item (e.g. Draft, Active, Completed, Archived).
-   - **Purpose** — the first paragraph of `## Task summary`, `## Task`, or `## Goal`
-     (tried in that order).
-3. Validates each plan against the standard plan template structure:
-   - Missing `## Plan metadata` section → Warning.
-   - Empty `Status:` in `## Plan metadata` → Warning.
-4. Prints a summary for each plan and a total count.
-5. Exits with code `0` regardless of validation warnings — the command is
-   read-only and never modifies any files.
-
-**Output (no plans directory or no .md files)**
-
-```
-No plans found.
-```
-
-**Output (plans found)**
-
-```
-Plans in .github/carl/plans/
-
-  my-feature.md
-    Title:    My Feature Plan
-    Status:   Active
-    Purpose:  Add the widget subsystem.
-
-  draft.md
-    Title:    Draft Plan
-    Status:   (not set)
-    Purpose:  Starting soon.
-    Warning:  Status not set in ## Plan metadata
-
-2 plan(s) found. 1 warning(s).
-```
-
-**Fields**
-
-| Field | Source | Notes |
-|---|---|---|
-| Title | First `# heading` in the file | Falls back to `(not set)` |
-| Status | `- Status:` in `## Plan metadata` | Lifecycle state: Draft, Active, Completed, Archived |
-| Purpose | First paragraph of `## Task summary`, `## Task`, or `## Goal` | Falls back to `(not set)` |
-
----
+### `carl map`
 
 Generates and updates `.github/carl/repo-map.json` by deriving the repository
 structure from the filesystem.
@@ -408,6 +349,67 @@ Repo map updated: .github/carl/repo-map.json
 - The generated file itself appears in the `governance` section on subsequent runs.
 - Run `carl map` after adding new packages, workflows, or documentation to keep
   the map current.
+
+---
+
+### `carl plan`
+
+Discovers, validates, and summarises plan files in `.github/carl/plans/`.
+
+**Usage**
+
+```
+carl plan
+```
+
+**What it does**
+
+1. Scans `.github/carl/plans/` for `.md` files.
+2. Parses each file to extract:
+   - **Title** — the first level-1 heading (`# …`).
+   - **Status** (lifecycle state) — the `Status:` field in the `## Plan metadata`
+     list item (e.g. Draft, Active, Completed, Archived).
+   - **Purpose** — the first paragraph of `## Task summary`, `## Task`, or `## Goal`
+     (tried in that order).
+3. Validates each plan against the standard plan template structure:
+   - Missing `## Plan metadata` section → Warning.
+   - Empty `Status:` in `## Plan metadata` → Warning.
+4. Prints a summary for each plan and a total count.
+5. Exits with code `0` regardless of validation warnings — the command is
+   read-only and never modifies any files.
+
+**Output (no plans directory or no .md files)**
+
+```
+No plans found.
+```
+
+**Output (plans found)**
+
+```
+Plans in .github/carl/plans/
+
+  my-feature.md
+    Title:    My Feature Plan
+    Status:   Active
+    Purpose:  Add the widget subsystem.
+
+  draft.md
+    Title:    Draft Plan
+    Status:   (not set)
+    Purpose:  Starting soon.
+    Warning:  Status not set in ## Plan metadata
+
+2 plan(s) found. 1 warning(s).
+```
+
+**Fields**
+
+| Field | Source | Notes |
+|---|---|---|
+| Title | First `# heading` in the file | Falls back to `(not set)` |
+| Status | `- Status:` in `## Plan metadata` | Lifecycle state: Draft, Active, Completed, Archived |
+| Purpose | First paragraph of `## Task summary`, `## Task`, or `## Goal` | Falls back to `(not set)` |
 
 ---
 

@@ -2,6 +2,7 @@ package plan_test
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,9 +27,11 @@ func captureStdout(t *testing.T, fn func()) string {
 	_ = w.Close()
 	os.Stdout = old
 
-	buf := make([]byte, 8192)
-	n, _ := r.Read(buf)
-	return string(buf[:n])
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(out)
 }
 
 // writePlan creates a plan file in dir with the given filename and content.

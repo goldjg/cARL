@@ -162,7 +162,7 @@ func extractTitle(data []byte) string {
 	scanner := bufio.NewScanner(bytes.NewReader(data))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "# ") && !strings.HasPrefix(line, "## ") {
+		if strings.HasPrefix(line, "# ") {
 			return strings.TrimSpace(strings.TrimPrefix(line, "# "))
 		}
 	}
