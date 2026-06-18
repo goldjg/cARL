@@ -149,6 +149,7 @@ VISION.md
 ARCHITECTURE.md
 ROADMAP.md
 GLOSSARY.md
+CLI.md
 ```
 
 ---
@@ -159,6 +160,75 @@ GLOSSARY.md
 2. That file is the root operating model — plan-first discipline, security constraints, cognition governance.
 3. Individual packs under `.github/instructions/` provide focused guidance per language, platform, or cloud provider.
 4. `.github/carl/` contains durable governance artefacts: memory cache, PR contract, invariants, trust boundaries, and plans.
+
+---
+
+## Quick Start (CLI)
+
+The `carl` CLI installs and manages the cARL runtime in any repository.
+It is a single self-contained binary — no dependencies, no network required after download.
+
+### 1. Install the CLI
+
+Download the latest binary for your platform from the
+[releases page](https://github.com/goldjg/cARL/releases/latest):
+
+```sh
+# Linux (amd64)
+curl -L https://github.com/goldjg/cARL/releases/latest/download/carl-<tag>-linux-amd64 \
+  -o carl && chmod +x carl && sudo mv carl /usr/local/bin/carl
+
+# macOS (Apple Silicon)
+curl -L https://github.com/goldjg/cARL/releases/latest/download/carl-<tag>-darwin-arm64 \
+  -o carl && chmod +x carl && sudo mv carl /usr/local/bin/carl
+```
+
+Or build from source (requires Go 1.24+):
+
+```sh
+go install github.com/goldjg/carl/cmd/carl@latest
+```
+
+### 2. Install the runtime into your repository
+
+Navigate to the root of any repository and run:
+
+```sh
+cd /path/to/your-repo
+carl init
+```
+
+This writes all governance artefacts into `.github/` and creates
+`.github/carl/runtime.json` as the authoritative runtime manifest.
+
+### 3. Verify the installation
+
+```sh
+carl version
+```
+
+Expected output:
+```
+CLI Version:      1.0.0
+Runtime Version:  1.0.0
+Source:           goldjg/cARL
+...
+Runtime Status:
+  Healthy
+```
+
+### 4. Restore drift
+
+If any managed artefacts are modified and you want to restore them to their
+canonical state:
+
+```sh
+carl repair
+```
+
+> `memory.md` and `runtime.json` are protected and are never overwritten by `repair`.
+
+See [CLI.md](CLI.md) for the full command reference.
 
 ---
 
@@ -213,7 +283,7 @@ Azure · Microsoft Entra ID · Microsoft Graph · Google Cloud Platform · Netli
 2. Follow naming: `<name>.instructions.md` in the appropriate subdirectory.
 3. Keep each pack focused on a single concern.
 4. Add `<!-- version: 1.0.0 -->` at the top of any new file.
-5. Update this README.
+5. Update this README and [CLI.md](CLI.md) if the change affects the CLI.
 
 ---
 
