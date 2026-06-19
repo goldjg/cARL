@@ -6,6 +6,7 @@
 //
 // Available commands:
 //
+//	convert    Migrate durable governance knowledge from legacy sources into cARL artefacts
 //	doctor     Diagnose runtime issues and provide actionable remediation guidance
 //	harness    Manage and inspect harness adapters for AI coding agents
 //	init       Install the cARL runtime into the current repository
@@ -26,6 +27,7 @@ import (
 
 	"github.com/goldjg/carl/embedded"
 	"github.com/goldjg/carl/internal/cmdutil"
+	"github.com/goldjg/carl/internal/convert"
 	"github.com/goldjg/carl/internal/doctor"
 	"github.com/goldjg/carl/internal/harness"
 	"github.com/goldjg/carl/internal/install"
@@ -52,6 +54,7 @@ func main() {
 	defer stop()
 
 	cmds := []cmdutil.Command{
+		convert.New(),
 		doctor.New(embedded.Assets),
 		harness.New(embedded.Assets),
 		install.New(embedded.Assets, sourceCommit),

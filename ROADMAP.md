@@ -128,6 +128,32 @@ surfaces missing or drifted harness adapters as `WARNING` findings with
 section (active, missing, drifted, healthy) without changing overall runtime
 status semantics.
 
+### `carl convert` Command (AADLC Migration)
+**Status:** Delivered
+**Command:** `carl convert aadlc [--dry-run | --apply]`
+**Description:** Migrates durable governance knowledge from legacy AADLC
+repositories into canonical cARL artefacts so adoption of cARL does not lose
+accumulated context. Built around a converter framework: each source implements
+a small `Converter` interface (`Discover` + `Classify`) while a shared,
+converter-agnostic migration engine performs duplicate detection, conflict
+detection, routing, and deterministic reporting. Additional converters
+(`claude`, `copilot`, `repo`, ...) can be registered later without reworking the
+engine. The AADLC converter discovers artefacts under `.aadlc/`,
+`.github/aadlc/`, `aadlc/`, and `AADLC.md` (Markdown + YAML, recursive);
+classifies content into invariants, durable memory, and governance rules by
+section heading; and routes invariants to `.github/carl/invariants.yml` and
+memory/governance entries to a managed block in `.github/carl/memory.md`
+(`<!-- BEGIN/END GENERATED: convert aadlc -->`). Existing cARL knowledge is
+never overwritten — duplicates are skipped and reported, and conflicts (e.g. a
+migrated invariant whose generated `aadlc-` id collides with a different
+existing invariant) are reported for human review and never written. AADLC
+artefacts are never deleted or modified. `--dry-run` (default) produces the same
+report as `--apply` without writing. If the managed convert block's markers in
+`memory.md` are malformed (begin without end, end without begin, or end before
+begin) the command fails with a non-zero exit and writes nothing rather than
+appending a second generated block — mirroring `carl reconcile`'s marker safety.
+Idempotent and deterministic — repeated runs never duplicate content.
+
 ### `carl reconcile` Command
 **Status:** Delivered
 **Command:** `carl reconcile`
