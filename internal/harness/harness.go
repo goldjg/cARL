@@ -28,9 +28,10 @@ type Adapter struct {
 	ID string
 	// Name is the human-readable display name (e.g. "GitHub Copilot").
 	Name string
-	// Support indicates implementation maturity: "supported" or "planned".
-	// A "supported" adapter has its DetectionFile and AdapterFiles defined,
-	// enabling detection and status reporting.
+	// Support indicates implementation maturity:
+	//   "production"   -- tested, production-validated, primary development target
+	//   "experimental" -- partial validation, governance loading under investigation
+	//   "theoretical"  -- adapter exists, not yet validated end-to-end
 	Support string
 	// DetectionFile is the repo-relative path whose presence indicates this
 	// harness is active in the repository. Empty for planned adapters.
@@ -51,7 +52,7 @@ var knownAdapters = []Adapter{
 	{
 		ID:            "copilot",
 		Name:          "GitHub Copilot",
-		Support:       "supported",
+		Support:       "production",
 		DetectionFile: ".github/copilot-instructions.md",
 		AdapterFiles:  []string{".github/copilot-instructions.md"},
 		SourceFile:    ".github/copilot-instructions.md",
@@ -59,7 +60,7 @@ var knownAdapters = []Adapter{
 	{
 		ID:            "claude",
 		Name:          "Claude Code",
-		Support:       "supported",
+		Support:       "experimental",
 		DetectionFile: "CLAUDE.md",
 		AdapterFiles:  []string{"CLAUDE.md"},
 		SourceFile:    ".github/copilot-instructions.md",
@@ -67,7 +68,7 @@ var knownAdapters = []Adapter{
 	{
 		ID:            "codex",
 		Name:          "Codex",
-		Support:       "supported",
+		Support:       "theoretical",
 		DetectionFile: "AGENTS.md",
 		AdapterFiles:  []string{"AGENTS.md"},
 		SourceFile:    ".github/copilot-instructions.md",
@@ -75,7 +76,7 @@ var knownAdapters = []Adapter{
 	{
 		ID:            "cursor",
 		Name:          "Cursor",
-		Support:       "supported",
+		Support:       "theoretical",
 		DetectionFile: ".cursorrules",
 		AdapterFiles:  []string{".cursorrules"},
 		SourceFile:    ".github/copilot-instructions.md",
@@ -83,7 +84,7 @@ var knownAdapters = []Adapter{
 	{
 		ID:            "antigravity",
 		Name:          "Antigravity",
-		Support:       "supported",
+		Support:       "theoretical",
 		DetectionFile: "ANTIGRAVITY.md",
 		AdapterFiles:  []string{"ANTIGRAVITY.md"},
 		SourceFile:    ".github/copilot-instructions.md",
@@ -174,13 +175,19 @@ func (c *Command) RunListInDir(_ string) error {
 	}
 	fmt.Println()
 
-	supported := 0
+	production, experimental, theoretical := 0, 0, 0
 	for _, a := range knownAdapters {
-		if a.Support == "supported" {
-			supported++
+		switch a.Support {
+		case "production":
+			production++
+		case "experimental":
+			experimental++
+		case "theoretical":
+			theoretical++
 		}
 	}
-	fmt.Printf("%d of %d adapter(s) supported.\n", supported, len(knownAdapters))
+	fmt.Printf("%d production, %d experimental, %d theoretical (%d total).\n",
+		production, experimental, theoretical, len(knownAdapters))
 	return nil
 }
 
@@ -260,13 +267,14 @@ func (c *Command) RunSyncInDir(rootDir string, harnessIDs []string) error {
 }
 
 // resolveAdapters returns the list of adapters to sync. If ids is empty, all
-// supported adapters are returned. If ids is non-empty, only the named adapters
-// are returned; an error is returned if any id is unrecognised.
+// adapters with defined AdapterFiles and SourceFile are returned. If ids is
+// non-empty, only the named adapters are returned; an error is returned if any
+// id is unrecognised.
 func resolveAdapters(ids []string) ([]Adapter, error) {
 	if len(ids) == 0 {
 		result := make([]Adapter, 0, len(knownAdapters))
 		for _, a := range knownAdapters {
-			if a.Support == "supported" {
+			if len(a.AdapterFiles) > 0 && a.SourceFile != "" {
 				result = append(result, a)
 			}
 		}

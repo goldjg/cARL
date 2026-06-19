@@ -96,21 +96,23 @@ and empty `Status:` field. Always exits 0 — read-only, never modifies files.
 **Description:** Introduces the harness adapter concept: a bridge between cARL
 canonical artefacts and AI coding agent context injection mechanisms. cARL artefacts
 are the canonical source of truth; harness files are adapters, not authorities.
-Supports GitHub Copilot as the first implemented adapter (detection via
-`.github/copilot-instructions.md`). Registers Claude Code, Codex, Cursor, and
-Antigravity as planned adapters for future implementation. `carl harness list` shows
-all known adapters with support status (static, no filesystem check). `carl harness
-status` detects which harnesses are active in the current repository. Both subcommands
-are read-only and always exit 0. Designed for extensibility as new agents are supported.
+Supports GitHub Copilot as the production-validated primary adapter (detection via
+`.github/copilot-instructions.md`). Registers Claude Code as experimental (partial
+validation, governance loading under investigation) and Codex, Cursor, and Antigravity
+as theoretical (adapters exist but not yet validated end-to-end). `carl harness list`
+shows all known adapters with support tier. `carl harness status` detects which
+harnesses are active in the current repository. Both subcommands are read-only and
+always exit 0. Designed for extensibility as new agents are validated.
 
 ### `carl harness sync` — Harness Adapter File Generation
 **Status:** Delivered (PR #11)
 **Command:** `carl harness sync [<harness-id>...]`
 **Description:** Adds a `sync` subcommand to `carl harness` that generates adapter
-files for all supported harnesses (or a named subset) from the canonical cARL
-artefacts embedded in the CLI binary. Adapter files are treated as disposable
-outputs — always regenerated from the canonical source and never edited manually.
-All five harnesses (copilot, claude, codex, cursor, antigravity) are supported.
+files for all harnesses with defined adapter files (or a named subset) from the
+canonical cARL artefacts embedded in the CLI binary. Adapter files are treated as
+disposable outputs — always regenerated from the canonical source and never edited
+manually. All five harnesses (copilot, claude, codex, cursor, antigravity) have
+adapter files; sync works for all tiers (production, experimental, theoretical).
 The `SourceFile` field is added to the `Adapter` struct to record which embedded
 artefact provides the content for each harness. The `harness.Command` now accepts
 an `Artifacts` dependency consistent with other write commands (`repair`, `doctor`,
@@ -241,8 +243,8 @@ No network access required.
 **Description:** A machine-readable declaration of which cARL packs are active in a repository, enabling IDE tooling to surface relevant governance context to developers.
 
 ### 15. cARL for Non-Copilot Agents
-**Status:** Delivered (PR #10, #11) — harness adapter framework, all five adapters, and adapter file generation all implemented.
-**Description:** Adapt cARL governance artefacts for use with other AI coding agents (Cursor, Aider, Claude Code, etc.) that support system-prompt injection from repository files. Harness adapters bridge cARL canonical artefacts to each agent's context injection mechanism. All five adapters (copilot, claude, codex, cursor, antigravity) are supported with detection files and adapter file definitions. Detection: `CLAUDE.md` (Claude Code), `AGENTS.md` (Codex), `.cursorrules` (Cursor), `ANTIGRAVITY.md` (Antigravity), `.github/copilot-instructions.md` (Copilot). Adapter file content generation via `carl harness sync` was delivered in PR #11.
+**Status:** In progress (PR #10, #11 delivered harness framework and adapter file generation; validation ongoing)
+**Description:** Adapt cARL governance artefacts for use with other AI coding agents (Cursor, Aider, Claude Code, etc.) that support system-prompt injection from repository files. Harness adapters bridge cARL canonical artefacts to each agent's context injection mechanism. All five adapters (copilot, claude, codex, cursor, antigravity) are implemented with detection files and adapter file definitions. Validation status: copilot is production-validated; claude is experimental (partial validation, governance loading under investigation); codex, cursor, and antigravity are theoretical (adapters exist, end-to-end validation pending). Detection: `CLAUDE.md` (Claude Code), `AGENTS.md` (Codex), `.cursorrules` (Cursor), `ANTIGRAVITY.md` (Antigravity), `.github/copilot-instructions.md` (Copilot). Adapter file content generation via `carl harness sync` delivered in PR #11.
 **Design question:** ~~Each agent has different context injection mechanisms. What is the minimal adaptation needed per agent?~~
 
 ---

@@ -106,7 +106,7 @@ func TestHarness_List_ShowsAllAdapters(t *testing.T) {
 	}
 }
 
-// Contract assertion 2: copilot is "supported"; all known adapters are supported.
+// Contract assertion 2: copilot is "production"; adapters have varied support tiers.
 // Also verifies count summary line.
 func TestHarness_List_SupportStatus(t *testing.T) {
 	dir := t.TempDir()
@@ -118,20 +118,26 @@ func TestHarness_List_SupportStatus(t *testing.T) {
 		}
 	})
 
-	if !strings.Contains(output, "supported") {
-		t.Errorf("expected 'supported' in list output; got:\n%s", output)
+	if !strings.Contains(output, "production") {
+		t.Errorf("expected 'production' in list output; got:\n%s", output)
 	}
 
 	// Derive expected counts from the registry itself for robustness.
 	adapters := harness.Adapters()
 	total := len(adapters)
-	supported := 0
+	production, experimental, theoretical := 0, 0, 0
 	for _, a := range adapters {
-		if a.Support == "supported" {
-			supported++
+		switch a.Support {
+		case "production":
+			production++
+		case "experimental":
+			experimental++
+		case "theoretical":
+			theoretical++
 		}
 	}
-	wantLine := fmt.Sprintf("%d of %d adapter(s) supported.", supported, total)
+	wantLine := fmt.Sprintf("%d production, %d experimental, %d theoretical (%d total).",
+		production, experimental, theoretical, total)
 	if !strings.Contains(output, wantLine) {
 		t.Errorf("expected %q in list output; got:\n%s", wantLine, output)
 	}
@@ -286,8 +292,8 @@ func TestHarness_Run_Status(t *testing.T) {
 	})
 }
 
-// TestHarness_Adapters_CopilotIsSupported verifies the exported registry.
-func TestHarness_Adapters_CopilotIsSupported(t *testing.T) {
+// TestHarness_Adapters_CopilotIsProduction verifies the exported registry.
+func TestHarness_Adapters_CopilotIsProduction(t *testing.T) {
 	adapters := harness.Adapters()
 
 	var copilot *harness.Adapter
@@ -300,31 +306,44 @@ func TestHarness_Adapters_CopilotIsSupported(t *testing.T) {
 	if copilot == nil {
 		t.Fatal("copilot adapter not found in registry")
 	}
-	if copilot.Support != "supported" {
-		t.Errorf("copilot.Support = %q; want 'supported'", copilot.Support)
+	if copilot.Support != "production" {
+		t.Errorf("copilot.Support = %q; want 'production'", copilot.Support)
 	}
 	if copilot.DetectionFile == "" {
-		t.Error("copilot.DetectionFile must not be empty for a supported adapter")
+		t.Error("copilot.DetectionFile must not be empty")
 	}
 }
 
-// TestHarness_Adapters_SupportedHaveDetectionFile verifies all supported adapters
-// have a non-empty DetectionFile defined.
-func TestHarness_Adapters_SupportedHaveDetectionFile(t *testing.T) {
-	for _, a := range harness.Adapters() {
-		if a.Support == "supported" && a.DetectionFile == "" {
-			t.Errorf("supported adapter %q has no DetectionFile; all supported adapters must define one", a.ID)
+// TestHarness_Adapters_ClaudeIsExperimental verifies Claude Code support tier.
+func TestHarness_Adapters_ClaudeIsExperimental(t *testing.T) {
+	adapters := harness.Adapters()
+	for _, a := range adapters {
+		if a.ID == "claude" {
+			if a.Support != "experimental" {
+				t.Errorf("claude.Support = %q; want 'experimental'", a.Support)
+			}
+			return
 		}
 	}
+	t.Fatal("claude adapter not found in registry")
 }
 
-// TestHarness_Adapters_PlannedHaveNoDetectionFile verifies planned adapters
-// have no detection file defined (they cannot be detected).
-func TestHarness_Adapters_PlannedHaveNoDetectionFile(t *testing.T) {
-	for _, a := range harness.Adapters() {
-		if a.Support == "planned" && a.DetectionFile != "" {
-			t.Errorf("planned adapter %q has a DetectionFile %q; planned adapters should have empty DetectionFile",
-				a.ID, a.DetectionFile)
+// TestHarness_Adapters_TheoreticalAdapters verifies Codex, Cursor, Antigravity support tier.
+func TestHarness_Adapters_TheoreticalAdapters(t *testing.T) {
+	theoretical := []string{"codex", "cursor", "antigravity"}
+	adapters := harness.Adapters()
+	index := make(map[string]harness.Adapter, len(adapters))
+	for _, a := range adapters {
+		index[a.ID] = a
+	}
+	for _, id := range theoretical {
+		a, ok := index[id]
+		if !ok {
+			t.Errorf("adapter %q not found in registry", id)
+			continue
+		}
+		if a.Support != "theoretical" {
+			t.Errorf("%s.Support = %q; want 'theoretical'", id, a.Support)
 		}
 	}
 }
@@ -515,15 +534,15 @@ func TestHarness_Sync_AllHarnesses(t *testing.T) {
 		}
 	}
 
-	// Summary line must report all supported adapters.
+	// Summary line must report all adapters with defined adapter files.
 	adapters := harness.Adapters()
-	supported := 0
+	syncable := 0
 	for _, a := range adapters {
-		if a.Support == "supported" {
-			supported++
+		if len(a.AdapterFiles) > 0 && a.SourceFile != "" {
+			syncable++
 		}
 	}
-	wantSummary := fmt.Sprintf("%d adapter file(s) synced.", supported)
+	wantSummary := fmt.Sprintf("%d adapter file(s) synced.", syncable)
 	if !strings.Contains(output, wantSummary) {
 		t.Errorf("expected %q in sync output; got:\n%s", wantSummary, output)
 	}

@@ -647,7 +647,7 @@ carl harness <subcommand> [arguments]
 |---|---|
 | `list` | List known harness adapters and their support status |
 | `status` | Report harness adapter presence and sync health in the current repository |
-| `sync` | Generate adapter files for supported harnesses from canonical cARL artefacts |
+| `sync` | Generate adapter files for all harnesses from canonical cARL artefacts |
 
 Run `carl harness --help` to print subcommand usage.
 
@@ -666,8 +666,8 @@ carl harness list
 **What it does**
 
 1. Prints the canonical adapter registry — all harnesses cARL knows about.
-2. For each adapter shows: ID, display name, and support status (`supported` or `planned`).
-3. Prints a summary line with the count of supported adapters.
+2. For each adapter shows: ID, display name, and support status (`production`, `experimental`, or `theoretical`).
+3. Prints a summary line with counts by tier.
 
 This subcommand is purely informational — it does not check the filesystem.
 
@@ -676,23 +676,24 @@ This subcommand is purely informational — it does not check the filesystem.
 ```
 Harness Adapters:
 
-  copilot       GitHub Copilot       supported
-  claude        Claude Code          supported
-  codex         Codex                supported
-  cursor        Cursor               supported
-  antigravity   Antigravity          supported
+  copilot       GitHub Copilot       production
+  claude        Claude Code          experimental
+  codex         Codex                theoretical
+  cursor        Cursor               theoretical
+  antigravity   Antigravity          theoretical
 
-5 of 5 adapter(s) supported.
+1 production, 1 experimental, 3 theoretical (5 total).
 ```
 
 **Support status values**
 
 | Status | Meaning |
 |---|---|
-| `supported` | Detection file and adapter files are defined; detection and status reporting are active |
-| `planned` | Adapter is declared for discoverability; not yet implemented |
+| `production` | Tested and production-validated; primary development target |
+| `experimental` | Partial validation; governance loading under investigation |
+| `theoretical` | Adapter exists; not yet validated end-to-end |
 
-> **Note:** Content generation and sync (populating adapter files from cARL artefacts) is now available for all supported adapters via `carl harness sync`.
+> **Note:** Content generation and sync (populating adapter files from cARL artefacts) is available for all adapters via `carl harness sync`.
 
 ---
 
@@ -709,7 +710,7 @@ carl harness status
 **What it does**
 
 1. For each known adapter, checks whether its detection file is present in the repository.
-2. For supported adapters, compares adapter file bytes against the canonical embedded source.
+2. For adapters with defined adapter files, compares adapter file bytes against the canonical embedded source.
 3. Reports presence as `Present` or `Missing`, and sync health as `Synced`, `Drifted`, `Missing`, or `-`.
 4. Prints a summary line with active, missing, drifted, and healthy adapter counts.
 
@@ -718,11 +719,11 @@ carl harness status
 ```
 Harness Adapter Status:
 
-  copilot       GitHub Copilot       supported    Present  Synced
-  claude        Claude Code          supported    Missing  Missing
-  codex         Codex                supported    Missing  Missing
-  cursor        Cursor               supported    Missing  Missing
-  antigravity   Antigravity          supported    Missing  Missing
+  copilot       GitHub Copilot       production    Present  Synced
+  claude        Claude Code          experimental  Missing  Missing
+  codex         Codex                theoretical   Missing  Missing
+  cursor        Cursor               theoretical   Missing  Missing
+  antigravity   Antigravity          theoretical   Missing  Missing
 
 1 active, 4 missing, 0 drifted, 1 healthy.
 ```
@@ -732,11 +733,11 @@ Harness Adapter Status:
 ```
 Harness Adapter Status:
 
-  copilot       GitHub Copilot       supported    Present  Synced
-  claude        Claude Code          supported    Present  Drifted
-  codex         Codex                supported    Missing  Missing
-  cursor        Cursor               supported    Missing  Missing
-  antigravity   Antigravity          supported    Missing  Missing
+  copilot       GitHub Copilot       production    Present  Synced
+  claude        Claude Code          experimental  Present  Drifted
+  codex         Codex                theoretical   Missing  Missing
+  cursor        Cursor               theoretical   Missing  Missing
+  antigravity   Antigravity          theoretical   Missing  Missing
 
 2 active, 3 missing, 1 drifted, 1 healthy.
 ```
@@ -765,7 +766,7 @@ Harness Adapter Status:
 
 ### `carl harness sync`
 
-Generates adapter files for supported harnesses from the canonical cARL artefacts
+Generates adapter files for all harnesses from the canonical cARL artefacts
 embedded in the CLI binary. Adapter files are disposable — they are always
 regenerated from the canonical source and should not be edited manually.
 
@@ -777,7 +778,7 @@ carl harness sync [<harness-id>...]
 
 **What it does**
 
-1. Resolves the set of target harnesses: all supported harnesses if no IDs are
+1. Resolves the set of target harnesses: all harnesses with defined adapter files if no IDs are
    given, or only the named harnesses if one or more IDs are provided.
 2. For each target harness, reads the canonical content from the embedded
    artefacts (`.github/copilot-instructions.md`).
