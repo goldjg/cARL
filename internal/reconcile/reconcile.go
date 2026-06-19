@@ -79,6 +79,11 @@ func (c *Command) RunInDir(rootDir string) error {
 		return fmt.Errorf("parse repo map: %w", err)
 	}
 
+	// Validate that any existing generated-section markers are well-formed.
+	if err := checkMarkers(string(memData)); err != nil {
+		return err
+	}
+
 	// Build and inject the generated section.
 	generated := buildGeneratedSection(&m)
 	newContent, changed := injectSection(string(memData), generated)
@@ -175,6 +180,38 @@ func buildGeneratedSection(m *repomap.Map) string {
 
 	b.WriteString(genEndMarker + "\n")
 	return b.String()
+}
+
+// checkMarkers returns an error when the generated-section markers in content
+// are in a malformed state:
+//   - begin marker present but end marker absent
+//   - end marker present but begin marker absent
+//   - end marker appears before begin marker
+//
+// In any of these cases the caller should not write anything; the user must
+// repair memory.md manually or re-run from a clean file.
+func checkMarkers(content string) error {
+	beginIdx := strings.Index(content, genBeginMarker)
+	endIdx := strings.Index(content, genEndMarker)
+	hasBegin := beginIdx >= 0
+	hasEnd := endIdx >= 0
+
+	const advice = "repair the markers manually or re-run `carl reconcile` from a clean memory.md"
+
+	switch {
+	case hasBegin && !hasEnd:
+		return fmt.Errorf("memory.md contains %q but is missing %q — "+
+			"the generated section markers are malformed; %s",
+			genBeginMarker, genEndMarker, advice)
+	case hasEnd && !hasBegin:
+		return fmt.Errorf("memory.md contains %q but is missing %q — "+
+			"the generated section markers are malformed; %s",
+			genEndMarker, genBeginMarker, advice)
+	case hasBegin && hasEnd && endIdx < beginIdx:
+		return fmt.Errorf("memory.md has the end marker appearing before the begin marker — "+
+			"the generated section markers are malformed; %s", advice)
+	}
+	return nil
 }
 
 // injectSection inserts or replaces the generated section in memoryContent.

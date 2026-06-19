@@ -411,3 +411,67 @@ func TestReconcile_RespectsLastUpdatedPosition(t *testing.T) {
 			endIdx, lastUpdatedIdx)
 	}
 }
+
+// malformedMarkerTests groups the three cases where marker state is invalid.
+// Each case must: return a non-nil error, leave memory.md unmodified, and
+// include the phrase "malformed" in the error message.
+
+// TestReconcile_R7_BeginMarkerOnly checks that a begin marker without an end
+// marker causes a non-zero exit and no write.
+func TestReconcile_R7_BeginMarkerOnly(t *testing.T) {
+	dir := t.TempDir()
+	writeRepoMap(t, dir, minimalMap())
+	original := "# Memory\n\n<!-- BEGIN GENERATED: reconcile -->\norphan content\n\n## Last updated\n2026-01-01\n"
+	writeMemory(t, dir, original)
+
+	err := reconcile.New().RunInDir(dir)
+	if err == nil {
+		t.Fatal("expected error when begin marker is present but end marker is missing")
+	}
+	if !strings.Contains(err.Error(), "malformed") {
+		t.Errorf("error should describe markers as malformed; got: %q", err.Error())
+	}
+	if got := readMemory(t, dir); got != original {
+		t.Errorf("memory.md must not be modified on malformed marker error;\ngot:\n%s", got)
+	}
+}
+
+// TestReconcile_R7_EndMarkerOnly checks that an end marker without a begin
+// marker causes a non-zero exit and no write.
+func TestReconcile_R7_EndMarkerOnly(t *testing.T) {
+	dir := t.TempDir()
+	writeRepoMap(t, dir, minimalMap())
+	original := "# Memory\n\norphan content\n<!-- END GENERATED: reconcile -->\n\n## Last updated\n2026-01-01\n"
+	writeMemory(t, dir, original)
+
+	err := reconcile.New().RunInDir(dir)
+	if err == nil {
+		t.Fatal("expected error when end marker is present but begin marker is missing")
+	}
+	if !strings.Contains(err.Error(), "malformed") {
+		t.Errorf("error should describe markers as malformed; got: %q", err.Error())
+	}
+	if got := readMemory(t, dir); got != original {
+		t.Errorf("memory.md must not be modified on malformed marker error;\ngot:\n%s", got)
+	}
+}
+
+// TestReconcile_R7_EndBeforeBegin checks that an end marker appearing before
+// the begin marker causes a non-zero exit and no write.
+func TestReconcile_R7_EndBeforeBegin(t *testing.T) {
+	dir := t.TempDir()
+	writeRepoMap(t, dir, minimalMap())
+	original := "# Memory\n\n<!-- END GENERATED: reconcile -->\n\nsome text\n\n<!-- BEGIN GENERATED: reconcile -->\n\n## Last updated\n2026-01-01\n"
+	writeMemory(t, dir, original)
+
+	err := reconcile.New().RunInDir(dir)
+	if err == nil {
+		t.Fatal("expected error when end marker appears before begin marker")
+	}
+	if !strings.Contains(err.Error(), "malformed") {
+		t.Errorf("error should describe markers as malformed; got: %q", err.Error())
+	}
+	if got := readMemory(t, dir); got != original {
+		t.Errorf("memory.md must not be modified on malformed marker error;\ngot:\n%s", got)
+	}
+}
