@@ -100,6 +100,8 @@ cARL takes these concepts, renames them for clarity, organises them into a coher
 
 The runtime semantics are unchanged. This is a rename and productisation, not a redesign. The `aadlc.instructions.md` file is now `carl.instructions.md`. The `.github/aadlc/` directory is now `.github/carl/`. All governance behaviour is preserved.
 
+Repositories already running AADLC can migrate their accumulated durable knowledge (invariants, lessons, and governance rules) into canonical cARL artefacts with `carl convert aadlc` — see the [Quick Start](#6-migrate-from-aadlc-existing-repositories).
+
 ---
 
 ## Repository Structure
@@ -246,6 +248,34 @@ INFO    runtime is healthy — all managed artefacts are present and canonical
 ```
 
 See [CLI.md](CLI.md) for the full command reference.
+
+### 6. Migrate from AADLC (existing repositories)
+
+If your repository already contains governance knowledge under legacy AADLC
+artefacts (`.aadlc/`, `.github/aadlc/`, `AADLC.md`, ...), migrate that durable
+knowledge into canonical cARL artefacts so adoption does not lose accumulated
+context:
+
+```sh
+carl convert aadlc --dry-run   # analyse and report; makes no changes
+carl convert aadlc --apply     # perform the migration
+```
+
+`carl convert` discovers AADLC artefacts, classifies their content into
+invariants, durable memory, and governance rules, and migrates them into
+`.github/carl/invariants.yml` and `.github/carl/memory.md`. It never deletes or
+modifies AADLC artefacts, never overwrites existing cARL knowledge (duplicates
+are skipped and conflicts are reported for human review), and is idempotent.
+
+The typical end-to-end adoption workflow is:
+
+```sh
+carl init
+carl map
+carl reconcile
+carl convert aadlc
+carl harness sync
+```
 
 ---
 

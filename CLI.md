@@ -429,6 +429,140 @@ Reconciled durable artefacts.
 
 ---
 
+### `carl convert`
+
+Migrates durable governance knowledge from a legacy or foreign source into
+canonical cARL artefacts. The first supported source is **AADLC**
+(`carl convert aadlc`). cARL is the productised form of AADLC, so many
+repositories already carry durable invariants, lessons, and governance rules
+under AADLC paths that should be preserved when cARL is adopted.
+
+The command is built around a converter framework: each source implements a
+small `Converter` interface (discover + classify) while a shared,
+converter-agnostic engine performs duplicate detection, conflict detection,
+routing, and reporting. Additional converters (e.g. `claude`, `copilot`,
+`repo`) can be added later without reworking the migration engine.
+
+**Usage**
+
+```
+carl convert <source> [--dry-run | --apply]
+```
+
+Sources:
+
+| Source | Description |
+|---|---|
+| `aadlc` | Migrate durable knowledge from legacy AADLC artefacts |
+
+Flags:
+
+| Flag | Description |
+|---|---|
+| `--dry-run` | Analyse and report migration opportunities without writing (default) |
+| `--apply` | Perform the migration and update cARL artefacts |
+
+`--dry-run` and `--apply` are mutually exclusive. With no flag, the command
+defaults to `--dry-run`.
+
+**Discovery**
+
+`carl convert aadlc` searches conventional AADLC locations:
+
+```
+.aadlc/
+.github/aadlc/
+aadlc/
+AADLC.md
+```
+
+Directories are scanned recursively; only Markdown (`.md`) and YAML
+(`.yml`/`.yaml`) files are considered. Missing locations are skipped silently.
+
+**Classification**
+
+Discovered content is classified into three categories, each routed to a
+canonical cARL destination:
+
+| Category | Examples | Destination |
+|---|---|---|
+| Invariants | Repository constraints and assumptions | `.github/carl/invariants.yml` |
+| Durable memory | Architectural decisions, lessons learned, known limitations, historical context | `.github/carl/memory.md` |
+| Governance rules | PR contract, planning, and approval requirements | `.github/carl/memory.md` |
+
+YAML files using the cARL `invariants:` schema contribute their rules as
+invariants. Markdown files are scanned section by section: a heading's text
+selects the category, and the bullet-list items beneath it become migration
+items. Content that cannot be confidently classified is ignored — the command
+prefers safety over speculative migration.
+
+**Conflict handling**
+
+Existing cARL knowledge is never overwritten:
+
+- **Duplicate** — an item already present in the destination is skipped and
+  reported.
+- **Conflict** — an item that collides with, but differs from, existing cARL
+  content (e.g. a migrated invariant whose generated id matches an existing
+  invariant with different wording) is reported and left for human review;
+  it is never written.
+
+**Migration report**
+
+Both modes print the same deterministic report (only the destination heading
+and the trailing note differ):
+
+```
+AADLC Migration Report
+
+Discovered:
+  2 artefact(s)
+    .aadlc/invariants.yml
+    AADLC.md
+
+Convertible:
+  3 invariant(s)
+  2 memory entry(ies)
+  2 governance rule(s)
+
+Skipped:
+  1 duplicate(s)
+
+Conflicts:
+  0 item(s) requiring review
+
+Updated:
+  .github/carl/invariants.yml
+  .github/carl/memory.md
+
+Migration applied.
+```
+
+Under `--dry-run` the destination heading reads `Would update:` and the report
+ends with `Dry run — no changes written. Re-run with --apply to migrate.`
+
+**Errors**
+
+| Error | Cause | Resolution |
+|---|---|---|
+| `unknown convert source "<id>"` | The source is not registered | Run `carl convert --help` to see valid sources |
+| `--apply and --dry-run are mutually exclusive` | Both flags were passed | Pass at most one mode flag |
+| `invariants.yml not found` / `memory.md not found` | A destination is missing while applying | Run `carl init` first |
+
+**Notes**
+
+- AADLC artefacts are never deleted or modified — the command only reads them.
+- Migrated invariants are namespaced with an `aadlc-` id prefix and a derived
+  name; severity defaults to `high`.
+- Migrated memory and governance entries live in a managed block in
+  `memory.md` delimited by `<!-- BEGIN GENERATED: convert aadlc -->` /
+  `<!-- END GENERATED: convert aadlc -->`. Human-authored content outside the
+  block is preserved.
+- The command is idempotent and produces deterministic output — running it
+  repeatedly never duplicates content.
+
+---
+
 ### `carl plan`
 
 Discovers, validates, and summarises plan files in `.github/carl/plans/`.

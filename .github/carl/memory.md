@@ -160,6 +160,28 @@ using `filepath.WalkDir`. It exports `RunInDir(rootDir)` for testability
 (same pattern as all other command packages). `OutputFile` constant is
 `.github/carl/repo-map.json`.
 
+The `convert` package (`internal/convert`) implements `carl convert
+<source> [--dry-run | --apply]`, an AADLC-to-cARL governance migration
+command. It is built around a converter framework: each source implements
+the `Converter` interface (`ID`, `Name`, `Discover`, `Classify`) and is
+registered in the `converters` slice; a shared, converter-agnostic engine
+(`buildPlan`/`migrationPlan`/`RunInDir`) performs duplicate detection,
+conflict detection, routing, and deterministic reporting. New converters
+(claude, copilot, repo) can be added without touching the engine. The
+AADLC converter discovers artefacts under `.aadlc/`, `.github/aadlc/`,
+`aadlc/`, and `AADLC.md` (Markdown + YAML, recursive) and classifies bullet
+content by section-heading keywords into invariants, durable memory, and
+governance rules. Invariants are appended to `.github/carl/invariants.yml`
+(namespaced `aadlc-` ids, severity `high`); memory + governance entries go
+into a managed block in `.github/carl/memory.md`
+(`<!-- BEGIN/END GENERATED: convert aadlc -->`). Duplicates are skipped and
+conflicts (e.g. generated id collisions with different content) are
+reported, never written. AADLC artefacts are never modified or deleted.
+Default mode is `--dry-run`; idempotent and deterministic. A minimal,
+standard-library-only invariants.yml parser/serialiser
+(`parseInvariants`/`appendInvariants`, double-quoted scalar round-trip)
+lives in the package — no YAML dependency.
+
 ## Core invariants
 - Instruction packs should remain modular and focused on a single
   concern.
