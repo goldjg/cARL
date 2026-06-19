@@ -177,7 +177,11 @@ into a managed block in `.github/carl/memory.md`
 (`<!-- BEGIN/END GENERATED: convert aadlc -->`). Duplicates are skipped and
 conflicts (e.g. generated id collisions with different content) are
 reported, never written. AADLC artefacts are never modified or deleted.
-Default mode is `--dry-run`; idempotent and deterministic. A minimal,
+If the managed convert block's markers are malformed (begin without end,
+end without begin, or end before begin), `buildPlan` calls `checkMarkers`
+and fails with a non-zero exit before writing anything, rather than treating
+the block as absent and appending a second one — mirroring `carl reconcile`'s
+marker safety. Default mode is `--dry-run`; idempotent and deterministic. A minimal,
 standard-library-only invariants.yml parser/serialiser
 (`parseInvariants`/`appendInvariants`, double-quoted scalar round-trip)
 lives in the package — no YAML dependency.

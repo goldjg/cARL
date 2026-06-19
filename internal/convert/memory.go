@@ -1,6 +1,7 @@
 package convert
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 )
@@ -51,6 +52,39 @@ func extractMigratedEntries(memory string) migratedEntries {
 		}
 	}
 	return entries
+}
+
+// checkMarkers returns an error when the managed convert-block markers in
+// memory are in a malformed state:
+//   - begin marker present but end marker absent
+//   - end marker present but begin marker absent
+//   - end marker appears before begin marker
+//
+// In any of these cases the caller must not write anything: treating the block
+// as absent would append a second generated block and corrupt memory.md. The
+// user must repair the markers manually or restore from a clean memory.md.
+func checkMarkers(memory string) error {
+	beginIdx := strings.Index(memory, memBeginMarker)
+	endIdx := strings.Index(memory, memEndMarker)
+	hasBegin := beginIdx >= 0
+	hasEnd := endIdx >= 0
+
+	const advice = "repair the markers manually or restore from a clean memory.md before re-running `carl convert`"
+
+	switch {
+	case hasBegin && !hasEnd:
+		return fmt.Errorf("memory.md contains %q but is missing %q — "+
+			"the convert-generated section markers are malformed; %s",
+			memBeginMarker, memEndMarker, advice)
+	case hasEnd && !hasBegin:
+		return fmt.Errorf("memory.md contains %q but is missing %q — "+
+			"the convert-generated section markers are malformed; %s",
+			memEndMarker, memBeginMarker, advice)
+	case hasBegin && hasEnd && endIdx < beginIdx:
+		return fmt.Errorf("memory.md has the convert-generated end marker appearing before the begin marker — "+
+			"the convert-generated section markers are malformed; %s", advice)
+	}
+	return nil
 }
 
 // renderMigratedBlock builds the full managed convert block (including markers

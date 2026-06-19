@@ -326,6 +326,72 @@ func TestUnknownSourceAndFlags(t *testing.T) {
 	}
 }
 
+// newRepoWithMemory creates a temporary repo with canonical destinations, but
+// uses the supplied memory.md content (instead of baseMemory) and an AADLC
+// source that yields convertible items. It returns the repo root and the
+// memory.md path.
+func newRepoWithMemory(t *testing.T, memory string) (root, memPath string) {
+	t.Helper()
+	root = t.TempDir()
+	carlDir := filepath.Join(root, ".github", "carl")
+	if err := os.MkdirAll(carlDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(carlDir, "invariants.yml"), baseInvariants)
+	memPath = filepath.Join(carlDir, "memory.md")
+	writeFile(t, memPath, memory)
+	writeFile(t, filepath.Join(root, "AADLC.md"), sampleAADLC)
+	return root, memPath
+}
+
+// malformedMarkerCases enumerates the three invalid managed-convert-block
+// marker states. Each must: return a non-nil error mentioning "malformed",
+// leave memory.md unchanged, and write nothing (whether applying or not).
+var malformedMarkerCases = []struct {
+	name   string
+	memory string
+}{
+	{
+		name:   "begin-only",
+		memory: "<!-- version: 1.2.0 -->\n# Memory\n\n<!-- BEGIN GENERATED: convert aadlc -->\norphan content\n\n## Last updated\n2026-01-01\n",
+	},
+	{
+		name:   "end-only",
+		memory: "<!-- version: 1.2.0 -->\n# Memory\n\norphan content\n<!-- END GENERATED: convert aadlc -->\n\n## Last updated\n2026-01-01\n",
+	},
+	{
+		name:   "end-before-begin",
+		memory: "<!-- version: 1.2.0 -->\n# Memory\n\n<!-- END GENERATED: convert aadlc -->\n\nsome text\n\n<!-- BEGIN GENERATED: convert aadlc -->\n\n## Last updated\n2026-01-01\n",
+	},
+}
+
+func TestMalformedMarkersFailSafely(t *testing.T) {
+	for _, tc := range malformedMarkerCases {
+		tc := tc
+		// Malformed markers must fail safely in both dry-run and apply modes.
+		for _, apply := range []bool{false, true} {
+			mode := "dry-run"
+			if apply {
+				mode = "apply"
+			}
+			t.Run(tc.name+"/"+mode, func(t *testing.T) {
+				root, memPath := newRepoWithMemory(t, tc.memory)
+
+				err := RunInDir(root, aadlcConverter{}, apply)
+				if err == nil {
+					t.Fatalf("expected error for malformed markers (%s)", tc.name)
+				}
+				if !strings.Contains(err.Error(), "malformed") {
+					t.Errorf("error should describe markers as malformed; got: %q", err.Error())
+				}
+				if got := readFile(t, memPath); got != tc.memory {
+					t.Errorf("memory.md must not be modified on malformed marker error;\ngot:\n%s", got)
+				}
+			})
+		}
+	}
+}
+
 func TestInvariantsRoundTrip(t *testing.T) {
 	parsed := parseInvariants(baseInvariants)
 	if len(parsed) != 1 {

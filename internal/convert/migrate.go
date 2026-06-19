@@ -98,6 +98,15 @@ func buildPlan(rootDir, source string, artefacts []Artefact, items []Item) (*mig
 	}
 	plan.invariantsContent = invContent
 	plan.memoryContent = memContent
+
+	// Validate that any existing managed convert-block markers are well-formed
+	// before doing anything else. Malformed markers (begin-only, end-only, or
+	// end-before-begin) would otherwise be treated as an absent block and cause
+	// a second generated block to be appended, corrupting memory.md.
+	if err := checkMarkers(memContent); err != nil {
+		return nil, err
+	}
+
 	plan.existingMigrations = extractMigratedEntries(memContent)
 
 	existingInvs := parseInvariants(invContent)

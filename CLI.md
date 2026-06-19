@@ -548,6 +548,7 @@ ends with `Dry run — no changes written. Re-run with --apply to migrate.`
 | `unknown convert source "<id>"` | The source is not registered | Run `carl convert --help` to see valid sources |
 | `--apply and --dry-run are mutually exclusive` | Both flags were passed | Pass at most one mode flag |
 | `invariants.yml not found` / `memory.md not found` | A destination is missing while applying | Run `carl init` first |
+| `the convert-generated section markers are malformed` | `memory.md` has a begin marker without an end marker, an end marker without a begin marker, or an end marker before the begin marker | Repair the markers manually or restore from a clean `memory.md` before re-running |
 
 **Notes**
 
@@ -557,7 +558,9 @@ ends with `Dry run — no changes written. Re-run with --apply to migrate.`
 - Migrated memory and governance entries live in a managed block in
   `memory.md` delimited by `<!-- BEGIN GENERATED: convert aadlc -->` /
   `<!-- END GENERATED: convert aadlc -->`. Human-authored content outside the
-  block is preserved.
+  block is preserved. If these markers are malformed (begin without end, end
+  without begin, or end before begin), the command fails with a non-zero exit
+  and writes nothing rather than appending a second generated block.
 - The command is idempotent and produces deterministic output — running it
   repeatedly never duplicates content.
 

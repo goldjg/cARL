@@ -148,8 +148,11 @@ never overwritten — duplicates are skipped and reported, and conflicts (e.g. a
 migrated invariant whose generated `aadlc-` id collides with a different
 existing invariant) are reported for human review and never written. AADLC
 artefacts are never deleted or modified. `--dry-run` (default) produces the same
-report as `--apply` without writing. Idempotent and deterministic — repeated
-runs never duplicate content.
+report as `--apply` without writing. If the managed convert block's markers in
+`memory.md` are malformed (begin without end, end without begin, or end before
+begin) the command fails with a non-zero exit and writes nothing rather than
+appending a second generated block — mirroring `carl reconcile`'s marker safety.
+Idempotent and deterministic — repeated runs never duplicate content.
 
 ### `carl reconcile` Command
 **Status:** Delivered
