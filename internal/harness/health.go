@@ -58,7 +58,7 @@ func Inspect(rootDir string, arts Artifacts) ([]AdapterHealth, error) {
 				health.Presence = PresenceMissing
 			}
 		}
-		if a.Support == "supported" && len(a.AdapterFiles) > 0 && a.SourceFile != "" {
+		if len(a.AdapterFiles) > 0 && a.SourceFile != "" {
 			for _, f := range a.AdapterFiles {
 				fileMissing, fileDrifted, err := repair.CompareFile(rootDir, f, a.SourceFile, arts)
 				if err != nil {

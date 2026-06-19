@@ -131,14 +131,17 @@ agents; subcommands: `list`, `status`, and `sync`). Harness adapters
 bridge cARL canonical artefacts to agent context injection mechanisms —
 cARL artefacts are the canonical source of truth, harness files are
 adapters, not authorities. `carl harness list` shows all known adapters
-— all five are now supported: copilot, claude, codex, cursor, antigravity.
+with support tier: copilot (`production` — tested, production-validated,
+primary development target), claude (`experimental` — partial validation,
+governance loading under investigation), codex/cursor/antigravity
+(`theoretical` — adapter exists, not yet validated end-to-end).
 `carl harness status` reports both detection-file presence and sync
 health (`Present`, `Missing`, `Drifted`, `Synced`) by comparing adapter
 file bytes against the canonical embedded source. `carl harness sync
-[<harness-id>...]` generates adapter files for all supported (or named)
-harnesses from the canonical embedded artefact (`.github/copilot-instructions.md`
-is the SourceFile for all adapters); adapter files are disposable and
-always overwritten. Sync is idempotent and does not require `carl init`.
+[<harness-id>...]` generates adapter files for all adapters with defined
+adapter files (or named harnesses); adapter files are disposable and
+always overwritten. Sync works for all tiers regardless of support level.
+Sync is idempotent and does not require `carl init`.
 `carl doctor` surfaces missing or drifted harness adapters as WARNING
 findings with `carl harness sync` remediation. `carl status` includes a
 separate harness summary (active, missing, drifted, healthy) without
