@@ -14,11 +14,9 @@ durable invariants.
 
 ## Goal
 
-Implement harness health awareness across cARL so harness adapters are
-treated as managed disposable artefacts. Extend `carl harness status`
-with presence and sync-health reporting, surface missing/drifted harness
-adapters in `carl doctor`, add a harness summary to `carl status`, and
-update durable artefacts and CLI documentation.
+Implement `carl reconcile` — a command that updates repository-specific
+durable artefacts so cARL memory reflects the current repository structure,
+not just the upstream default runtime.
 
 ## Contract status
 
@@ -26,11 +24,13 @@ active
 
 ## Non-goals
 
-- Changes to `carl init`, `carl repair`, `carl map`, or `carl plan`
-- Automatic harness repair or sync from `doctor` or `status`
+- Changes to `carl init`, `carl repair`, `carl doctor`, `carl status`,
+  `carl map`, `carl plan`, or `carl harness` behaviour except command registration
+- Automatic harness repair or sync
 - Network access or remote canonical sources
 - Changes to instruction packs or embedded governance content
-- Changing runtime status exit semantics
+- Memory schema changes (memory.md remains freeform markdown)
+- Modifying `runtime.json` or any harness adapter file
 
 ## Carry-forward rules
 
@@ -38,69 +38,62 @@ Promoted invariants from previous PRs remain in force:
 - No secrets committed to any file.
 - Security baseline (least privilege, no hard-coded credentials) applies.
 - `current-pr-contract.md` must be read before implementation begins.
+- Every implementation PR must update durable artefacts when behaviour,
+  assumptions, commands, scope, or operating model changes.
 
 ## Approved scope
 
-- `internal/repair/repair.go` — expose shared canonical comparison helper
-- `internal/harness/*.go` — add harness health inspection and richer status output
-- `internal/doctor/*.go` — add harness health findings and remediation guidance
-- `internal/status/*.go` — add harness summary section
-- `CLI.md` — document new harness/doctor/status output
-- `ROADMAP.md` — record harness health awareness as delivered
+- `internal/reconcile/reconcile.go` — new reconcile package and command
+- `internal/reconcile/reconcile_test.go` — R1–R6 contract tests
+- `cmd/carl/main.go` — register reconcile command
+- `CLI.md` — document new reconcile command
+- `ROADMAP.md` — record reconcile as delivered
 - `.github/carl/current-pr-contract.md` — this file
-- `.github/carl/memory.md` — durable facts update for harness health
+- `.github/carl/memory.md` — durable facts update for reconcile command
 
 ## Intentional amendments
 
-This PR amends prior harness work by promoting adapter files from
-presence-only detection artefacts to managed disposable outputs with
-canonical drift awareness. Runtime `Status:` remains defined only by
-managed runtime artefacts; harness health is surfaced separately.
+This PR extends cARL with a repo-specific knowledge update command.
+reconcile is distinct from repair: repair restores canonical runtime artefacts;
+reconcile updates human/agent-readable memory with current repo structure.
 
 ## Forbidden scope
 
 - Changes to instruction packs under `.github/instructions/`
 - Changes to `invariants.yml` or either embedded/assets copy
-- Automatic file repair outside explicit `carl harness sync`
+- Automatic writes from any existing read-only command
 - New external dependencies
 - Network or GitHub API access
+- Modifying `runtime.json`, harness adapter files, or embedded assets
 
 ## Architectural constraints
 
-- Harness sync health must compare adapter file bytes to the embedded
-  canonical source, reusing the existing byte-comparison model.
-- Shared comparison logic should not be duplicated across harness,
-  doctor, status, and repair code paths.
-- Harness adapters remain disposable generated outputs.
-- `doctor` stays diagnostic-only and always exits 0 when findings are emitted.
-- `status` keeps its existing runtime health semantics while adding a
-  separate harness summary section.
+- reconcile reads only `repo-map.json` and `memory.md`; writes only `memory.md`
+- Generated section uses `<!-- BEGIN GENERATED: reconcile -->` /
+  `<!-- END GENERATED: reconcile -->` markers; content outside markers is preserved
+- Command is idempotent: identical repo-map + same day = no file write
+- No embedded asset changes required (reconcile is not a managed artefact)
 
 ## Security constraints
 
 - No credentials, tokens, or secrets in any new file.
 - No user-controlled data passed to shell commands.
-- Filesystem reads remain bounded to the repository root.
-- No automatic writes from read-only commands.
+- Filesystem reads and writes remain bounded to the repository root.
 
 ## Contract assertions
 
-1. H1: a synced harness adapter is reported as healthy (`Present` + `Synced`) by `carl harness status`.
-2. H2: a modified harness adapter is reported as drifted by `carl harness status`.
-3. H3: a deleted harness adapter is reported as missing by `carl harness status`.
-4. H4: `carl doctor` reports missing or drifted harness adapters as `WARNING` findings with `carl harness sync` remediation.
-5. H5: `carl status` reports accurate active, missing, drifted, and healthy harness summary counts.
+1. R1: missing repo-map returns actionable error suggesting `carl map`
+2. R2: missing memory.md returns actionable error suggesting `carl init`
+3. R3: reconcile updates the repo-specific snapshot section from repo-map data
+4. R4: reconcile preserves human-authored notes outside the generated section
+5. R5: reconcile is idempotent — second run on same repo-map reports no changes
+6. R6: reconcile does not modify runtime.json or harness adapter files
 
 ## Files expected to change
 
-- `internal/repair/repair.go`
-- `internal/harness/harness.go`
-- `internal/harness/health.go`
-- `internal/harness/harness_test.go`
-- `internal/doctor/doctor.go`
-- `internal/doctor/doctor_test.go`
-- `internal/status/status.go`
-- `internal/status/status_test.go`
+- `internal/reconcile/reconcile.go` (new)
+- `internal/reconcile/reconcile_test.go` (new)
+- `cmd/carl/main.go`
 - `CLI.md`
 - `ROADMAP.md`
 - `.github/carl/current-pr-contract.md`
@@ -115,17 +108,16 @@ managed runtime artefacts; harness health is surfaced separately.
 
 ## Stop conditions
 
-- Any change that adds automatic repair behaviour to `doctor` or `status`
-- Any request to alter `init`, `repair`, `map`, or `plan`
+- Any change that modifies init, repair, doctor, status, map, plan, or harness
+  behaviour beyond command registration
 - Any need for network access
-- Any change to embedded instruction content
+- Any change to embedded instruction content or runtime.json
 
 ## Escalation triggers
 
-- Requirement to change overall runtime status semantics based on harness health
-- Requirement to support harness-specific canonical sources beyond embedded cARL artefacts
+- Requirement to change memory.md schema from freeform markdown to structured data
+- Requirement to reconcile files other than memory.md
 
 ## Context reset notes
 
-This contract is active for the harness health awareness PR. Close it
-when merged.
+This contract is active for the carl reconcile PR. Close it when merged.
