@@ -59,6 +59,8 @@ Harness-specific files are adapters and bootloaders — generated from cARL cano
 
 Adapters should be generated via `carl harness sync` and never manually edited. Drift between an adapter and its canonical source is a health issue, not a design choice.
 
+> **Current vs target:** As of the current implementation, some adapter files are copies of `.github/copilot-instructions.md` rather than outputs of a full template-generation pipeline. Automated generation via `carl harness sync` is the target architecture; readers should not assume that pipeline is complete for all harnesses today.
+
 ### Runtime Activation Lifecycle
 
 Governance file presence is not the same as governance activation. A harness adapter is not considered successful merely because governance files exist. Every harness must complete the following lifecycle:
@@ -76,7 +78,7 @@ Implementation details differ per harness (skills, instruction files, rules file
 Future tooling should measure governance activation rather than assume it. This includes:
 
 - Harness readiness validation (is the adapter present, current, and bootstrapped?)
-- Governance bootstrap verification (did the agent actually load and confirm governance?)
+- Governance bootstrap confirmation signal (did the agent emit a structured acknowledgement that governance was loaded? — note: self-reported; not independently verified)
 - Adapter health reporting (drift detection between generated adapter and canonical source)
 - Cross-harness lifecycle conformance checks
 
@@ -356,9 +358,9 @@ No network access required.
 **Status:** Not started  
 **Description:** Add a `carl harness validate [<harness-id>]` command (or extend `carl harness status --verbose`) that reports whether a harness has completed all five lifecycle stages, not just whether adapter files are present. For Claude Code this means verifying the skill is installed, current, and can load governance. Surface failures as actionable `carl doctor` findings with specific remediation steps.
 
-### 8. Governance Bootstrap Verification
+### 8. Governance Bootstrap Confirmation Signal (Exploratory)
 **Status:** Not started  
-**Description:** Define a machine-readable governance bootstrap report format. When an agent completes the runtime activation lifecycle, it should be able to emit a structured confirmation (e.g. a YAML or JSON artefact) that records: operating mode confirmed, PR contract state, memory loaded, tool policy loaded, timestamp. This enables post-session verification that governance was active rather than relying on agent self-reporting.
+**Description:** Explore a machine-readable governance bootstrap report format. When an agent completes the runtime activation lifecycle, it could emit a *structured confirmation signal* (e.g. a YAML or JSON artefact) recording: operating mode confirmed, PR contract state, memory loaded, tool policy loaded, timestamp. This is intentionally framed as exploratory: an agent can only self-report, and self-reporting is not proof. Treat any signal as a useful hint, not a guarantee that governance was active. Stronger assurance would require CLI-observed checks or CI evidence (see item 7).
 
 ---
 
@@ -442,7 +444,7 @@ These questions should be resolved before implementing related roadmap items:
 5. **Community pack quality bar** — What review process should community packs go through before being recommended?
 6. **Version pinning** — Should repositories pin specific pack versions or always use latest?
 7. **Agent compatibility** — Which agent-specific features (e.g. Copilot instruction packs capability) should cARL depend on vs avoid for portability?
-8. **Bootstrap verification format** — What is the right format for a machine-readable governance bootstrap confirmation? YAML artefact, PR comment, or structured log?
+8. **Bootstrap confirmation signal format** — If an agent self-reports governance activation, what is the right format for that structured confirmation signal? YAML artefact, PR comment, or structured log? How do we distinguish signal from proof (see item 8 in Near-Term)?
 9. **Skill versioning** — Should the `/carl` skill embed a version header, and should `carl doctor` detect version mismatches vs the current CLI binary?
 10. **Cross-harness lifecycle conformance** — How should `carl harness validate` determine that governance loading (not just discovery) succeeded for a given harness?
 
