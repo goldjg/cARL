@@ -21,7 +21,7 @@ The goal is to provide consistent governance — memory, contracts, policies, an
 - **One concern per pack** — new instruction packs should remain focused
 - **Version-controlled artefacts** — new governance artefacts belong in `.github/carl/`
 - **Backward compatibility first** — existing users should not need to change their setup
-- **Harnesses consume, not own** — harness-specific files are generated adapters; the canonical source lives in cARL
+- **Harnesses consume, not own** — Harness-specific files are adapter artefacts intended to be generated; the canonical source lives in cARL.
 - **Measure activation, not presence** — governance files existing is not the same as governance being active
 
 ---
