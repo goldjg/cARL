@@ -7,7 +7,7 @@ This roadmap describes the strategic direction and future evolution of cARL. Non
 
 ## Strategic Direction
 
-cARL is evolving from a GitHub Copilot-focused governance system into an **agent-agnostic governance runtime with harness-specific bootloaders**.
+cARL is evolving from a GitHub Copilot-focused governance system into a **harness-agnostic governance runtime with harness-specific bootloaders**.
 
 The goal is to provide consistent governance — memory, contracts, policies, and operating modes — across heterogeneous coding agents. cARL does not aim to replace agent runtimes (that is a separate concern). It provides the governance layer that any agent runtime can consume.
 
@@ -396,7 +396,7 @@ No network access required.
 
 ### 15. Multi-Harness Governance Runtime
 **Status:** In progress — harness framework and adapter file generation delivered (PR #9, #11); Claude Code bootstrap model and cross-harness validation pending  
-**Description:** Evolves cARL from a GitHub Copilot-focused governance system into a harness-agnostic governance runtime with harness-specific bootloaders. The architectural direction is defined in the **Architectural Direction** section above. Current state:
+**Description:** Implements the multi-harness governance runtime architecture defined above. Current state:
 
 - All five harness adapters are implemented with detection files and adapter file definitions (copilot, claude, codex, cursor, antigravity)
 - `carl harness sync` generates adapter files from canonical embedded artefacts
@@ -455,5 +455,5 @@ The following were considered for the initial bootstrap PR and explicitly deferr
 - Structured memory schema (deferred — current freeform markdown is sufficient for v1)
 - CI integration tooling (deferred — governance via agent compliance is the v1 model)
 - Community pack registry (deferred — single-repository adoption first)
-- Non-Copilot agent support (deferred — Copilot is the primary target for v1; superseded by Multi-Harness Governance Runtime roadmap item)
+- Non-Copilot agent support (deferred — Copilot is the primary target for v1; superseded by roadmap item 15, Multi-Harness Governance Runtime)
 
