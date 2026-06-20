@@ -1,7 +1,7 @@
 {
   "_note": "Repository map derived by `carl map`. Re-run to update after structural changes.",
   "generated_by": "carl map",
-  "last_updated": "2026-06-18",
+  "last_updated": "2026-06-20",
   "languages": [
     "Go"
   ],
@@ -31,6 +31,7 @@
     "embedded/assets": "Embedded runtime asset mirror",
     "internal": "Internal implementation packages",
     "internal/cmdutil": "Defines shared types for cARL CLI commands.",
+    "internal/convert": "Implements the `carl convert` command and its converter framework.",
     "internal/doctor": "Implements the `carl doctor` command.",
     "internal/harness": "Implements the `carl harness` command and its subcommands.",
     "internal/install": "Implements the `carl init` command.",
