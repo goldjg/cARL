@@ -1,18 +1,102 @@
-<!-- version: 1.2.0 -->
+<!-- version: 1.3.0 -->
 # PR Contract Pack
 
 Defines the PR contract controls that constrain implementation scope and govern escalation.
 
--   **Create a contract before implementation.** Use `.github/carl/current-pr-contract.md` to capture goal, non-goals, scope, constraints, and stop conditions.
--   **Treat approved scope as execution boundary.** Planned implementation must remain inside approved scope unless explicitly amended.
--   **Enforce forbidden scope explicitly.** Do not execute changes that fall into forbidden scope without user-approved contract amendment.
--   **Honor architectural and security constraints.** Contract constraints are mandatory guardrails during implementation and validation.
--   **Validate against expected file and test surfaces.** Keep changes aligned to expected files and listed validation commands.
--   **Record contract assertions when the work is test-critical.** For output-schema-heavy, validation-heavy, trust-boundary-changing, CLI/API-facing, persistence-format-sensitive, security-relevant, or failure-mode-sensitive work, list 3-5 explicit contract assertions in the active PR contract or linked plan before implementation.
--   **Require direct test linkage to contract assertions.** Tests that do not trace directly to listed contract assertions are insufficient evidence of compliance, even when they pass.
--   **Use escalation triggers and reset notes.** Escalate when trigger conditions are met and document context reset expectations on completion.
--   **Avoid stale contract anchoring.** Do not treat a completed PR constraint as durable law unless it has been promoted to an invariant.
--   **Carry forward only promoted invariants.** Completed PR contracts are historical evidence, not binding scope, unless the current contract explicitly promotes a constraint.
--   **Contract amendments must be explicit.** If a PR intentionally changes a previous constraint or introduces a new trust boundary, record the amendment in the current PR contract or plan file before implementation.
--   **Do not over-anchor on prior contracts.** New PRs may intentionally amend prior constraints when the amendment is explicit and scoped in the current contract.
--   **Approve new trust boundaries explicitly.** Treat a newly introduced trust boundary as approved only when the current PR contract or plan file records it as an intentional amendment.
+## Purpose
+
+`.github/carl/current-pr-contract.md` is the active execution boundary for implementation work.
+
+It captures:
+
+- goal;
+- contract status;
+- non-goals;
+- approved scope;
+- forbidden scope;
+- architectural constraints;
+- security constraints;
+- expected files;
+- validation requirements;
+- stop conditions;
+- escalation triggers;
+- context reset notes.
+
+## Contract authority
+
+- **Create or update a contract before implementation.** Use `.github/carl/current-pr-contract.md` to capture goal, non-goals, scope, constraints, and stop conditions.
+- **Read the active contract before implementation.** Do not begin repository writes until the active PR contract has been checked.
+- **Treat approved scope as execution boundary.** Planned implementation must remain inside approved scope unless explicitly amended.
+- **Enforce forbidden scope explicitly.** Do not execute changes that fall into forbidden scope without user-approved contract amendment.
+- **Honor architectural and security constraints.** Contract constraints are mandatory guardrails during implementation and validation.
+- **Validate against expected file and test surfaces.** Keep changes aligned to expected files and listed validation commands.
+- **Use stop conditions.** Stop immediately when a stop condition is reached.
+- **Use escalation triggers.** Ask for confirmation when ambiguity, risk, or scope changes match an escalation trigger.
+
+## Completed contracts
+
+Completed PR contracts are historical evidence, not durable law.
+
+Do not treat a completed PR constraint as binding scope unless it has been explicitly promoted to:
+
+- an invariant;
+- durable memory;
+- trust-boundary guidance;
+- current PR carry-forward rule;
+- documented architecture.
+
+New PRs may intentionally amend previous constraints when the amendment is explicit, scoped, and recorded in the current contract or linked plan.
+
+## Contract assertions
+
+For non-trivial work, record or infer 3-5 contract assertions before implementation.
+
+Prioritise assertions for:
+
+- output schemas;
+- CLI/API contracts;
+- warning/error semantics;
+- trust-boundary behaviour;
+- persistence formats;
+- security controls;
+- failure modes;
+- validation modes;
+- user-visible behaviour.
+
+Tests must trace directly to contract assertions. Tests that merely encode implementation drift are insufficient evidence, even when they pass.
+
+## Contract amendments
+
+Contract amendments must be explicit.
+
+If a request changes approved scope, forbidden scope, trust boundaries, command behaviour, validation expectations, or durable assumptions:
+
+1. stop;
+2. identify the amendment;
+3. update the contract or linked plan;
+4. proceed only when the amendment is covered.
+
+Do not silently broaden scope.
+
+## Harness and loader changes
+
+Harness loader or adapter changes are governance-sensitive.
+
+When changing files such as `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, or `ANTIGRAVITY.md`, the PR contract must explicitly cover:
+
+- which harness files may change;
+- whether embedded asset copies must change;
+- whether instruction packs may change;
+- how canonical cARL artefacts remain authoritative;
+- how final cARL/docs reconciliation will be reported.
+
+Harness adapter files are not independent authorities. They must route agents toward canonical cARL artefacts and preserve the active PR contract.
+
+## Context reset
+
+At the end of a PR:
+
+- close, supersede, or reset the active contract as appropriate;
+- promote only durable lessons into invariants, memory, trust boundaries, or documentation;
+- avoid leaving stale active contracts that constrain unrelated future work;
+- record reset notes when future sessions may otherwise over-anchor on completed scope.

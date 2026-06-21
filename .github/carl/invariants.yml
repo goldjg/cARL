@@ -1,4 +1,4 @@
-# version: 1.0.0
+# version: 1.1.0
 invariants:
   - id: no-hardcoded-secrets
     name: No hardcoded secrets
@@ -43,4 +43,24 @@ invariants:
   - id: durable-artefact-update-on-implementation
     name: Durable artefact update on implementation
     rule: Every implementation PR must update durable artefacts (.github/carl/invariants.yml, memory.md, ROADMAP.md, trust-boundaries.md) when behaviour, assumptions, commands, scope, roadmap, or operating model changes.
+    severity: high
+
+  - id: carl-canonical-governance
+    name: cARL canonical governance
+    rule: .github/carl artefacts are the canonical source of durable governance truth; harness-specific files must not be treated as independent authorities.
+    severity: high
+
+  - id: harness-adapters-not-authorities
+    name: Harness adapters are not authorities
+    rule: Harness-specific files such as .github/copilot-instructions.md, CLAUDE.md, AGENTS.md, .cursorrules, and ANTIGRAVITY.md are adapters/loaders that must route agents to canonical cARL artefacts.
+    severity: high
+
+  - id: explicit-carl-lifecycle
+    name: Explicit cARL lifecycle
+    rule: Harness loaders must make hydration, execution, validation, reconciliation, and final cARL/docs update decisions explicit.
+    severity: high
+
+  - id: repository-truth-over-session-memory
+    name: Repository truth over session memory
+    rule: Current repository state and canonical cARL artefacts must outrank stale prompt or session memory when they conflict.
     severity: high
