@@ -79,13 +79,24 @@ Automatic mode allows end-to-end implementation without pausing between steps, b
 
 Final responses must include:
 
-```text
-summary
+    summary
 
-changes
+    changes
 
-tests run/not run
+    tests run/not run
 
-cARL/docs update decision
+    cARL/docs update decision
 
-risks
+    risks
+
+In Plan-only mode, report:
+
+- no code changes proposed;
+- tests not run because Plan-only mode;
+- whether cARL/docs updates are expected if the plan is implemented.
+
+Under `cARL/docs update decision`, state one of:
+
+- cARL/docs updated, with files listed;
+- no cARL/docs update required, with reasoning;
+- cARL/docs update needed but not completed, with reason and recommended follow-up.
