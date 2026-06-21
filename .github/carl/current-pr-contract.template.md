@@ -1,53 +1,146 @@
 <!-- version: 1.1.0 -->
 # Current PR Contract
 
-This contract constrains implementation scope for the active PR. Update
-it when scope is explicitly amended. If a requested action falls outside
-approved scope, stop and escalate before proceeding.
+This file defines the active scope, constraints, validation expectations, and escalation triggers for the current implementation task.
 
-Use this contract to distinguish active PR constraints, completed PR
-constraints, durable invariants, and intentional amendments. Completed
-PR constraints are historical evidence unless they are explicitly
-promoted to durable invariants.
+It is a working contract, not a permanent architectural document.
 
-## Goal
-<!-- One outcome-focused objective for this PR. -->
+When the PR is complete, close, reset, or supersede this contract so future agents do not over-anchor on stale scope.
 
 ## Contract status
-<!-- draft | active | closed | superseded -->
+
+Status: Draft
+
+Allowed values:
+
+- Draft
+- Active
+- Superseded
+- Complete
+
+## Goal
+
+<!-- Describe the single primary outcome this PR/task must achieve. -->
 
 ## Non-goals
-<!-- Explicitly list what this PR will not change. -->
 
-## Carry-forward rules
-<!-- State which constraints are durable invariants and which are only scoped to this PR. Completed PR constraints are historical evidence unless explicitly promoted to invariants. -->
+<!-- List explicitly out-of-scope outcomes to prevent scope creep. -->
 
 ## Approved scope
-<!-- Bounded capabilities and behavior changes allowed in this PR. -->
 
-## Intentional amendments
-<!-- Explicitly record any intentional changes to previous PR constraints, trust boundaries, or assumptions. -->
+<!-- List files, directories, behaviours, commands, docs, and governance artefacts that may be changed. -->
 
 ## Forbidden scope
-<!-- Explicitly forbidden behavior, files, and operational changes. -->
+
+<!-- List files, behaviours, commands, docs, or governance surfaces that must not be changed. -->
 
 ## Architectural constraints
-<!-- Structural constraints that must be preserved (patterns, boundaries, composition). -->
+
+<!-- List architecture rules, compatibility requirements, runtime assumptions, and source-of-truth decisions. -->
 
 ## Security constraints
-<!-- Security requirements that must remain enforced throughout implementation. -->
 
-## Files expected to change
-<!-- Enumerate files or directories expected to be modified. -->
+<!-- List security properties that must be preserved, improved, or explicitly validated. -->
 
-## Tests / validation
-<!-- List validation commands and acceptance checks for this PR. -->
+## Trust boundaries
+
+<!-- List trust boundaries touched by this work and the validation expected for each. -->
+
+## Expected files
+
+<!-- List expected changed files. Update before implementation if scope changes. -->
+
+## Contract assertions
+
+For non-trivial work, define 3-5 assertions that must remain true after implementation.
+
+Examples:
+
+- Output schema remains backwards compatible.
+- Managed artefact repair remains idempotent.
+- Protected files are not overwritten.
+- Harness adapters route agents to canonical cARL artefacts.
+- Tests assert approved behaviour rather than implementation drift.
+
+Assertions:
+
+1. <!-- Assertion 1 -->
+2. <!-- Assertion 2 -->
+3. <!-- Assertion 3 -->
+
+## Validation plan
+
+<!-- List commands, tests, manual checks, and validation gaps. -->
+
+Required validation:
+
+- <!-- e.g. go test ./... -->
+- <!-- e.g. go build ./cmd/carl -->
+- <!-- e.g. carl doctor -->
+- <!-- e.g. carl harness status -->
+
+## cARL/docs update expectation
+
+State whether this work is expected to update durable governance or documentation.
+
+Allowed values:
+
+- Expected
+- Not expected
+- Unknown until implementation
+
+Decision:
+
+<!-- Populate before final response. -->
+
+Rationale:
+
+<!-- Explain why docs/cARL updates are or are not expected. -->
 
 ## Stop conditions
-<!-- Define conditions that require stopping implementation immediately. -->
+
+Stop and ask for confirmation if:
+
+- implementation requires files outside approved scope;
+- non-goals appear necessary to satisfy the goal;
+- security, identity, trust-boundary, or governance semantics change unexpectedly;
+- validation cannot prove a contract-critical behaviour;
+- tests begin encoding implementation drift;
+- embedded managed asset requirements are unclear;
+- model/session behaviour repeatedly misses the contract;
+- assumptions conflict with current repository state.
 
 ## Escalation triggers
-<!-- Define ambiguity, risk, or scope triggers that require user confirmation. -->
+
+Escalate before proceeding if:
+
+- the active authority order is unclear;
+- current repository state conflicts with durable memory;
+- prompt/session memory conflicts with cARL artefacts;
+- an invariant must be amended;
+- a trust boundary must be added or weakened;
+- CI/CD, release, dependency, or security policy changes become necessary;
+- harness adapter authority semantics change;
+- runtime state semantics change;
+- destructive or broad writes become necessary.
 
 ## Context reset notes
-<!-- Notes to close this contract and reset context when work is complete. -->
+
+When the PR/task completes, record:
+
+- what should carry forward into durable memory;
+- what should be promoted to invariants or trust boundaries;
+- what should remain historical only;
+- what stale assumptions future agents should ignore.
+
+## Completion checklist
+
+Before final response:
+
+- [ ] Implementation stayed inside approved scope.
+- [ ] Forbidden scope was not touched.
+- [ ] Contract assertions were validated.
+- [ ] Tests or manual checks were run or gaps were reported.
+- [ ] cARL/docs update decision was made.
+- [ ] Durable changes were reflected in memory/docs/invariants/trust boundaries where required.
+- [ ] Active contract was marked Complete, Superseded, or reset as appropriate.
