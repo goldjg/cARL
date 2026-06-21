@@ -1,14 +1,91 @@
-<!-- version: 1.1.0 -->
+<!-- version: 1.2.0 -->
 # Baseline Pack
 
-Defines core engineering operating model, modes, and expectations.
+Defines the core engineering operating model, modes, and response expectations.
+
+## General behaviour
 
 When in doubt on edge cases, state assumptions explicitly, ask a clarifying question if the choice changes the outcome, and prefer the safer interpretation.
 
--   Plan before code: for any non-trivial change, write a brief plan first. The plan must include Goal, Affected files, Step-by-step changes, Test strategy, and Risks. If the user requests code directly, respond with the brief plan first and ask for confirmation before producing the implementation.
--   Small, reversible changes: each change should touch one logical unit or approximately 50 lines, and should be revertable via a single `git revert` without data migration.
--   Do not skip tests: for every code change, run the existing test suite, add tests covering new behavior, and never disable or delete tests without explicit user approval. If no test framework is present, propose one and add at least one test for the change. If tests cannot be executed, state this explicitly and list the tests that should be run manually.
--   Tests are contract assertions, not post-hoc justifications: make tests prove the approved behavior, not whatever was implemented first. When relevant, assert exact JSON schema, stdout/stderr separation, invalid-input exit behavior, and no-network trust-boundary enforcement directly.
--   Security rules: never hardcode secrets, validate all external inputs, prefer parameterized queries, flag any change that touches auth or crypto for explicit user review.
--   Precedence when principles conflict: Security > Tests > Reversibility > Small scope. Surface the trade-off to the user before proceeding.
--   Modes: (1) Plan-only — output a numbered plan with no code or file edits. (2) Implement — produce code changes after a plan is approved. Default to Plan-only. Switch to Implement only when the user explicitly says "implement", "apply", or "go ahead". A Plan must include: Goal, Affected files, Step-by-step changes, Test strategy, and Risks. To leave Plan-only mode, the user must say "approve" or "implement".
+Do not optimise for “done.” Optimise for correct, maintainable, secure, testable, and explainable change.
+
+## Core rules
+
+- **Plan before code.** For any non-trivial change, write a brief plan first. The plan must include Goal, Affected files, Step-by-step changes, Test strategy, Risks, and cARL/docs update expectation.
+- **Small, reversible changes.** Each change should touch one logical unit where practical and should be revertible via a single `git revert` without data migration.
+- **Existing patterns first.** Inspect the repository before introducing a new pattern. Prefer existing naming, file layout, error handling, logging, dependency, testing, and CI/CD conventions.
+- **No unrelated refactors.** Do not clean up or redesign adjacent code unless explicitly in scope.
+- **Do not skip tests.** For every code change, run the relevant existing validation where possible and add/update tests for changed behaviour when appropriate.
+- **Tests are contract assertions, not post-hoc justifications.** Make tests prove the approved behaviour, not whatever was implemented first.
+- **Security rules.** Never hardcode secrets, validate external inputs, avoid unsafe execution, preserve authentication and authorization controls, and flag any change that touches auth or crypto for explicit user review.
+- **Dependency discipline.** Do not add dependencies casually. Prefer native implementation for small functionality when safe.
+- **Precedence when principles conflict.** Security > PR contract > invariants > tests > reversibility > small scope > style. Surface the trade-off to the user before proceeding.
+- **Governance reconciliation.** Before final response, decide whether docs or cARL artefacts need updates. If they do, update them. If they do not, explicitly state why.
+
+## Operating modes
+
+Default to Plan-only mode.
+
+Switch modes only by explicit user instruction.
+
+### Plan-only mode
+
+Use when the user has not explicitly approved implementation.
+
+In Plan-only mode:
+
+- do not apply code changes;
+- do not run tests;
+- provide a numbered or structured plan;
+- identify affected files;
+- identify validation steps;
+- identify likely cARL/docs updates;
+- ask for approval before implementation.
+
+### Assisted implementation mode
+
+Use only when the user explicitly says something like:
+
+- `implement`
+- `apply`
+- `make the change`
+- `proceed`
+- `approved`
+- `go ahead`
+
+In Assisted implementation mode:
+
+- hydrate cARL before edits;
+- stay inside the active PR contract;
+- make focused changes;
+- run relevant validation where possible;
+- reconcile docs/cARL before final response.
+
+### Automatic mode
+
+Use only when the user explicitly writes `automatic mode`.
+
+Automatic mode allows end-to-end implementation without pausing between steps, but it does not bypass:
+
+- cARL hydration;
+- PR contract scope;
+- invariants;
+- tool policy;
+- validation;
+- cARL/docs reconciliation;
+- final risk reporting.
+
+## Required final response
+
+Final responses must include:
+
+```text
+summary
+
+changes
+
+tests run/not run
+
+cARL/docs update decision
+
+risks
