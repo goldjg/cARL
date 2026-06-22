@@ -21,6 +21,16 @@ type Artifacts interface {
 	Open(targetPath string) ([]byte, error)
 }
 
+// AdapterFile describes one output file managed by a harness adapter.
+// Each file has its own embedded source, enabling shim adapters to write
+// a shared loader alongside their own harness-specific shim content.
+type AdapterFile struct {
+	// Path is the repo-relative output path for this file.
+	Path string
+	// SourceFile is the embedded asset path whose content is written to Path.
+	SourceFile string
+}
+
 // Adapter describes a harness adapter — the bridge between cARL canonical
 // artefacts and a specific AI coding agent's context injection mechanism.
 type Adapter struct {
@@ -34,17 +44,18 @@ type Adapter struct {
 	//   "theoretical"  -- adapter exists, not yet validated end-to-end
 	Support string
 	// DetectionFile is the repo-relative path whose presence indicates this
-	// harness is active in the repository. Empty for planned adapters.
+	// harness is active in the repository. For shim adapters this is the
+	// harness-specific shim file, not the shared loader. Empty for planned adapters.
 	DetectionFile string
-	// AdapterFiles lists repo-relative paths that serve as the adapter layer
-	// for this harness. These files are managed by cARL; the harness is the
-	// consumer. Empty for planned adapters.
-	AdapterFiles []string
-	// SourceFile is the repo-relative path of the embedded canonical artefact
-	// used as the content source when generating this adapter's files via
-	// `carl harness sync`. Empty for planned adapters.
-	SourceFile string
+	// Files lists all files managed by this adapter, each mapped to its own
+	// embedded source. For shim adapters (all except copilot) this includes
+	// the shared loader (.github/copilot-instructions.md) as well as the
+	// harness-specific shim. Empty for planned adapters.
+	Files []AdapterFile
 }
+
+// loaderPath is the shared cARL loader that every harness shim points to.
+const loaderPath = ".github/copilot-instructions.md"
 
 // knownAdapters is the canonical ordered registry of all harnesses cARL
 // is aware of. The order determines display order in list and status output.
@@ -53,41 +64,50 @@ var knownAdapters = []Adapter{
 		ID:            "copilot",
 		Name:          "GitHub Copilot",
 		Support:       "production",
-		DetectionFile: ".github/copilot-instructions.md",
-		AdapterFiles:  []string{".github/copilot-instructions.md"},
-		SourceFile:    ".github/copilot-instructions.md",
+		DetectionFile: loaderPath,
+		Files: []AdapterFile{
+			{Path: loaderPath, SourceFile: loaderPath},
+		},
 	},
 	{
 		ID:            "claude",
 		Name:          "Claude Code",
 		Support:       "experimental",
 		DetectionFile: "CLAUDE.md",
-		AdapterFiles:  []string{"CLAUDE.md"},
-		SourceFile:    ".github/copilot-instructions.md",
+		Files: []AdapterFile{
+			{Path: loaderPath, SourceFile: loaderPath},
+			{Path: "CLAUDE.md", SourceFile: "CLAUDE.md"},
+		},
 	},
 	{
 		ID:            "codex",
 		Name:          "Codex",
 		Support:       "theoretical",
 		DetectionFile: "AGENTS.md",
-		AdapterFiles:  []string{"AGENTS.md"},
-		SourceFile:    ".github/copilot-instructions.md",
+		Files: []AdapterFile{
+			{Path: loaderPath, SourceFile: loaderPath},
+			{Path: "AGENTS.md", SourceFile: "AGENTS.md"},
+		},
 	},
 	{
 		ID:            "cursor",
 		Name:          "Cursor",
 		Support:       "theoretical",
-		DetectionFile: ".cursorrules",
-		AdapterFiles:  []string{".cursorrules"},
-		SourceFile:    ".github/copilot-instructions.md",
+		DetectionFile: ".cursor/rules/carl.mdc",
+		Files: []AdapterFile{
+			{Path: loaderPath, SourceFile: loaderPath},
+			{Path: ".cursor/rules/carl.mdc", SourceFile: ".cursor/rules/carl.mdc"},
+		},
 	},
 	{
 		ID:            "antigravity",
 		Name:          "Antigravity",
 		Support:       "theoretical",
-		DetectionFile: "ANTIGRAVITY.md",
-		AdapterFiles:  []string{"ANTIGRAVITY.md"},
-		SourceFile:    ".github/copilot-instructions.md",
+		DetectionFile: ".agents/rules/carl.md",
+		Files: []AdapterFile{
+			{Path: loaderPath, SourceFile: loaderPath},
+			{Path: ".agents/rules/carl.md", SourceFile: ".agents/rules/carl.md"},
+		},
 	},
 }
 
@@ -221,6 +241,10 @@ func (c *Command) RunStatusInDir(rootDir string) error {
 // adapter's file(s) to disk. Existing files are overwritten — adapter files
 // are disposable and always regenerated from the canonical source.
 //
+// When multiple adapters share a common file (e.g. the shared loader at
+// .github/copilot-instructions.md), that file is written only once to avoid
+// redundant writes and to keep the summary count accurate.
+//
 // harnessIDs restricts the operation to the named harnesses. If empty, all
 // supported harnesses are synced. An unknown harness ID returns an error.
 //
@@ -235,30 +259,41 @@ func (c *Command) RunSyncInDir(rootDir string, harnessIDs []string) error {
 	fmt.Println("Syncing harness adapters...")
 	fmt.Println()
 
-	written := 0
+	// Collect the ordered set of unique file writes. When the same output path
+	// appears in multiple adapters (e.g. the shared loader), write it only once
+	// under the adapter that claims it first in registry order.
+	type pendingWrite struct {
+		adapterID  string
+		path       string
+		sourceFile string
+	}
+	seen := make(map[string]bool)
+	var queue []pendingWrite
 	for _, a := range targets {
-		// resolveAdapters returns only supported adapters; this guard is a
-		// belt-and-suspenders check against malformed registry entries.
-		if len(a.AdapterFiles) == 0 || a.SourceFile == "" {
-			continue
+		for _, af := range a.Files {
+			if seen[af.Path] {
+				continue
+			}
+			seen[af.Path] = true
+			queue = append(queue, pendingWrite{adapterID: a.ID, path: af.Path, sourceFile: af.SourceFile})
 		}
+	}
 
-		content, err := c.arts.Open(a.SourceFile)
+	written := 0
+	for _, w := range queue {
+		content, err := c.arts.Open(w.sourceFile)
 		if err != nil {
-			return fmt.Errorf("read canonical source for harness %q: %w", a.ID, err)
+			return fmt.Errorf("read canonical source %q for harness %q: %w", w.sourceFile, w.adapterID, err)
 		}
-
-		for _, af := range a.AdapterFiles {
-			target := filepath.Join(rootDir, filepath.FromSlash(af))
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-				return fmt.Errorf("create directory for %s: %w", af, err)
-			}
-			if err := os.WriteFile(target, content, 0644); err != nil {
-				return fmt.Errorf("write adapter file %s: %w", af, err)
-			}
-			fmt.Printf("  %-13s  %s\n", a.ID, af)
-			written++
+		target := filepath.Join(rootDir, filepath.FromSlash(w.path))
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			return fmt.Errorf("create directory for %s: %w", w.path, err)
 		}
+		if err := os.WriteFile(target, content, 0644); err != nil {
+			return fmt.Errorf("write adapter file %s: %w", w.path, err)
+		}
+		fmt.Printf("  %-13s  %s\n", w.adapterID, w.path)
+		written++
 	}
 
 	fmt.Println()
@@ -267,14 +302,13 @@ func (c *Command) RunSyncInDir(rootDir string, harnessIDs []string) error {
 }
 
 // resolveAdapters returns the list of adapters to sync. If ids is empty, all
-// adapters with defined AdapterFiles and SourceFile are returned. If ids is
-// non-empty, only the named adapters are returned; an error is returned if any
-// id is unrecognised.
+// adapters with defined Files are returned. If ids is non-empty, only the
+// named adapters are returned; an error is returned if any id is unrecognised.
 func resolveAdapters(ids []string) ([]Adapter, error) {
 	if len(ids) == 0 {
 		result := make([]Adapter, 0, len(knownAdapters))
 		for _, a := range knownAdapters {
-			if len(a.AdapterFiles) > 0 && a.SourceFile != "" {
+			if len(a.Files) > 0 {
 				result = append(result, a)
 			}
 		}

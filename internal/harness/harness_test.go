@@ -27,12 +27,16 @@ func (a *testArts) Open(path string) ([]byte, error) {
 	return nil, fmt.Errorf("testArts: file not found: %s", path)
 }
 
-// newTestArts returns a testArts pre-loaded with the canonical copilot
-// instructions placeholder used by sync tests.
+// newTestArts returns a testArts pre-loaded with the shared loader and
+// per-harness shim content used by sync tests.
 func newTestArts() *testArts {
 	return &testArts{
 		files: map[string][]byte{
 			".github/copilot-instructions.md": []byte("# cARL Governance Instructions\n\nTest canonical content.\n"),
+			"CLAUDE.md":                       []byte("# Claude Code cARL Adapter\n\nTest shim content.\n"),
+			"AGENTS.md":                       []byte("# Codex cARL Adapter\n\nTest shim content.\n"),
+			".cursor/rules/carl.mdc":           []byte("# Cursor cARL Adapter\n\nTest shim content.\n"),
+			".agents/rules/carl.md":            []byte("# Antigravity cARL Adapter\n\nTest shim content.\n"),
 		},
 	}
 }
@@ -488,8 +492,8 @@ func TestHarness_Adapters_DetectionFiles(t *testing.T) {
 		"copilot":     ".github/copilot-instructions.md",
 		"claude":      "CLAUDE.md",
 		"codex":       "AGENTS.md",
-		"cursor":      ".cursorrules",
-		"antigravity": "ANTIGRAVITY.md",
+		"cursor":      ".cursor/rules/carl.mdc",
+		"antigravity": ".agents/rules/carl.md",
 	}
 
 	for _, a := range harness.Adapters() {
@@ -506,8 +510,8 @@ func TestHarness_Adapters_DetectionFiles(t *testing.T) {
 
 // --- sync contract assertions ---
 
-// Contract assertion S1: sync with no harness IDs writes adapter files for
-// all supported harnesses.
+// Contract assertion S1: sync with no harness IDs writes all unique adapter
+// files (shared loader once + each harness-specific shim).
 func TestHarness_Sync_AllHarnesses(t *testing.T) {
 	dir := t.TempDir()
 	cmd := harness.New(newTestArts())
@@ -524,8 +528,8 @@ func TestHarness_Sync_AllHarnesses(t *testing.T) {
 		"copilot":     filepath.Join(dir, ".github", "copilot-instructions.md"),
 		"claude":      filepath.Join(dir, "CLAUDE.md"),
 		"codex":       filepath.Join(dir, "AGENTS.md"),
-		"cursor":      filepath.Join(dir, ".cursorrules"),
-		"antigravity": filepath.Join(dir, "ANTIGRAVITY.md"),
+		"cursor":      filepath.Join(dir, ".cursor", "rules", "carl.mdc"),
+		"antigravity": filepath.Join(dir, ".agents", "rules", "carl.md"),
 	}
 
 	for id, path := range wantFiles {
@@ -534,22 +538,22 @@ func TestHarness_Sync_AllHarnesses(t *testing.T) {
 		}
 	}
 
-	// Summary line must report all adapters with defined adapter files.
+	// Summary line must report unique file count (shared loader written once).
 	adapters := harness.Adapters()
-	syncable := 0
+	seen := make(map[string]bool)
 	for _, a := range adapters {
-		if len(a.AdapterFiles) > 0 && a.SourceFile != "" {
-			syncable++
+		for _, af := range a.Files {
+			seen[af.Path] = true
 		}
 	}
-	wantSummary := fmt.Sprintf("%d adapter file(s) synced.", syncable)
+	wantSummary := fmt.Sprintf("%d adapter file(s) synced.", len(seen))
 	if !strings.Contains(output, wantSummary) {
 		t.Errorf("expected %q in sync output; got:\n%s", wantSummary, output)
 	}
 }
 
-// Contract assertion S2: sync with a specific harness ID writes only that
-// adapter file and leaves others absent.
+// Contract assertion S2: sync with a specific harness ID writes the shared
+// loader and that harness's shim; unrelated shim files remain absent.
 func TestHarness_Sync_SpecificHarness(t *testing.T) {
 	dir := t.TempDir()
 	cmd := harness.New(newTestArts())
@@ -564,9 +568,13 @@ func TestHarness_Sync_SpecificHarness(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "CLAUDE.md")); err != nil {
 		t.Errorf("CLAUDE.md should exist after sync claude; stat: %v", err)
 	}
-	// Copilot adapter should NOT exist (was not requested).
-	if _, err := os.Stat(filepath.Join(dir, ".github", "copilot-instructions.md")); err == nil {
-		t.Errorf(".github/copilot-instructions.md should not exist when only claude was synced")
+	// Shared loader must also exist — syncing any shim includes the shared loader.
+	if _, err := os.Stat(filepath.Join(dir, ".github", "copilot-instructions.md")); err != nil {
+		t.Errorf(".github/copilot-instructions.md should exist after sync claude (shared loader); stat: %v", err)
+	}
+	// Unrelated shims should NOT exist.
+	if _, err := os.Stat(filepath.Join(dir, "AGENTS.md")); err == nil {
+		t.Errorf("AGENTS.md should not exist when only claude was synced")
 	}
 }
 
@@ -636,8 +644,8 @@ func TestHarness_Sync_Idempotent(t *testing.T) {
 		"copilot":     filepath.Join(dir, ".github", "copilot-instructions.md"),
 		"claude":      filepath.Join(dir, "CLAUDE.md"),
 		"codex":       filepath.Join(dir, "AGENTS.md"),
-		"cursor":      filepath.Join(dir, ".cursorrules"),
-		"antigravity": filepath.Join(dir, "ANTIGRAVITY.md"),
+		"cursor":      filepath.Join(dir, ".cursor", "rules", "carl.mdc"),
+		"antigravity": filepath.Join(dir, ".agents", "rules", "carl.md"),
 	}
 	firstContents := make(map[string][]byte, len(adapterPaths))
 	for id, path := range adapterPaths {
@@ -702,11 +710,165 @@ func TestHarness_NoArgs_UsageIncludesSync(t *testing.T) {
 	}
 }
 
-// Contract assertion S8: supported adapters must have a non-empty SourceFile.
+// Contract assertion S8: all adapters with defined Files must have at least
+// one entry with a non-empty SourceFile.
 func TestHarness_Adapters_SupportedHaveSourceFile(t *testing.T) {
 	for _, a := range harness.Adapters() {
-		if a.Support == "supported" && a.SourceFile == "" {
-			t.Errorf("supported adapter %q has no SourceFile; all supported adapters must define one for sync", a.ID)
+		if len(a.Files) == 0 {
+			continue
 		}
+		for i, af := range a.Files {
+			if af.SourceFile == "" {
+				t.Errorf("adapter %q Files[%d].SourceFile is empty; all adapter files must define a source", a.ID, i)
+			}
+			if af.Path == "" {
+				t.Errorf("adapter %q Files[%d].Path is empty; all adapter files must define a target path", a.ID, i)
+			}
+		}
+	}
+}
+
+// --- shim model health contract assertions ---
+
+// TestHarness_ShimAdapter_IncludesLoaderInFiles verifies that every non-copilot
+// adapter includes the shared loader (.github/copilot-instructions.md) in its
+// Files list. This enforces the shim model: every shim must also manage the
+// shared loader so health checks fail if the loader is absent.
+func TestHarness_ShimAdapter_IncludesLoaderInFiles(t *testing.T) {
+	const loader = ".github/copilot-instructions.md"
+	for _, a := range harness.Adapters() {
+		if a.ID == "copilot" {
+			continue // copilot IS the shared loader
+		}
+		hasLoader := false
+		for _, af := range a.Files {
+			if af.Path == loader {
+				hasLoader = true
+				break
+			}
+		}
+		if !hasLoader {
+			t.Errorf("shim adapter %q does not include shared loader %q in Files; shim adapters must manage the shared loader", a.ID, loader)
+		}
+	}
+}
+
+// TestHarness_Status_ShimUnhealthy_WhenLoaderMissing verifies that a shim
+// harness is not healthy when only its shim file exists but the shared loader
+// (.github/copilot-instructions.md) is absent.
+func TestHarness_Status_ShimUnhealthy_WhenLoaderMissing(t *testing.T) {
+	dir := t.TempDir()
+	// Write only the shim file for claude, not the shared loader.
+	if err := os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte("# Claude Code cARL Adapter\n\nTest shim content.\n"), 0644); err != nil {
+		t.Fatalf("write CLAUDE.md: %v", err)
+	}
+
+	cmd := harness.New(newTestArts())
+	output := captureStdout(t, func() {
+		if err := cmd.RunStatusInDir(dir); err != nil {
+			t.Fatalf("RunStatusInDir: %v", err)
+		}
+	})
+
+	// claude should be Present (CLAUDE.md exists) but not Synced (loader missing).
+	if !strings.Contains(output, "claude") {
+		t.Errorf("expected 'claude' in status output; got:\n%s", output)
+	}
+	if strings.Contains(output, "Synced") && strings.Contains(output, "claude") {
+		// Ensure claude row specifically is not Synced — check the output doesn't
+		// contain the healthy summary count.
+		if strings.Contains(output, "1 healthy") {
+			t.Errorf("expected claude to be unhealthy when shared loader is missing; got:\n%s", output)
+		}
+	}
+	// Must not appear in the healthy count.
+	if strings.Contains(output, "1 healthy.") {
+		t.Errorf("expected 0 healthy when shared loader is absent; got:\n%s", output)
+	}
+}
+
+// TestHarness_Status_ShimUnhealthy_WhenShimMissing verifies that a shim
+// harness is not healthy when only the shared loader exists but the
+// harness-specific shim is absent.
+func TestHarness_Status_ShimUnhealthy_WhenShimMissing(t *testing.T) {
+	dir := t.TempDir()
+	// Write only the shared loader, not the claude shim.
+	if err := os.MkdirAll(filepath.Join(dir, ".github"), 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".github", "copilot-instructions.md"), []byte("# cARL Governance Instructions\n\nTest canonical content.\n"), 0644); err != nil {
+		t.Fatalf("write copilot-instructions.md: %v", err)
+	}
+
+	cmd := harness.New(newTestArts())
+	output := captureStdout(t, func() {
+		if err := cmd.RunStatusInDir(dir); err != nil {
+			t.Fatalf("RunStatusInDir: %v", err)
+		}
+	})
+
+	// claude should be Missing (CLAUDE.md absent) and Sync should show Missing.
+	if !strings.Contains(output, "claude") {
+		t.Errorf("expected 'claude' in status output; got:\n%s", output)
+	}
+	// claude must not be healthy — its shim is missing.
+	if strings.Contains(output, "Missing") == false {
+		t.Errorf("expected 'Missing' in status output when shim is absent; got:\n%s", output)
+	}
+}
+
+// TestHarness_Status_ShimDrifted_WhenLoaderModified verifies that a shim
+// harness is reported as Drifted when the shared loader is modified.
+func TestHarness_Status_ShimDrifted_WhenLoaderModified(t *testing.T) {
+	dir := t.TempDir()
+	syncHarnesses(t, dir, "claude")
+
+	// Modify the shared loader.
+	if err := os.WriteFile(filepath.Join(dir, ".github", "copilot-instructions.md"), []byte("modified loader"), 0644); err != nil {
+		t.Fatalf("modify shared loader: %v", err)
+	}
+
+	cmd := harness.New(newTestArts())
+	output := captureStdout(t, func() {
+		if err := cmd.RunStatusInDir(dir); err != nil {
+			t.Fatalf("RunStatusInDir: %v", err)
+		}
+	})
+
+	// Both copilot and claude should be drifted (both share the loader file).
+	if !strings.Contains(output, "Drifted") {
+		t.Errorf("expected 'Drifted' in status output when shared loader is modified; got:\n%s", output)
+	}
+}
+
+// TestHarness_Status_CursorDetectionFile verifies cursor uses the new
+// .cursor/rules/carl.mdc detection file path.
+func TestHarness_Status_CursorDetectionFile(t *testing.T) {
+	dir := t.TempDir()
+	syncHarnesses(t, dir, "cursor")
+
+	// .cursor/rules/carl.mdc must exist (new detection file).
+	if _, err := os.Stat(filepath.Join(dir, ".cursor", "rules", "carl.mdc")); err != nil {
+		t.Errorf(".cursor/rules/carl.mdc should exist after sync cursor; stat: %v", err)
+	}
+	// Old .cursorrules must NOT have been created.
+	if _, err := os.Stat(filepath.Join(dir, ".cursorrules")); err == nil {
+		t.Errorf(".cursorrules should not be created by the new cursor adapter")
+	}
+}
+
+// TestHarness_Status_AntigravityDetectionFile verifies antigravity uses the
+// new .agents/rules/carl.md detection file path.
+func TestHarness_Status_AntigravityDetectionFile(t *testing.T) {
+	dir := t.TempDir()
+	syncHarnesses(t, dir, "antigravity")
+
+	// .agents/rules/carl.md must exist (new detection file).
+	if _, err := os.Stat(filepath.Join(dir, ".agents", "rules", "carl.md")); err != nil {
+		t.Errorf(".agents/rules/carl.md should exist after sync antigravity; stat: %v", err)
+	}
+	// Old ANTIGRAVITY.md must NOT have been created.
+	if _, err := os.Stat(filepath.Join(dir, "ANTIGRAVITY.md")); err == nil {
+		t.Errorf("ANTIGRAVITY.md should not be created by the new antigravity adapter")
 	}
 }

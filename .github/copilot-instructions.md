@@ -1,9 +1,11 @@
-<!-- version: 2.0.0 -->
-# Copilot cARL Loader
+<!-- version: 2.1.0 -->
+# Shared cARL Adapter Loader
 
 This repository uses **cARL** as its authoritative agent governance system.
 
-This file is the GitHub Copilot harness adapter. It is a loader, not the source of governance truth.
+This file is located at `.github/copilot-instructions.md` for GitHub Copilot compatibility, but it is also the **shared cARL adapter loader** for all harness shims. Other harness entrypoints (CLAUDE.md, AGENTS.md, .cursor/rules/carl.mdc, .agents/rules/carl.md) are shims that point here.
+
+This file is a loader, not the source of governance truth.
 
 Do not treat this file as the complete operating model. Use it to hydrate, apply, and reconcile the canonical cARL artefacts.
 

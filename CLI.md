@@ -759,8 +759,8 @@ Harness Adapter Status:
 | `copilot` | `.github/copilot-instructions.md` |
 | `claude` | `CLAUDE.md` |
 | `codex` | `AGENTS.md` |
-| `cursor` | `.cursorrules` |
-| `antigravity` | `ANTIGRAVITY.md` |
+| `cursor` | `.cursor/rules/carl.mdc` |
+| `antigravity` | `.agents/rules/carl.md` |
 
 ---
 
@@ -780,11 +780,18 @@ carl harness sync [<harness-id>...]
 
 1. Resolves the set of target harnesses: all harnesses with defined adapter files if no IDs are
    given, or only the named harnesses if one or more IDs are provided.
-2. For each target harness, reads the canonical content from the embedded
-   artefacts (`.github/copilot-instructions.md`).
-3. Writes the content to each harness's adapter file(s), creating parent
-   directories as needed. Existing files are overwritten.
+2. For each target harness, writes all required adapter files (shared loader plus harness-specific
+   shim) from embedded artefacts. The shared loader (`.github/copilot-instructions.md`) is written
+   once even when syncing multiple harnesses.
+3. Creates parent directories as needed. Existing files are overwritten.
 4. Reports each file written and a summary count.
+
+**Adapter model**
+
+`.github/copilot-instructions.md` is the shared cARL adapter loader. Every harness sync writes this
+file. The harness-specific shim files (CLAUDE.md, AGENTS.md, etc.) are tiny files that tell the
+harness to read `.github/copilot-instructions.md` before any repository work. Canonical governance
+remains under `.github/carl/`.
 
 **Output (sync all harnesses)**
 
@@ -794,8 +801,8 @@ Syncing harness adapters...
   copilot        .github/copilot-instructions.md
   claude         CLAUDE.md
   codex          AGENTS.md
-  cursor         .cursorrules
-  antigravity    ANTIGRAVITY.md
+  cursor         .cursor/rules/carl.mdc
+  antigravity    .agents/rules/carl.md
 
 5 adapter file(s) synced.
 ```
@@ -805,9 +812,10 @@ Syncing harness adapters...
 ```
 Syncing harness adapters...
 
+  .github/copilot-instructions.md
   claude         CLAUDE.md
 
-1 adapter file(s) synced.
+2 adapter file(s) synced.
 ```
 
 **Errors**
@@ -820,7 +828,7 @@ Syncing harness adapters...
 
 - Sync is idempotent — running it multiple times produces the same result.
 - The command does not require `carl init` to have been run first.
-- To activate a harness after sync, simply commit the generated adapter file.
+- To activate a harness after sync, simply commit the generated adapter files.
 
 ---
 

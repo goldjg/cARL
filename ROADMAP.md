@@ -50,16 +50,19 @@ Harnesses must **consume** these artefacts. They must not become alternate sourc
 
 Harness-specific files are adapters and bootloaders — generated from cARL canonical artefacts and treated as implementation outputs rather than primary governance sources:
 
-- `.github/copilot-instructions.md` (Copilot)
-- `CLAUDE.md` (Claude Code)
+- `.github/copilot-instructions.md` (Copilot — shared loader and Copilot entrypoint)
+- `CLAUDE.md` (Claude Code shim)
 - `.claude/skills/carl.md` (Claude cARL skill)
-- `AGENTS.md` (Codex)
-- `.cursorrules` (Cursor)
+- `AGENTS.md` (Codex shim)
+- `.cursor/rules/carl.mdc` (Cursor shim)
+- `.agents/rules/carl.md` (Antigravity shim)
 - Future harness adapter files
+
+`.github/copilot-instructions.md` is both the Copilot harness entrypoint and the **shared cARL adapter loader**. All other harness shim files are tiny files that direct agents to read `.github/copilot-instructions.md` before any repository work. Canonical governance remains under `.github/carl/`.
 
 Adapters should be generated via `carl harness sync` and never manually edited. Drift between an adapter and its canonical source is a health issue, not a design choice.
 
-> **Current vs target:** As of the current implementation, some adapter files are copies of `.github/copilot-instructions.md` rather than outputs of a full template-generation pipeline. Automated generation via `carl harness sync` is the target architecture; readers should not assume that pipeline is complete for all harnesses today.
+> **Current state:** The shim model is implemented. `carl harness sync` writes the shared loader once plus the harness-specific shim for each synced harness. A shim harness is healthy only when both the shared loader and the shim are present and synced.
 
 ### Runtime Activation Lifecycle
 
@@ -162,7 +165,7 @@ Implementation mechanisms differ across harnesses. The lifecycle does not:
 |---|---|
 | GitHub Copilot | `.github/copilot-instructions.md` instruction file |
 | Claude Code | `.claude/skills/carl.md` skill invoked via `/carl` |
-| Cursor | `.cursorrules` rules file |
+| Cursor | `.cursor/rules/carl.mdc` rules file |
 | Codex | `AGENTS.md` agent instructions file |
 | Future harnesses | TBD — mechanism differs, lifecycle is invariant |
 
