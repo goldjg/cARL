@@ -774,13 +774,6 @@ func TestHarness_Status_ShimUnhealthy_WhenLoaderMissing(t *testing.T) {
 	if !strings.Contains(output, "claude") {
 		t.Errorf("expected 'claude' in status output; got:\n%s", output)
 	}
-	if strings.Contains(output, "Synced") && strings.Contains(output, "claude") {
-		// Ensure claude row specifically is not Synced — check the output doesn't
-		// contain the healthy summary count.
-		if strings.Contains(output, "1 healthy") {
-			t.Errorf("expected claude to be unhealthy when shared loader is missing; got:\n%s", output)
-		}
-	}
 	// Must not appear in the healthy count.
 	if strings.Contains(output, "1 healthy.") {
 		t.Errorf("expected 0 healthy when shared loader is absent; got:\n%s", output)

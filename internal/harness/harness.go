@@ -262,19 +262,24 @@ func (c *Command) RunSyncInDir(rootDir string, harnessIDs []string) error {
 	// Collect the ordered set of unique file writes. When the same output path
 	// appears in multiple adapters (e.g. the shared loader), write it only once
 	// under the adapter that claims it first in registry order.
+	// If two adapters claim the same path with different source files, that is a
+	// registry conflict and we return an error rather than silently discarding data.
 	type pendingWrite struct {
 		adapterID  string
 		path       string
 		sourceFile string
 	}
-	seen := make(map[string]bool)
+	seenSource := make(map[string]string) // path -> sourceFile of first claimant
 	var queue []pendingWrite
 	for _, a := range targets {
 		for _, af := range a.Files {
-			if seen[af.Path] {
+			if prev, ok := seenSource[af.Path]; ok {
+				if prev != af.SourceFile {
+					return fmt.Errorf("registry conflict: path %q claimed by two adapters with different source files (%q vs %q)", af.Path, prev, af.SourceFile)
+				}
 				continue
 			}
-			seen[af.Path] = true
+			seenSource[af.Path] = af.SourceFile
 			queue = append(queue, pendingWrite{adapterID: a.ID, path: af.Path, sourceFile: af.SourceFile})
 		}
 	}
