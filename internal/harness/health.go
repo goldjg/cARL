@@ -58,18 +58,18 @@ func Inspect(rootDir string, arts Artifacts) ([]AdapterHealth, error) {
 				health.Presence = PresenceMissing
 			}
 		}
-		if len(a.AdapterFiles) > 0 && a.SourceFile != "" {
-			for _, f := range a.AdapterFiles {
-				fileMissing, fileDrifted, err := repair.CompareFile(rootDir, f, a.SourceFile, arts)
+		if len(a.Files) > 0 {
+			for _, af := range a.Files {
+				fileMissing, fileDrifted, err := repair.CompareFile(rootDir, af.Path, af.SourceFile, arts)
 				if err != nil {
 					return nil, fmt.Errorf("inspect harness %q: %w", a.ID, err)
 				}
 				if fileMissing {
-					health.MissingFiles = append(health.MissingFiles, f)
+					health.MissingFiles = append(health.MissingFiles, af.Path)
 					continue
 				}
 				if fileDrifted {
-					health.DriftedFiles = append(health.DriftedFiles, f)
+					health.DriftedFiles = append(health.DriftedFiles, af.Path)
 				}
 			}
 			switch {

@@ -23,9 +23,9 @@ cARL artefacts are the canonical source of governance truth for this repository.
 
 `.github/instructions/` contains modular single-concern instruction packs used by supported harnesses.
 
-Harness-specific files such as `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, and `ANTIGRAVITY.md` are adapters/loaders. They may load, summarise, or route agents toward cARL, but they are not the canonical governance authority.
+Harness-specific files such as `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/carl.mdc`, and `.agents/rules/carl.md` are adapters/shims. They may load, summarise, or route agents toward cARL, but they are not the canonical governance authority.
 
-`.github/copilot-instructions.md` is the GitHub Copilot harness adapter. It should remain a thin, procedural loader that makes the cARL lifecycle explicit:
+`.github/copilot-instructions.md` is both the GitHub Copilot harness entrypoint and the **shared cARL adapter loader** for all other harness shims. It is located at that path for Copilot compatibility. All other harness entrypoints (CLAUDE.md, AGENTS.md, .cursor/rules/carl.mdc, .agents/rules/carl.md) are tiny shim files that tell the harness to read `.github/copilot-instructions.md` before any repository work. It should remain a thin, procedural loader that makes the cARL lifecycle explicit:
 
 1. hydrate cARL before planning or implementation;
 2. apply cARL governance during execution;
@@ -120,7 +120,7 @@ Harness adapters bridge cARL canonical artefacts to agent context injection mech
 
 `carl harness status` reports both detection-file presence and sync health by comparing adapter file bytes against the canonical embedded source.
 
-`carl harness sync [<harness-id>...]` generates adapter files for all adapters with defined adapter files, or only named harnesses when harness IDs are supplied. Adapter files are disposable and always overwritten. Sync works for all tiers regardless of support level. Sync is idempotent and does not require `carl init`.
+`carl harness sync [<harness-id>...]` generates adapter files for all adapters with defined adapter files, or only named harnesses when harness IDs are supplied. Syncing a shim harness writes both the shared loader (`.github/copilot-instructions.md`) and the harness-specific shim. The shared loader is written once even when syncing all harnesses. Adapter files are disposable and always overwritten. Sync works for all tiers regardless of support level. Sync is idempotent and does not require `carl init`.
 
 `carl doctor` surfaces missing or drifted harness adapters as warning findings with `carl harness sync` remediation.
 
@@ -131,8 +131,10 @@ Detection files:
 - Copilot: `.github/copilot-instructions.md`
 - Claude: `CLAUDE.md`
 - Codex: `AGENTS.md`
-- Cursor: `.cursorrules`
-- Antigravity: `ANTIGRAVITY.md`
+- Cursor: `.cursor/rules/carl.mdc`
+- Antigravity: `.agents/rules/carl.md`
+
+A shim harness is healthy only when both the shared loader (`.github/copilot-instructions.md`) and the harness-specific shim are present and synced.
 
 `harness.Command` accepts an `Artifacts` dependency using the same interface pattern as `repair`, `doctor`, and `status`.
 
@@ -160,7 +162,7 @@ Malformed managed convert block markers cause conversion to fail before writing 
 - Harness-specific files are adapters/loaders, not authorities.
 - Harness adapters must remain disposable and regenerable from canonical cARL assets.
 - Instruction packs should remain modular and focused on a single concern.
-- `.github/copilot-instructions.md` should remain a thin Copilot loader rather than duplicating the full operating model.
+- `.github/copilot-instructions.md` is both the Copilot harness entrypoint and the shared cARL adapter loader for all harness shims. It should remain a thin, procedural loader rather than duplicating the full operating model.
 - cARLv2 artefacts should reduce semantic rediscovery without becoming a per-turn session diary.
 - Prompt-as-code should be used for substantial, long, nested, model-comparison, or boundary-sensitive agent tasks.
 - Every implementation PR must make an explicit cARL/docs update decision before final response.
