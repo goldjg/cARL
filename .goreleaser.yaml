@@ -104,21 +104,27 @@ nfpms:
         dst: /usr/share/doc/carl/LICENSE
         type: doc
 
-# homebrew_casks publishes a Homebrew tap entry for the cARL binary.
+# homebrew_casks documents the intended Homebrew tap configuration for cARL.
 #
-# GoReleaser v2 deprecated the `brews` (Formula) publisher in favour of
-# `homebrew_casks`. For CLI binaries, the `binaries` field installs the binary
-# into the PATH; users install with:
+# GoReleaser v2 replaced the `brews` (Formula) publisher with `homebrew_casks`.
+# For CLI binaries, the `binaries` field installs the binary into the PATH;
+# users would install via:
 #   brew tap goldjg/carl && brew install --cask carl
 #
-# Publishing is gated: when HOMEBREW_TAP_GITHUB_TOKEN is absent or empty,
-# GoReleaser skips the upload without failing the release (skip_upload: auto).
+# Publishing is currently DISABLED (skip_upload: true).
 #
-# To enable Homebrew publishing:
+# Background: `skip_upload: auto` proved unsafe — GoReleaser still attempted to
+# contact goldjg/homebrew-carl when HOMEBREW_TAP_GITHUB_TOKEN was present but
+# invalid, causing a 401 failure that aborted the release after assets had
+# already been uploaded. Setting skip_upload: true makes the pipeline
+# deterministic: no tap access is attempted regardless of token state.
+#
+# To re-enable Homebrew publishing in a future PR:
 #   1. Create a repository named `homebrew-carl` under the goldjg organisation.
 #   2. Add a repository secret HOMEBREW_TAP_GITHUB_TOKEN with a token that has
 #      write access to homebrew-carl.
-#   3. Pass it to the GoReleaser action: see .github/workflows/release.yml.
+#   3. Pass the token via the GoReleaser action env (see release.yml).
+#   4. Change skip_upload from true to auto (or remove it entirely).
 #
 # See DISTRIBUTION.md for full Homebrew setup instructions.
 homebrew_casks:
@@ -127,7 +133,11 @@ homebrew_casks:
       owner: goldjg
       name: homebrew-carl
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    skip_upload: auto
+    # skip_upload: true — Homebrew tap publishing is disabled until the tap
+    # repository exists and a valid token is configured. Do not change this to
+    # "auto" without also ensuring HOMEBREW_TAP_GITHUB_TOKEN is valid; "auto"
+    # still contacts the tap repo when the env var is set (even if empty/invalid).
+    skip_upload: true
     homepage: https://github.com/goldjg/cARL
     description: "cARL — Cognitive Agent Runtime Layer for AI coding agents"
     binaries:

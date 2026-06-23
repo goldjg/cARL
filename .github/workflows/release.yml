@@ -6,11 +6,10 @@
 #   contents: write — required to create GitHub Releases and upload assets.
 #
 # Secrets:
-#   GITHUB_TOKEN              — automatically provided; used for the release.
-#   HOMEBREW_TAP_GITHUB_TOKEN — optional; enables Homebrew tap publishing.
-#                               If absent, GoReleaser skips tap upload
-#                               without failing the release.
+#   GITHUB_TOKEN — automatically provided; used for the release.
 #
+# Homebrew tap publishing is currently disabled (skip_upload: true in
+# .goreleaser.yaml). No HOMEBREW_TAP_GITHUB_TOKEN is required or used.
 # See DISTRIBUTION.md for Homebrew, WinGet, and enterprise mirroring setup.
 
 name: Release
@@ -51,7 +50,4 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional: pass a PAT with write access to goldjg/homebrew-carl to
-          # publish the Homebrew formula. Leave unset to skip tap publishing.
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
 

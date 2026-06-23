@@ -91,22 +91,33 @@ sudo apk add --allow-untrusted carl_1.0.0_linux_amd64.apk
 
 ### Homebrew (macOS / Linux)
 
-**Status: gated — requires tap setup before publishing is enabled.**
+**Status: disabled in CI — tap repository not yet created.**
 
-A Homebrew tap entry is generated at release time using GoReleaser's
+A Homebrew tap entry is documented in `.goreleaser.yaml` using GoReleaser's
 `homebrew_casks` publisher (GoReleaser v2 replaced the earlier `brews`/Formula
 publisher with this mechanism; the `binaries` field installs the CLI binary into
-the PATH). Publishing is enabled when the `HOMEBREW_TAP_GITHUB_TOKEN` secret is
-configured in the repository. Until then, the tap step is skipped automatically.
+the PATH). Publishing is currently set to `skip_upload: true`, which means
+GoReleaser generates the cask definition but does **not** attempt to push it to
+any tap repository during a release.
 
-To set up Homebrew publishing:
+Background: `skip_upload: auto` was previously used, but it proved unsafe —
+GoReleaser still contacted `goldjg/homebrew-carl` when
+`HOMEBREW_TAP_GITHUB_TOKEN` was present but invalid, causing a `401 Bad
+credentials` failure that aborted the release after assets had already been
+uploaded.
+
+To enable Homebrew publishing in a future PR:
 
 1. Create a repository named `homebrew-carl` under the `goldjg` organisation.
 2. Generate a GitHub personal access token (PAT) or a fine-grained token with
    `Contents: write` access to `homebrew-carl`.
 3. Add the token as a repository secret named `HOMEBREW_TAP_GITHUB_TOKEN` in
    `goldjg/cARL`.
-4. Once configured, users can install via:
+4. In `.goreleaser.yaml`, change `skip_upload: true` to `skip_upload: auto`
+   (or remove the field).
+5. In `.github/workflows/release.yml`, pass the token to GoReleaser:
+   `HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}`
+6. Once configured, users can install via:
 
 ```sh
 brew tap goldjg/carl
@@ -208,6 +219,6 @@ sha256sum --check --ignore-missing checksums.txt
 | deb / rpm / apk package artefacts | GoReleaser + nfpm | ✅ Automated |
 | apt / yum / apk repository publishing | Internal/manual setup | 📋 Future — see mirroring section |
 | GitHub Release | GoReleaser | ✅ Automated |
-| Homebrew tap formula | GoReleaser (gated) | ⚙️ Requires tap token |
+| Homebrew tap formula | GoReleaser (disabled) | 📋 Disabled — tap repo not yet created; see Homebrew section |
 | WinGet submission | Manual | 📋 Manual PR to winget-pkgs |
 | Enterprise Artifactory mirroring | Manual / custom CI | 📋 Internal setup |
