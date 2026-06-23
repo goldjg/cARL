@@ -91,8 +91,6 @@ sudo apk add --allow-untrusted carl_1.0.0_linux_amd64.apk
 
 ### Homebrew (macOS / Linux)
 
-**Status: disabled in CI — tap repository not yet created.**
-
 A Homebrew tap entry is documented in `.goreleaser.yaml` using GoReleaser's
 `homebrew_casks` publisher (GoReleaser v2 replaced the earlier `brews`/Formula
 publisher with this mechanism; the `binaries` field installs the CLI binary into
