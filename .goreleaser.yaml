@@ -12,7 +12,9 @@ project_name: carl
 
 before:
   hooks:
-    - go mod tidy
+    # go mod verify confirms the module cache matches go.sum without mutating
+    # the working tree. go mod tidy is intentionally omitted here: run it
+    # locally before tagging so the release build stays deterministic.
     - go mod verify
 
 builds:
@@ -82,7 +84,9 @@ nfpms:
   - id: packages
     package_name: carl
     file_name_template: "{{ .PackageName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    builds:
+    # ids replaces the deprecated `builds` field: references the build ID to
+    # select which binary is packaged.
+    ids:
       - carl
     vendor: goldjg
     homepage: https://github.com/goldjg/cARL
@@ -100,7 +104,8 @@ nfpms:
         dst: /usr/share/doc/carl/LICENSE
         type: doc
 
-# brews publishes a Homebrew formula to a tap repository.
+# homebrew_casks publishes a Homebrew cask to a tap repository.
+# Users install with: brew install --cask goldjg/carl/carl
 #
 # Publishing is gated: when HOMEBREW_TAP_GITHUB_TOKEN is absent or empty,
 # GoReleaser skips the upload without failing the release (skip_upload: auto).
@@ -112,7 +117,7 @@ nfpms:
 #   3. Pass it to the GoReleaser action: see .github/workflows/release.yml.
 #
 # See DISTRIBUTION.md for full Homebrew setup instructions.
-brews:
+homebrew_casks:
   - name: carl
     repository:
       owner: goldjg
@@ -121,11 +126,8 @@ brews:
     skip_upload: auto
     homepage: https://github.com/goldjg/cARL
     description: "cARL — Cognitive Agent Runtime Layer for AI coding agents"
-    license: MIT
-    install: |
-      bin.install "carl"
-    test: |
-      system "#{bin}/carl", "--version"
+    binaries:
+      - carl
 
 # WinGet publishing is not configured here.
 # GoReleaser OSS does not include a WinGet publisher.

@@ -40,11 +40,14 @@ jobs:
 
       - name: Run GoReleaser
         # goreleaser/goreleaser-action is a third-party action.
-        # Pin to a specific commit SHA in production for supply-chain safety.
+        # The action tag (@v6) is pinned to the GoReleaser v2 major line.
+        # The GoReleaser tool version below is pinned to a specific release for
+        # determinism. Update both pins together when upgrading GoReleaser.
+        # Follow-up: pin the action itself to a commit SHA for supply-chain safety.
         # See: https://github.com/goreleaser/goreleaser-action/releases
         uses: goreleaser/goreleaser-action@v6
         with:
-          version: latest
+          version: v2.16.0
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

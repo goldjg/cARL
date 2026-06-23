@@ -76,12 +76,18 @@ curl -LO https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_linu
 sudo rpm -i carl_1.0.0_linux_amd64.rpm
 ```
 
+> **Future:** A signed yum/dnf repository is a planned distribution channel.
+> Until then, install from the `.rpm` artefact directly.
+
 ### Alpine Linux (apk)
 
 ```sh
 curl -LO https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_linux_amd64.apk
 sudo apk add --allow-untrusted carl_1.0.0_linux_amd64.apk
 ```
+
+> **Future:** A signed Alpine package repository is a planned distribution channel.
+> Until then, install from the `.apk` artefact directly.
 
 ### Homebrew (macOS / Linux)
 
@@ -102,7 +108,7 @@ To set up Homebrew publishing:
 
 ```sh
 brew tap goldjg/carl
-brew install carl
+brew install --cask carl
 ```
 
 ### WinGet (Windows)
@@ -197,7 +203,8 @@ sha256sum --check --ignore-missing checksums.txt
 |---|---|---|
 | Build (all platforms) | GoReleaser | ✅ Automated |
 | Archives + checksums | GoReleaser | ✅ Automated |
-| deb / rpm / apk packages | GoReleaser + nfpm | ✅ Automated |
+| deb / rpm / apk package artefacts | GoReleaser + nfpm | ✅ Automated |
+| apt / yum / apk repository publishing | Internal/manual setup | 📋 Future — see mirroring section |
 | GitHub Release | GoReleaser | ✅ Automated |
 | Homebrew tap formula | GoReleaser (gated) | ⚙️ Requires tap token |
 | WinGet submission | Manual | 📋 Manual PR to winget-pkgs |
