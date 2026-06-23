@@ -104,7 +104,7 @@ GoReleaser still contacted `goldjg/homebrew-carl` when
 credentials` failure that aborted the release after assets had already been
 uploaded.
 
-To enable Homebrew publishing in a future PR:
+To enable Homebrew publishing if not already done:
 
 1. Create a repository named `homebrew-carl` under the `goldjg` organisation.
 2. Generate a GitHub personal access token (PAT) or a fine-grained token with
@@ -117,9 +117,19 @@ To enable Homebrew publishing in a future PR:
    `HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}`
 6. Once configured, users can install via:
 
+> macOS binaries are not currently Apple signed or notarized. Homebrew installation works, but macOS Gatekeeper may require manual approval or removal of the quarantine attribute on first run. Signing and notarization are planned for a future release.
+
 ```sh
 brew tap goldjg/carl
+brew trust goldjg/carl
 brew install --cask carl
+
+# macOS unsigned binary workaround needed for now
+# then carl runs
+
+brew uninstall --cask carl
+brew untrust goldjg/carl
+brew untap goldjg/carl
 ```
 
 ### WinGet (Windows)
