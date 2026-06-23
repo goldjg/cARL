@@ -104,8 +104,12 @@ nfpms:
         dst: /usr/share/doc/carl/LICENSE
         type: doc
 
-# homebrew_casks publishes a Homebrew cask to a tap repository.
-# Users install with: brew install --cask goldjg/carl/carl
+# homebrew_casks publishes a Homebrew tap entry for the cARL binary.
+#
+# GoReleaser v2 deprecated the `brews` (Formula) publisher in favour of
+# `homebrew_casks`. For CLI binaries, the `binaries` field installs the binary
+# into the PATH; users install with:
+#   brew tap goldjg/carl && brew install --cask carl
 #
 # Publishing is gated: when HOMEBREW_TAP_GITHUB_TOKEN is absent or empty,
 # GoReleaser skips the upload without failing the release (skip_upload: auto).

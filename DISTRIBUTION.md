@@ -93,9 +93,11 @@ sudo apk add --allow-untrusted carl_1.0.0_linux_amd64.apk
 
 **Status: gated — requires tap setup before publishing is enabled.**
 
-A Homebrew formula is generated at release time. Publishing to the tap is
-enabled when the `HOMEBREW_TAP_GITHUB_TOKEN` secret is configured in the
-repository. Until then, the tap step is skipped automatically.
+A Homebrew tap entry is generated at release time using GoReleaser's
+`homebrew_casks` publisher (GoReleaser v2 replaced the earlier `brews`/Formula
+publisher with this mechanism; the `binaries` field installs the CLI binary into
+the PATH). Publishing is enabled when the `HOMEBREW_TAP_GITHUB_TOKEN` secret is
+configured in the repository. Until then, the tap step is skipped automatically.
 
 To set up Homebrew publishing:
 
