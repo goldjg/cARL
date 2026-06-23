@@ -1,12 +1,17 @@
-# Release workflow — builds and publishes cARL CLI binaries for all supported
-# platforms when a semantic version tag (v*) is pushed.
+# Release workflow — builds and publishes cARL CLI binaries, archives, and
+# native packages (deb/rpm/apk) using GoReleaser when a semantic version tag
+# (v*) is pushed.
 #
 # Permissions:
 #   contents: write — required to create GitHub Releases and upload assets.
 #
 # Secrets:
-#   GITHUB_TOKEN — automatically provided by GitHub Actions; no additional
-#   secrets are required.
+#   GITHUB_TOKEN              — automatically provided; used for the release.
+#   HOMEBREW_TAP_GITHUB_TOKEN — optional; enables Homebrew tap publishing.
+#                               If absent, GoReleaser skips tap upload
+#                               without failing the release.
+#
+# See DISTRIBUTION.md for Homebrew, WinGet, and enterprise mirroring setup.
 
 name: Release
 
@@ -19,89 +24,31 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
+  release:
+    name: GoReleaser
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - goos: linux
-            goarch: amd64
-          - goos: linux
-            goarch: arm64
-          - goos: darwin
-            goarch: amd64
-          - goos: darwin
-            goarch: arm64
-          - goos: windows
-            goarch: amd64
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history is required for GoReleaser changelog generation.
+          fetch-depth: 0
 
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
 
-      - name: Set artifact name
-        id: artifact
-        shell: bash
-        run: |
-          TAG="${{ github.ref_name }}"
-          NAME="carl-${TAG}-${{ matrix.goos }}-${{ matrix.goarch }}"
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            BINARY="${NAME}.exe"
-          else
-            BINARY="${NAME}"
-          fi
-          echo "name=${NAME}"   >> "$GITHUB_OUTPUT"
-          echo "binary=${BINARY}" >> "$GITHUB_OUTPUT"
-
-      - name: Build
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: "0"
-          CLI_VERSION: ${{ github.ref_name }}
-          SOURCE_COMMIT: ${{ github.sha }}
-        run: |
-          go build \
-            -ldflags "-X main.cliVersion=${CLI_VERSION} -X main.sourceCommit=${SOURCE_COMMIT}" \
-            -o "${{ steps.artifact.outputs.binary }}" \
-            ./cmd/carl
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Run GoReleaser
+        # goreleaser/goreleaser-action is a third-party action.
+        # Pin to a specific commit SHA in production for supply-chain safety.
+        # See: https://github.com/goreleaser/goreleaser-action/releases
+        uses: goreleaser/goreleaser-action@v6
         with:
-          name: ${{ steps.artifact.outputs.name }}
-          path: ${{ steps.artifact.outputs.binary }}
-          if-no-files-found: error
-
-  release:
-    name: Create GitHub Release
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: dist
-          # merge-multiple flattens all per-platform artifact directories into
-          # a single dist/ so the release step can glob dist/* in one command.
-          merge-multiple: true
-
-      - name: Create or update GitHub Release
+          version: latest
+          args: release --clean
         env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          if gh release view "$TAG" > /dev/null 2>&1; then
-            gh release upload "$TAG" dist/* --clobber
-          else
-            gh release create "$TAG" \
-              --title "$TAG" \
-              --generate-notes \
-              dist/*
-          fi
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional: pass a PAT with write access to goldjg/homebrew-carl to
+          # publish the Homebrew formula. Leave unset to skip tap publishing.
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+
