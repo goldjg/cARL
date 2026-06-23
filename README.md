@@ -205,9 +205,19 @@ See [DISTRIBUTION.md](DISTRIBUTION.md) for install commands.
 
 #### Homebrew (macOS / Linux)
 
+> macOS binaries are not currently Apple signed or notarized. Homebrew installation works, but macOS Gatekeeper may require manual approval or removal of the quarantine attribute on first run. Signing and notarization are planned for a future release.
+
 ```sh
 brew tap goldjg/carl
+brew trust goldjg/carl
 brew install --cask carl
+
+# macOS unsigned binary workaround needed for now
+# then carl runs
+
+brew uninstall --cask carl
+brew untrust goldjg/carl
+brew untap goldjg/carl
 ```
 
 #### Build from source (requires Go 1.24+)
