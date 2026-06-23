@@ -137,7 +137,6 @@ homebrew_casks:
     # repository exists and a valid token is configured. Do not change this to
     # "auto" without also ensuring HOMEBREW_TAP_GITHUB_TOKEN is valid; "auto"
     # still contacts the tap repo when the env var is set (even if empty/invalid).
-    skip_upload: auto
     homepage: https://github.com/goldjg/cARL
     description: "cARL — Cognitive Agent Runtime Layer for AI coding agents"
     binaries:
