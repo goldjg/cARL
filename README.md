@@ -175,21 +175,44 @@ It is a single self-contained binary — no dependencies, no network required af
 
 ### 1. Install the CLI
 
-Download the latest binary for your platform from the
+#### Download a release archive (Linux / macOS)
+
+Download the latest archive for your platform from the
 [releases page](https://github.com/goldjg/cARL/releases/latest).
-Replace `v1.0.0` in the commands below with the desired release tag:
+Replace `v1.0.0` and `1.0.0` in the commands below with the desired release tag:
 
 ```sh
 # Linux (amd64)
-curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl-v1.0.0-linux-amd64 \
-  -o carl && chmod +x carl && sudo mv carl /usr/local/bin/carl
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_linux_amd64.tar.gz \
+  | tar xz && sudo mv carl /usr/local/bin/carl
 
 # macOS (Apple Silicon)
-curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl-v1.0.0-darwin-arm64 \
-  -o carl && chmod +x carl && sudo mv carl /usr/local/bin/carl
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_darwin_arm64.tar.gz \
+  | tar xz && sudo mv carl /usr/local/bin/carl
+
+# macOS (Intel)
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_darwin_amd64.tar.gz \
+  | tar xz && sudo mv carl /usr/local/bin/carl
 ```
 
-Or build from source (requires Go 1.24+):
+Windows users: download `carl_1.0.0_windows_amd64.zip` from the releases page,
+extract `carl.exe`, and add it to your `PATH`.
+
+#### Native Linux packages (deb / rpm / apk)
+
+`.deb`, `.rpm`, and `.apk` packages are also attached to each GitHub Release.
+See [DISTRIBUTION.md](DISTRIBUTION.md) for install commands.
+
+#### Homebrew (macOS / Linux)
+
+> Homebrew tap publishing is planned. Once the tap is configured:
+>
+> ```sh
+> brew tap goldjg/carl
+> brew install carl
+> ```
+
+#### Build from source (requires Go 1.24+)
 
 ```sh
 go install github.com/goldjg/carl/cmd/carl@latest

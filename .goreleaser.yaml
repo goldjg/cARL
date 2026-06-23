@@ -1,0 +1,138 @@
+# GoReleaser configuration for the cARL CLI.
+# https://goreleaser.com/customization/
+#
+# Requires GoReleaser v2 (goreleaser/goreleaser-action@v6 or later).
+# Run locally:
+#   goreleaser check              — validate this config
+#   goreleaser release --snapshot --skip=publish  — dry-run without publishing
+
+version: 2
+
+project_name: carl
+
+before:
+  hooks:
+    # go mod verify confirms the module cache matches go.sum without mutating
+    # the working tree. go mod tidy is intentionally omitted here: run it
+    # locally before tagging so the release build stays deterministic.
+    - go mod verify
+
+builds:
+  - id: carl
+    main: ./cmd/carl
+    binary: carl
+    env:
+      # Static binaries: no CGO. Matches the existing hand-rolled workflow.
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      # Windows arm64 is not a supported target.
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      # Inject build-time metadata. Corresponds to vars in cmd/carl/main.go:
+      #   var cliVersion  = "dev"
+      #   var sourceCommit = "dev"
+      - -s -w
+      - -X main.cliVersion={{.Version}}
+      - -X main.sourceCommit={{.FullCommit}}
+
+archives:
+  - id: default
+    # Naming: carl_1.2.3_linux_amd64.tar.gz / carl_1.2.3_windows_amd64.zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+      - Merge pull request
+      - Merge branch
+
+release:
+  github:
+    owner: goldjg
+    name: cARL
+  # draft: false — release is published immediately on tag push.
+  draft: false
+  # prerelease: auto — versions such as v1.0.0-rc.1 are marked pre-release.
+  prerelease: auto
+  make_latest: true
+
+# nfpm generates native Linux packages (deb, rpm, apk) attached to the
+# GitHub Release as additional artefacts. See DISTRIBUTION.md for install
+# instructions and enterprise mirroring guidance.
+nfpms:
+  - id: packages
+    package_name: carl
+    file_name_template: "{{ .PackageName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    # ids replaces the deprecated `builds` field: references the build ID to
+    # select which binary is packaged.
+    ids:
+      - carl
+    vendor: goldjg
+    homepage: https://github.com/goldjg/cARL
+    maintainer: Graham Gold <noreply@github.com>
+    description: |-
+      cARL — Cognitive Agent Runtime Layer.
+      Version-controlled governance and instruction layer for AI coding agents.
+    license: MIT
+    formats:
+      - deb
+      - rpm
+      - apk
+    contents:
+      - src: LICENSE
+        dst: /usr/share/doc/carl/LICENSE
+        type: doc
+
+# homebrew_casks publishes a Homebrew tap entry for the cARL binary.
+#
+# GoReleaser v2 deprecated the `brews` (Formula) publisher in favour of
+# `homebrew_casks`. For CLI binaries, the `binaries` field installs the binary
+# into the PATH; users install with:
+#   brew tap goldjg/carl && brew install --cask carl
+#
+# Publishing is gated: when HOMEBREW_TAP_GITHUB_TOKEN is absent or empty,
+# GoReleaser skips the upload without failing the release (skip_upload: auto).
+#
+# To enable Homebrew publishing:
+#   1. Create a repository named `homebrew-carl` under the goldjg organisation.
+#   2. Add a repository secret HOMEBREW_TAP_GITHUB_TOKEN with a token that has
+#      write access to homebrew-carl.
+#   3. Pass it to the GoReleaser action: see .github/workflows/release.yml.
+#
+# See DISTRIBUTION.md for full Homebrew setup instructions.
+homebrew_casks:
+  - name: carl
+    repository:
+      owner: goldjg
+      name: homebrew-carl
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    skip_upload: auto
+    homepage: https://github.com/goldjg/cARL
+    description: "cARL — Cognitive Agent Runtime Layer for AI coding agents"
+    binaries:
+      - carl
+
+# WinGet publishing is not configured here.
+# GoReleaser OSS does not include a WinGet publisher.
+# To submit a WinGet manifest after a release, see DISTRIBUTION.md.

@@ -7,16 +7,18 @@ Use this contract to distinguish active PR constraints, completed PR constraints
 
 ---
 
+## Previous contract (superseded)
+
+The previous active contract (harness loader refactor) is now superseded by this contract.
+Durable lesson carried forward: harness instruction files are adapter surfaces; cARL artefacts remain the canonical governance authority.
+
+---
+
 ## Goal
 
-Refactor cARL harness loading semantics so harness-specific instruction files act as thin adapters/loaders for canonical cARL governance artefacts, rather than acting as independent repository constitutions.
+Switch the cARL release/distribution pipeline from the current hand-rolled GitHub Actions build matrix to GoReleaser, and add first-class packaging artefacts for GitHub Releases, Homebrew, apt/deb, yum/rpm, and apk.
 
-The primary outcome is to make Copilot and future harness adapters explicitly perform the cARL lifecycle:
-
-1. hydrate cARL before planning or implementation;
-2. apply cARL governance during execution;
-3. reconcile documentation and durable cARL artefacts before final response;
-4. report whether cARL/docs updates were required.
+GoReleaser becomes the canonical release packaging layer: repeatable, checksummed, package-manager friendly, and easier to mirror internally.
 
 ## Contract status
 
@@ -47,118 +49,82 @@ Promoted invariants from previous PRs remain in force:
 
 ## Approved scope
 
-- `.github/copilot-instructions.md` — refactor from full operating model into thin Copilot loader / adapter.
-- `.github/carl/memory.md` — update durable architecture truth to reflect that cARL artefacts are canonical and harness files are adapters, not authorities.
+- `.goreleaser.yaml` — new GoReleaser configuration (builds, archives, checksums, nfpm packages, homebrew tap).
+- `.github/workflows/release.yml` — replace hand-rolled build matrix with GoReleaser workflow.
+- `.github/workflows/goreleaser-check.yml` — new workflow for config validation and snapshot dry-run.
+- `DISTRIBUTION.md` — new file documenting packaging, enterprise mirroring, and manual publishing steps.
+- `README.md` — update install section to reflect new archive-based downloads and package manager options.
+- `ROADMAP.md` — update release workflow entry to reflect GoReleaser adoption.
 - `.github/carl/current-pr-contract.md` — this active contract.
-- `.github/carl/invariants.yml` — update only if a durable invariant needs to be added or clarified.
-- `.github/carl/trust-boundaries.md` — update only if the trust boundary model needs clarification for harness adapters versus canonical cARL artefacts.
-- `.github/instructions/core/*.instructions.md` — update only if needed to keep loader semantics consistent with canonical cARL governance.
-- `embedded/assets/.github/**` — update only where required to keep embedded managed artefacts byte-identical with canonical runtime assets.
-- `ROADMAP.md`, `ARCHITECTURE.md`, `README.md`, or `CLI.md` — update only if the loader/adaptor architecture or documented command behaviour changes.
-
-## Intentional amendments
-
-This PR intentionally amends the previous architectural wording that treated `.github/copilot-instructions.md` as the repository constitution.
-
-New durable architecture:
-
-- cARL artefacts are the canonical source of governance truth.
-- Harness-specific files are adapters/loaders that inject or point agents toward canonical cARL artefacts.
-- `.github/copilot-instructions.md` is the Copilot adapter, not the authority.
-- If harness/session memory conflicts with `.github/carl/*`, the canonical cARL artefacts win unless current repository state proves them stale.
-- If `.github/carl/memory.md` conflicts with current repository state, repository state wins and memory should be updated.
+- `.github/carl/memory.md` — update to record release infrastructure change.
 
 ## Forbidden scope
 
-- Introducing network-backed runtime updates.
-- Adding new third-party dependencies.
-- Rewriting all instruction packs as part of this PR.
-- Removing existing safety, security, dependency, test, or PR contract controls.
-- Turning `memory.md` into a per-turn execution log.
-- Modifying runtime state semantics in `.github/carl/runtime.json`.
-- Changing generated command behaviour unless explicitly amended.
+- No changes to Go source code or CLI command behaviour.
+- No changes to cARL runtime governance artefacts (invariants.yml, trust-boundaries.md, tool-policy.yml) unless a durable invariant is materially affected.
+- No embedded asset changes (no Go source changes → no embedded asset sync needed).
+- No publishing to external package registries without explicit secret configuration.
+- No committing secrets, tokens, credentials, or organisation-internal URLs.
+- No rewriting of instruction packs or harness adapters.
+- No new Go dependencies.
 
 ## Architectural constraints
 
-- Harness adapter files must remain disposable and regenerable.
-- Canonical governance must live in `.github/carl/*` and reusable instruction packs, not be duplicated independently per harness.
-- Loader files should be short, procedural, and explicit about the required lifecycle.
-- Loader files should optimise for model salience, especially smaller models that may not infer governance lifecycle obligations.
-- The cARL lifecycle must include a final reconciliation decision: update docs/cARL if durable truth changed, otherwise explicitly state why no update was required.
-- Repository cARL artefacts outrank stale prompt/session memory when they conflict.
-- Avoid contradictory authority language such as calling a harness adapter the “constitution” if cARL artefacts are canonical.
+- GoReleaser must use `version: 2` (GoReleaser v2 format).
+- CGO_ENABLED=0 preserved for all build targets (static binaries).
+- Build-time ldflags must inject `main.cliVersion` and `main.sourceCommit` as in the existing workflow.
+- Homebrew publishing must be gated (`skip_upload: auto`) — no tap token committed, no silent failure.
+- WinGet publishing is documented only; no auto-submission configured.
+- nfpm packages (deb, rpm, apk) generated and attached to GitHub Release.
+- No credentials in `.goreleaser.yaml` — tokens passed via GitHub Actions secrets only.
+- `goreleaser check` must pass with the committed config.
 
 ## Security constraints
 
 - No secrets, tokens, private keys, tenant data, or credentials in any new or modified file.
 - Do not weaken authentication, authorization, validation, logging safety, dependency hygiene, or secret handling guidance.
-- Treat CI/CD and harness instruction files as governance-sensitive because they influence delegated agent behaviour.
-- Do not introduce instructions that allow broad autonomous writes without PR contract coverage.
+- Treat CI/CD workflow files as governance-sensitive.
+- Homebrew tap token must flow through GitHub Actions secrets, not be committed.
 
 ## Files expected to change
 
-Expected:
-
-- `.github/carl/current-pr-contract.md`
-- `.github/copilot-instructions.md`
-- `.github/carl/memory.md`
-
-Possible, if required by the implementation:
-
-- `.github/carl/invariants.yml`
-- `.github/carl/trust-boundaries.md`
-- `.github/instructions/core/carl.instructions.md`
-- `.github/instructions/core/memory-cache.instructions.md`
-- `.github/instructions/core/pr-contract.instructions.md`
-- `.github/instructions/core/cognition-governance.instructions.md`
-- `embedded/assets/.github/copilot-instructions.md`
-- `embedded/assets/.github/instructions/core/*.instructions.md`
-- `ROADMAP.md`
-- `ARCHITECTURE.md`
-- `README.md`
-- `CLI.md`
+- `.goreleaser.yaml` — new
+- `.github/workflows/release.yml` — replaced
+- `.github/workflows/goreleaser-check.yml` — new
+- `DISTRIBUTION.md` — new
+- `README.md` — install section updated
+- `ROADMAP.md` — release workflow item updated
+- `.github/carl/current-pr-contract.md` — this file
+- `.github/carl/memory.md` — release infrastructure note
 
 ## Tests / validation
 
-- Review all changed governance files for contradictory authority language.
-- Verify `.github/copilot-instructions.md` is a thin loader, not a duplicated full operating model.
-- Verify the loader explicitly requires:
-  - cARL hydration before planning/implementation;
-  - PR contract check;
-  - relevant instruction pack check;
-  - docs/cARL reconciliation before final response;
-  - explicit no-update reasoning when docs/cARL are unchanged.
-- If embedded assets are changed, run `go test ./...`.
-- If CLI code is changed, run:
-  - `go build ./cmd/carl`
-  - `go test ./...`
-- If no CLI code is changed, state that Go build/test were not required and why.
+- `goreleaser check` passes on the committed `.goreleaser.yaml`.
+- `go build ./cmd/carl` and `go test ./...` pass (no Go source changes, but verifying no regression).
+- No secrets in committed files (secret-scan changed files).
 
 ## Stop conditions
 
-Stop and ask for confirmation if the change requires:
+Stop and ask for confirmation if:
 
-- altering runtime.json semantics;
-- changing CLI command behaviour;
-- introducing a new harness;
-- removing or weakening security/test/dependency governance;
-- making broad instruction pack rewrites;
-- resolving conflicting architecture language in a way not covered by this contract.
+- GoReleaser configuration requires committing any token or credential.
+- A GoReleaser feature requires a Go dependency or source change.
+- WinGet auto-submission is requested without a clearly described token/process.
 
 ## Escalation triggers
 
 Escalate if:
 
-- GitHub Copilot instruction precedence requires a different file layout than expected;
-- harness adapter semantics conflict with existing cARL runtime management behaviour;
-- embedded asset sync requirements are unclear;
-- a durable invariant needs amendment beyond loader/adaptor authority semantics;
-- current repository state conflicts with memory in a way that cannot be safely resolved from the files alone.
+- GoReleaser v2 syntax differs materially from what is documented.
+- Homebrew tap configuration cannot be safely gated without committing a token.
+- nfpm package generation requires changes to Go build flags or source.
 
 ## Context reset notes
 
-When this PR is complete, close or supersede this contract.
+When this PR is complete, supersede or close this contract.
 
-The durable lesson to carry forward is:
+Durable lessons to carry forward:
 
-Harness instruction files are adapter surfaces. They may load, summarise, or route to cARL, but they are not the canonical governance authority. cARL artefacts remain the source of durable project truth.
+- GoReleaser is the canonical release packaging layer for cARL CLI.
+- Homebrew, WinGet, and Artifactory publishing are staged: artefacts generated now, live publishing gated on secrets/process.
+- Package manager install instructions reference archive-based downloads from GitHub Releases.
