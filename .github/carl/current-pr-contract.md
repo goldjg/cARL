@@ -9,16 +9,22 @@ Use this contract to distinguish active PR constraints, completed PR constraints
 
 ## Previous contract (superseded)
 
-The previous active contract (harness loader refactor) is now superseded by this contract.
-Durable lesson carried forward: harness instruction files are adapter surfaces; cARL artefacts remain the canonical governance authority.
+The previous active contract (GoReleaser migration, PR #3) is now superseded by this contract.
+Durable lesson carried forward: GoReleaser `skip_upload: auto` is not safe when a token secret is present but invalid — it still attempts to contact the tap repository. Use `skip_upload: true` to fully disable publishing until the tap is ready.
 
 ---
 
 ## Goal
 
-Switch the cARL release/distribution pipeline from the current hand-rolled GitHub Actions build matrix to GoReleaser, and add first-class packaging artefacts for GitHub Releases, Homebrew, apt/deb, yum/rpm, and apk.
+Fix the GoReleaser Homebrew cask publishing failure discovered during the v0.4.1 release.
 
-GoReleaser becomes the canonical release packaging layer: repeatable, checksummed, package-manager friendly, and easier to mirror internally.
+The v0.4.1 release successfully uploaded GitHub Release assets but then failed with
+`401 Bad credentials` while attempting to contact `goldjg/homebrew-carl`. Root cause:
+`skip_upload: auto` still contacts the tap repository when `HOMEBREW_TAP_GITHUB_TOKEN`
+is present but invalid/unusable (even an empty or wrong-scope value triggers the attempt).
+
+Replace `skip_upload: auto` with `skip_upload: true` to make the release pipeline
+deterministic and green by default when Homebrew tap publishing has not been deliberately enabled.
 
 ## Contract status
 
@@ -27,7 +33,7 @@ active
 ## Non-goals
 
 - No changes to core CLI command behaviour.
-- No changes to runtime installation, repair, status, doctor, map, plan, convert, reconcile, or harness command behaviour unless required only to keep embedded assets in sync.
+- No changes to runtime installation, repair, status, doctor, map, plan, convert, reconcile, or harness command behaviour.
 - No new harness implementations.
 - No model benchmarking implementation.
 - No network access.
@@ -49,75 +55,69 @@ Promoted invariants from previous PRs remain in force:
 
 ## Approved scope
 
-- `.goreleaser.yaml` — new GoReleaser configuration (builds, archives, checksums, nfpm packages, homebrew tap).
-- `.github/workflows/release.yml` — replace hand-rolled build matrix with GoReleaser workflow.
-- `.github/workflows/goreleaser-check.yml` — new workflow for config validation and snapshot dry-run.
-- `DISTRIBUTION.md` — new file documenting packaging, enterprise mirroring, and manual publishing steps.
-- `README.md` — update install section to reflect new archive-based downloads and package manager options.
-- `ROADMAP.md` — update release workflow entry to reflect GoReleaser adoption.
+- `.goreleaser.yaml` — change `skip_upload: auto` to `skip_upload: true`; update block comment.
+- `.github/workflows/release.yml` — remove `HOMEBREW_TAP_GITHUB_TOKEN` env var; update header comment.
+- `DISTRIBUTION.md` — update Homebrew section status and release pipeline table.
+- `README.md` — update Homebrew install section note.
+- `ROADMAP.md` — update release workflow description.
+- `.github/carl/memory.md` — update release infrastructure note.
 - `.github/carl/current-pr-contract.md` — this active contract.
-- `.github/carl/memory.md` — update to record release infrastructure change.
 
 ## Forbidden scope
 
 - No changes to Go source code or CLI command behaviour.
-- No changes to cARL runtime governance artefacts (invariants.yml, trust-boundaries.md, tool-policy.yml) unless a durable invariant is materially affected.
-- No embedded asset changes (no Go source changes → no embedded asset sync needed).
-- No publishing to external package registries without explicit secret configuration.
+- No changes to cARL runtime governance artefacts (invariants.yml, trust-boundaries.md, tool-policy.yml).
+- No embedded asset changes.
+- No publishing to external package registries.
 - No committing secrets, tokens, credentials, or organisation-internal URLs.
 - No rewriting of instruction packs or harness adapters.
 - No new Go dependencies.
+- Do not delete GitHub Release publishing.
+- Do not remove deb/rpm/apk generation.
 
 ## Architectural constraints
 
-- GoReleaser must use `version: 2` (GoReleaser v2 format).
-- CGO_ENABLED=0 preserved for all build targets (static binaries).
-- Build-time ldflags must inject `main.cliVersion` and `main.sourceCommit` as in the existing workflow.
-- Homebrew publishing must be gated (`skip_upload: auto`) — no tap token committed, no silent failure.
-- WinGet publishing is documented only; no auto-submission configured.
-- nfpm packages (deb, rpm, apk) generated and attached to GitHub Release.
-- No credentials in `.goreleaser.yaml` — tokens passed via GitHub Actions secrets only.
+- `skip_upload: true` must be set in `homebrew_casks` in `.goreleaser.yaml`.
 - `goreleaser check` must pass with the committed config.
+- The `homebrew_casks` block is retained as documentation of the intended future configuration.
+- No Homebrew tap access during normal releases.
 
 ## Security constraints
 
 - No secrets, tokens, private keys, tenant data, or credentials in any new or modified file.
 - Do not weaken authentication, authorization, validation, logging safety, dependency hygiene, or secret handling guidance.
 - Treat CI/CD workflow files as governance-sensitive.
-- Homebrew tap token must flow through GitHub Actions secrets, not be committed.
 
 ## Files expected to change
 
-- `.goreleaser.yaml` — new
-- `.github/workflows/release.yml` — replaced
-- `.github/workflows/goreleaser-check.yml` — new
-- `DISTRIBUTION.md` — new
-- `README.md` — install section updated
-- `ROADMAP.md` — release workflow item updated
-- `.github/carl/current-pr-contract.md` — this file
-- `.github/carl/memory.md` — release infrastructure note
+- `.goreleaser.yaml`
+- `.github/workflows/release.yml`
+- `DISTRIBUTION.md`
+- `README.md`
+- `ROADMAP.md`
+- `.github/carl/memory.md`
+- `.github/carl/current-pr-contract.md`
 
 ## Tests / validation
 
 - `goreleaser check` passes on the committed `.goreleaser.yaml`.
-- `go build ./cmd/carl` and `go test ./...` pass (no Go source changes, but verifying no regression).
-- No secrets in committed files (secret-scan changed files).
+- `go build ./cmd/carl` and `go test ./...` pass (no Go source changes, verifying no regression).
+- No secrets in committed files.
+- Release workflow no longer references `HOMEBREW_TAP_GITHUB_TOKEN`.
 
 ## Stop conditions
 
 Stop and ask for confirmation if:
 
-- GoReleaser configuration requires committing any token or credential.
-- A GoReleaser feature requires a Go dependency or source change.
-- WinGet auto-submission is requested without a clearly described token/process.
+- Any change requires committing a token or credential.
+- `goreleaser check` fails with the new config.
 
 ## Escalation triggers
 
 Escalate if:
 
-- GoReleaser v2 syntax differs materially from what is documented.
-- Homebrew tap configuration cannot be safely gated without committing a token.
-- nfpm package generation requires changes to Go build flags or source.
+- `skip_upload: true` causes `goreleaser check` to reject the config.
+- The problem statement requires changes beyond the approved scope above.
 
 ## Context reset notes
 
@@ -125,6 +125,6 @@ When this PR is complete, supersede or close this contract.
 
 Durable lessons to carry forward:
 
-- GoReleaser is the canonical release packaging layer for cARL CLI.
-- Homebrew, WinGet, and Artifactory publishing are staged: artefacts generated now, live publishing gated on secrets/process.
-- Package manager install instructions reference archive-based downloads from GitHub Releases.
+- `skip_upload: auto` is not safe when a token secret is present but invalid; it still contacts the tap repository.
+- Use `skip_upload: true` to fully disable Homebrew tap publishing until the tap repository is confirmed ready and the token is valid.
+- Homebrew tap publishing is staged/documented, not active in CI.

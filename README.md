@@ -205,12 +205,9 @@ See [DISTRIBUTION.md](DISTRIBUTION.md) for install commands.
 
 #### Homebrew (macOS / Linux)
 
-> Homebrew tap publishing is planned. Once the tap is configured:
->
-> ```sh
-> brew tap goldjg/carl
-> brew install carl
-> ```
+> Homebrew tap publishing is not yet active. The tap repository does not yet
+> exist and publishing is disabled in CI. See [DISTRIBUTION.md](DISTRIBUTION.md)
+> for the setup steps required to enable it.
 
 #### Build from source (requires Go 1.24+)
 
