@@ -124,8 +124,8 @@ brew tap goldjg/carl
 brew trust goldjg/carl
 brew install --cask carl
 
-# macOS unsigned binary workaround needed for now
-# then carl runs
+# macOS unsigned binary workaround, only needed if Gatekeeper blocks first run
+xattr -dr com.apple.quarantine "$(brew --prefix)/Caskroom/carl"
 
 brew uninstall --cask carl
 brew untrust goldjg/carl
