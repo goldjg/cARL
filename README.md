@@ -198,6 +198,12 @@ curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_darwi
 Windows users: download `carl_1.0.0_windows_amd64.zip` from the releases page,
 extract `carl.exe`, and add it to your `PATH`.
 
+#### WinGet (Windows)
+
+```sh
+winget install goldjg.cARL
+```
+
 #### Native Linux packages (deb / rpm / apk)
 
 `.deb`, `.rpm`, and `.apk` packages are also attached to each GitHub Release.
