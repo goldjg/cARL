@@ -114,22 +114,26 @@ brew untap goldjg/carl
 
 ### WinGet (Windows)
 
-**Status: manual submission — not yet automated.**
+**Status: automated submission from the release workflow (when token is configured).**
 
-WinGet packages are submitted as pull requests to the
-[microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) repository.
+The tag-triggered release workflow (`.github/workflows/release.yml`)
+can submit/update the package in
+[microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) using
+`wingetcreate update`.
 
-To submit a new cARL version to WinGet:
+Required secret:
 
-1. Download the Windows release artefact and its checksum from the GitHub
-   Release page.
-2. Generate or update the WinGet manifest YAML files:
-   - `goldjg.cARL.installer.yaml`
-   - `goldjg.cARL.locale.en-US.yaml`
-   - `goldjg.cARL.yaml`
-3. Submit a pull request to `microsoft/winget-pkgs` with the manifests.
-4. Refer to the [WinGet contributing guide](https://github.com/microsoft/winget-pkgs/blob/master/CONTRIBUTING.md)
-   for the full submission process.
+- `WINGETCREATE_TOKEN` (repository secret) with permission to create PRs in
+  `microsoft/winget-pkgs` via wingetcreate.
+- Token guidance: use a classic PAT with `public_repo`, or a fine-grained token
+  with read/write pull request access and `Contents: read` access to
+  `microsoft/winget-pkgs`.
+- In typical WinGet flows, this token belongs to the account that owns the fork
+  used by wingetcreate for PR submission (not direct write access to upstream).
+
+If the secret is not configured, the WinGet publish job is skipped and you can
+still submit manually using the
+[WinGet contributing guide](https://github.com/microsoft/winget-pkgs/blob/master/CONTRIBUTING.md).
 
 Once accepted, users can install via:
 
@@ -208,5 +212,5 @@ sha256sum --check --ignore-missing checksums.txt
 | apt / yum / apk repository publishing | Internal/manual setup | 📋 Future — see mirroring section |
 | GitHub Release | GoReleaser | ✅ Automated |
 | Homebrew tap formula | GoReleaser | ✅ Automated |
-| WinGet submission | Manual | 📋 Manual PR to winget-pkgs |
+| WinGet submission | GitHub Actions + wingetcreate | ✅ Automated when `WINGETCREATE_TOKEN` is set |
 | Enterprise Artifactory mirroring | Manual / custom CI | 📋 Internal setup |

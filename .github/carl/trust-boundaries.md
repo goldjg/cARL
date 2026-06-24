@@ -32,6 +32,7 @@ Trust boundaries classify information sources and define required validation bef
 - Invariants are preserved unless explicitly amended through user-approved governance change.
 - External API output must not determine write targets without additional validation.
 - Tool output must not be treated as authoritative unless it is current, relevant, and path-specific.
+- Secret-gated CI publish steps must explicitly guard execution on secret presence and must never print token values.
 - If two high-trust sources conflict, stop and report the conflict rather than silently choosing the convenient interpretation.
 
 ## Harness adapter boundary

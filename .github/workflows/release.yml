@@ -7,9 +7,11 @@
 #
 # Secrets:
 #   GITHUB_TOKEN — automatically provided; used for the release.
+#   WINGETCREATE_TOKEN — optional; when set, used to submit/update the
+#   `goldjg.cARL` package in microsoft/winget-pkgs.
 #
-# Homebrew tap publishing is currently disabled (skip_upload: true in
-# .goreleaser.yaml). No HOMEBREW_TAP_GITHUB_TOKEN is required or used.
+# Homebrew tap publishing remains configured in GoReleaser and is gated by
+# HOMEBREW_TAP_GITHUB_TOKEN.
 # See DISTRIBUTION.md for Homebrew, WinGet, and enterprise mirroring setup.
 
 name: Release
@@ -52,3 +54,54 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
 
+  winget:
+    name: WinGet publish
+    runs-on: windows-latest
+    needs:
+      - release
+    env:
+      WINGETCREATE_TOKEN: ${{ secrets.WINGETCREATE_TOKEN }}
+    steps:
+      - name: Skip when WinGet token is not configured
+        if: ${{ env.WINGETCREATE_TOKEN == '' }}
+        shell: pwsh
+        run: Write-Host "WINGETCREATE_TOKEN is not configured; skipping WinGet publish."
+
+      - name: Submit WinGet manifest PR
+        if: ${{ env.WINGETCREATE_TOKEN != '' }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if ($env:GITHUB_REF_NAME -notmatch '^v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$') {
+            throw "Invalid tag format '$env:GITHUB_REF_NAME'. Expected semantic version tag starting with 'v'."
+          }
+
+          if ($env:GITHUB_REPOSITORY -notmatch '^[A-Za-z0-9_][A-Za-z0-9_.-]*/[A-Za-z0-9_][A-Za-z0-9_.-]*$') {
+            throw "Invalid repository format '$env:GITHUB_REPOSITORY'."
+          }
+
+          Write-Host "Installing wingetcreate..." -ForegroundColor Green
+
+          # Install Appx tooling via Windows PowerShell compatibility.
+          Import-Module Appx -UseWindowsPowerShell -ErrorAction Stop
+
+          # Reference uses Microsoft's official wingetcreate bootstrap URL.
+          # We accept the "latest" feed to follow upstream guidance; signature
+          # verification below is the integrity control for this bootstrap path.
+          $bundlePath = Join-Path -Path $env:TEMP -ChildPath "wingetcreate.msixbundle"
+          Invoke-WebRequest -Uri "https://aka.ms/wingetcreate/latest/msixbundle" -OutFile $bundlePath -ErrorAction Stop
+
+          $signature = Get-AuthenticodeSignature -FilePath $bundlePath
+          if ($signature.Status -ne 'Valid') {
+            throw "wingetcreate bundle signature validation failed: $($signature.Status)"
+          }
+
+          Add-AppxPackage -Path $bundlePath -ErrorAction Stop
+
+          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          $url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:GITHUB_REF_NAME/carl_${version}_windows_amd64.zip|x64"
+
+          # wingetcreate requires --token; GitHub masks secret values in logs.
+          Write-Host "Submitting WinGet PR for goldjg.cARL $version..." -ForegroundColor Green
+          wingetcreate update goldjg.cARL --version $version --token $env:WINGETCREATE_TOKEN --submit --urls $url

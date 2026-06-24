@@ -9,22 +9,19 @@ Use this contract to distinguish active PR constraints, completed PR constraints
 
 ## Previous contract (superseded)
 
-The previous active contract (GoReleaser migration, PR #3) is now superseded by this contract.
-Durable lesson carried forward: GoReleaser `skip_upload: auto` is not safe when a token secret is present but invalid — it still attempts to contact the tap repository. Use `skip_upload: true` to fully disable publishing until the tap is ready.
+The previous active contract (Homebrew publishing status update) is now superseded by this contract.
+
+Durable lessons carried forward:
+
+- Homebrew publishing is enabled and uses `HOMEBREW_TAP_GITHUB_TOKEN`.
+- `skip_upload: auto` can still contact the tap repository when token state is invalid.
 
 ---
 
 ## Goal
 
-Fix the GoReleaser Homebrew cask publishing failure discovered during the v0.4.1 release.
-
-The v0.4.1 release successfully uploaded GitHub Release assets but then failed with
-`401 Bad credentials` while attempting to contact `goldjg/homebrew-carl`. Root cause:
-`skip_upload: auto` still contacts the tap repository when `HOMEBREW_TAP_GITHUB_TOKEN`
-is present but invalid/unusable (even an empty or wrong-scope value triggers the attempt).
-
-Replace `skip_upload: auto` with `skip_upload: true` to make the release pipeline
-deterministic and green by default when Homebrew tap publishing has not been deliberately enabled.
+Add WinGet publishing automation to the release workflow by following the
+`oh-my-posh` release workflow pattern for `wingetcreate` submission.
 
 ## Contract status
 
@@ -35,10 +32,8 @@ active
 - No changes to core CLI command behaviour.
 - No changes to runtime installation, repair, status, doctor, map, plan, convert, reconcile, or harness command behaviour.
 - No new harness implementations.
-- No model benchmarking implementation.
-- No network access.
-- No external dependencies.
-- No broad rewrite of instruction packs.
+- No network access from cARL CLI commands.
+- No external dependencies for the Go codebase.
 - No change to `memory.md` schema.
 - No change to `runtime.json` semantics.
 
@@ -55,20 +50,20 @@ Promoted invariants from previous PRs remain in force:
 
 ## Approved scope
 
-- `.goreleaser.yaml` — change `skip_upload: auto` to `skip_upload: true`; update block comment.
-- `.github/workflows/release.yml` — remove `HOMEBREW_TAP_GITHUB_TOKEN` env var; update header comment.
-- `DISTRIBUTION.md` — update Homebrew section status and release pipeline table.
-- `README.md` — update Homebrew install section note.
-- `ROADMAP.md` — update release workflow description.
-- `.github/carl/memory.md` — update release infrastructure note.
+- `.github/workflows/release.yml` — add WinGet publish job using `wingetcreate update` and gated secret usage.
+- `DISTRIBUTION.md` — update WinGet distribution status and release pipeline summary.
+- `README.md` — add WinGet install path for Windows users.
+- `ROADMAP.md` — update release workflow description for WinGet automation.
+- `.github/carl/memory.md` — update release infrastructure durable truth.
+- `.github/carl/trust-boundaries.md` — add secret-gated CI publishing trust-boundary guidance.
 - `.github/carl/current-pr-contract.md` — this active contract.
 
 ## Forbidden scope
 
 - No changes to Go source code or CLI command behaviour.
-- No changes to cARL runtime governance artefacts (invariants.yml, trust-boundaries.md, tool-policy.yml).
+- No changes to cARL runtime governance artefacts (invariants.yml, trust-boundaries.md, tool-policy.yml) unless explicitly required by durable governance change.
 - No embedded asset changes.
-- No publishing to external package registries.
+- No publishing to external package registries during local validation.
 - No committing secrets, tokens, credentials, or organisation-internal URLs.
 - No rewriting of instruction packs or harness adapters.
 - No new Go dependencies.
@@ -77,47 +72,49 @@ Promoted invariants from previous PRs remain in force:
 
 ## Architectural constraints
 
-- `skip_upload: true` must be set in `homebrew_casks` in `.goreleaser.yaml`.
-- `goreleaser check` must pass with the committed config.
-- The `homebrew_casks` block is retained as documentation of the intended future configuration.
-- No Homebrew tap access during normal releases.
+- Release tags remain the trigger (`v*`).
+- WinGet submission runs as a separate job after release publication.
+- WinGet submission uses `wingetcreate update goldjg.cARL`.
+- WinGet job is skipped when `WINGETCREATE_TOKEN` is not configured.
+- Existing GoReleaser release behaviour for archives and packages remains unchanged.
 
 ## Security constraints
 
 - No secrets, tokens, private keys, tenant data, or credentials in any new or modified file.
 - Do not weaken authentication, authorization, validation, logging safety, dependency hygiene, or secret handling guidance.
 - Treat CI/CD workflow files as governance-sensitive.
+- Keep token usage scoped to the WinGet job and avoid logging token values.
 
 ## Files expected to change
 
-- `.goreleaser.yaml`
 - `.github/workflows/release.yml`
 - `DISTRIBUTION.md`
 - `README.md`
 - `ROADMAP.md`
 - `.github/carl/memory.md`
+- `.github/carl/trust-boundaries.md`
 - `.github/carl/current-pr-contract.md`
 
 ## Tests / validation
 
-- `goreleaser check` passes on the committed `.goreleaser.yaml`.
-- `go build ./cmd/carl` and `go test ./...` pass (no Go source changes, verifying no regression).
+- `go build ./cmd/carl` and `go test ./...` pass.
+- `goreleaser check` passes (or report environment limitation if unavailable).
 - No secrets in committed files.
-- Release workflow no longer references `HOMEBREW_TAP_GITHUB_TOKEN`.
+- Release workflow includes WinGet job and secret gate.
 
 ## Stop conditions
 
 Stop and ask for confirmation if:
 
 - Any change requires committing a token or credential.
-- `goreleaser check` fails with the new config.
+- WinGet automation requires additional credentials beyond repository secret configuration.
 
 ## Escalation triggers
 
 Escalate if:
 
-- `skip_upload: true` causes `goreleaser check` to reject the config.
-- The problem statement requires changes beyond the approved scope above.
+- The requested WinGet flow requires permissions or workflow changes beyond this approved scope.
+- `wingetcreate` command semantics require package identifier or artefact changes not covered by this contract.
 
 ## Context reset notes
 
@@ -125,6 +122,5 @@ When this PR is complete, supersede or close this contract.
 
 Durable lessons to carry forward:
 
-- `skip_upload: auto` is not safe when a token secret is present but invalid; it still contacts the tap repository.
-- Use `skip_upload: true` to fully disable Homebrew tap publishing until the tap repository is confirmed ready and the token is valid.
-- Homebrew tap publishing is staged/documented, not active in CI.
+- WinGet publishing can be integrated into release automation with a post-release `wingetcreate update` job.
+- `WINGETCREATE_TOKEN` should gate WinGet submission and allow no-token skip behaviour.

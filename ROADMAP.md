@@ -196,7 +196,8 @@ Release. Build-time `cliVersion` and `sourceCommit` are injected via `-ldflags`.
 Homebrew tap publishing is **enabled** via the `goldjg/homebrew-carl` tap.
 GoReleaser publishes the cask definition automatically on each tagged release
 using `HOMEBREW_TAP_GITHUB_TOKEN`.
-WinGet submission is documented in `DISTRIBUTION.md` but not yet automated.
+WinGet submission is automated in the release workflow via `wingetcreate update`
+when `WINGETCREATE_TOKEN` is configured; manual submission remains a fallback.
 No secrets required for the basic release.
 
 ### `carl status` Command
@@ -465,4 +466,3 @@ The following were considered for the initial bootstrap PR and explicitly deferr
 - CI integration tooling (deferred — governance via agent compliance is the v1 model)
 - Community pack registry (deferred — single-repository adoption first)
 - Non-Copilot agent support (deferred — Copilot is the primary target for v1; superseded by roadmap item 15, Multi-Harness Governance Runtime)
-
