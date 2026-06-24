@@ -193,10 +193,9 @@ for five platforms (linux/amd64, linux/arm64, darwin/amd64, darwin/arm64,
 windows/amd64), produce platform archives (tar.gz/zip), generate native Linux
 packages (deb/rpm/apk via nfpm), compute SHA-256 checksums, and publish a GitHub
 Release. Build-time `cliVersion` and `sourceCommit` are injected via `-ldflags`.
-Homebrew tap publishing is disabled (`skip_upload: true`) — `skip_upload: auto`
-proved unsafe when HOMEBREW_TAP_GITHUB_TOKEN was present but invalid (caused a
-401 abort after assets were already uploaded). Publishing will be re-enabled in
-a future PR once the `goldjg/homebrew-carl` tap repository exists.
+Homebrew tap publishing is **enabled** via the `goldjg/homebrew-carl` tap.
+GoReleaser publishes the cask definition automatically on each tagged release
+using `HOMEBREW_TAP_GITHUB_TOKEN`.
 WinGet submission is documented in `DISTRIBUTION.md` but not yet automated.
 No secrets required for the basic release.
 
