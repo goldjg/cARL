@@ -91,31 +91,11 @@ sudo apk add --allow-untrusted carl_1.0.0_linux_amd64.apk
 
 ### Homebrew (macOS / Linux)
 
-A Homebrew tap entry is documented in `.goreleaser.yaml` using GoReleaser's
-`homebrew_casks` publisher (GoReleaser v2 replaced the earlier `brews`/Formula
-publisher with this mechanism; the `binaries` field installs the CLI binary into
-the PATH). Publishing is currently set to `skip_upload: true`, which means
-GoReleaser generates the cask definition but does **not** attempt to push it to
-any tap repository during a release.
-
-Background: `skip_upload: auto` was previously used, but it proved unsafe —
-GoReleaser still contacted `goldjg/homebrew-carl` when
-`HOMEBREW_TAP_GITHUB_TOKEN` was present but invalid, causing a `401 Bad
-credentials` failure that aborted the release after assets had already been
-uploaded.
-
-To enable Homebrew publishing if not already done:
-
-1. Create a repository named `homebrew-carl` under the `goldjg` organisation.
-2. Generate a GitHub personal access token (PAT) or a fine-grained token with
-   `Contents: write` access to `homebrew-carl`.
-3. Add the token as a repository secret named `HOMEBREW_TAP_GITHUB_TOKEN` in
-   `goldjg/cARL`.
-4. In `.goreleaser.yaml`, change `skip_upload: true` to `skip_upload: auto`
-   (or remove the field).
-5. In `.github/workflows/release.yml`, pass the token to GoReleaser:
-   `HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}`
-6. Once configured, users can install via:
+Homebrew publishing is **enabled**. GoReleaser publishes the cask definition to
+the [`goldjg/homebrew-carl`](https://github.com/goldjg/homebrew-carl) tap
+automatically on each tagged release. The `HOMEBREW_TAP_GITHUB_TOKEN` repository
+secret must be set with `Contents: write` access to `goldjg/homebrew-carl` for
+publishing to succeed.
 
 > macOS binaries are not currently Apple signed or notarized. Homebrew installation works, but macOS Gatekeeper may require manual approval or removal of the quarantine attribute on first run. Signing and notarization are planned for a future release.
 
@@ -227,6 +207,6 @@ sha256sum --check --ignore-missing checksums.txt
 | deb / rpm / apk package artefacts | GoReleaser + nfpm | ✅ Automated |
 | apt / yum / apk repository publishing | Internal/manual setup | 📋 Future — see mirroring section |
 | GitHub Release | GoReleaser | ✅ Automated |
-| Homebrew tap formula | GoReleaser (disabled) | 📋 Disabled — tap repo not yet created; see Homebrew section |
+| Homebrew tap formula | GoReleaser | ✅ Automated |
 | WinGet submission | Manual | 📋 Manual PR to winget-pkgs |
 | Enterprise Artifactory mirroring | Manual / custom CI | 📋 Internal setup |

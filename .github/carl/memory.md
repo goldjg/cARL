@@ -46,7 +46,7 @@ The cARL CLI release pipeline uses **GoReleaser** (`.goreleaser.yaml`) as the ca
 - SHA-256 checksums
 - GitHub Release with all artefacts attached
 
-Homebrew tap publishing is **disabled** (`skip_upload: true`). `skip_upload: auto` was removed after it caused a `401 Bad credentials` abort during v0.4.1 — GoReleaser still contacted `goldjg/homebrew-carl` when `HOMEBREW_TAP_GITHUB_TOKEN` was present but invalid. Setting `skip_upload: true` makes releases deterministic: no tap access is attempted regardless of token state. WinGet submission is manual (see `DISTRIBUTION.md`). Enterprise mirroring into JFrog Artifactory or similar is documented in `DISTRIBUTION.md` but not automated in CI.
+Homebrew tap publishing is **enabled** via the `goldjg/homebrew-carl` tap. GoReleaser publishes the cask definition automatically on each tagged release; `HOMEBREW_TAP_GITHUB_TOKEN` must be set as a repository secret with `Contents: write` access to `goldjg/homebrew-carl`. (Note: `skip_upload: true` was removed after `skip_upload: auto` caused a `401 Bad credentials` abort during v0.4.1 when the token was present but invalid.) WinGet submission is manual (see `DISTRIBUTION.md`). Enterprise mirroring into JFrog Artifactory or similar is documented in `DISTRIBUTION.md` but not automated in CI.
 
 ## Repository snapshot
 
@@ -218,4 +218,4 @@ The active authority order is:
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-21 by harness loader governance update
+2026-06-24 by Homebrew publishing status update
