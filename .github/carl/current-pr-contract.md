@@ -125,7 +125,7 @@ Promoted invariants from previous PRs remain in force:
 - `go build ./cmd/carl` and `go test ./...` pass.
 - `goreleaser check` passes (or report environment limitation if unavailable).
 - No secrets in committed files.
-- Release workflow includes `sign-darwin` job, certificate cleanup, and secret preflight check.
+- Release workflow includes macOS codesigning, certificate cleanup, and secret preflight check.
 
 ## Stop conditions
 
