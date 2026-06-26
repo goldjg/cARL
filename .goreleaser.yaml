@@ -50,7 +50,12 @@ builds:
   # and notarised in the sign-darwin CI job before GoReleaser runs. GoReleaser
   # uses the prebuilt builder to pick up the signed binaries from ./prebuilt/
   # so archives, checksums, and Homebrew cask all reference the signed artefacts.
-  # The prebuilt path must match the layout produced by the sign-darwin job.
+  #
+  # IMPORTANT: The prebuilt path template must exactly match the directory layout
+  # produced by the sign-darwin job in .github/workflows/release.yml. If the
+  # sign-darwin job changes its output paths, update this template accordingly,
+  # and vice versa. The sign-darwin job uploads binaries at:
+  #   prebuilt/darwin_amd64/carl  and  prebuilt/darwin_arm64/carl
   - id: darwin
     builder: prebuilt
     goos:

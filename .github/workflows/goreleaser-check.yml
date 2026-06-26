@@ -87,6 +87,10 @@ jobs:
         # dry-runs there is no macOS runner, so build unsigned placeholders so
         # GoReleaser can complete the archive/checksum/Homebrew pipeline.
         # These binaries are never published to a GitHub Release.
+        #
+        # Note: ldflags (version/commit injection) are intentionally omitted here.
+        # Snapshot builds are for pipeline validation only — not for distribution —
+        # so the version and commit embedded in these placeholders do not matter.
         run: |
           mkdir -p prebuilt/darwin_amd64 prebuilt/darwin_arm64
           CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build \

@@ -122,7 +122,7 @@ repository before tagging a release.
 
 | Secret | Description |
 |---|---|
-| `MACOS_CERTIFICATE_P12_BASE64` | Base64-encoded Developer ID Application `.p12`. Export from Keychain Access (Certificate Assistant → Export), then encode: `base64 -i cert.p12 \| tr -d '\n'` |
+| `MACOS_CERTIFICATE_P12_BASE64` | Base64-encoded Developer ID Application `.p12`. Export from Keychain Access (Certificate Assistant → Export), then encode: `base64 -i cert.p12 | tr -d '\n'` |
 | `MACOS_CERTIFICATE_PASSWORD` | Password set when exporting the `.p12` |
 | `APPLE_ID` | Apple ID email address for notarytool authentication |
 | `APPLE_TEAM_ID` | 10-character Team ID from [developer.apple.com](https://developer.apple.com/account) → Membership |

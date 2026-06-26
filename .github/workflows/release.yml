@@ -120,7 +120,8 @@ jobs:
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-          # Import the certificate; -P reads the export password (masked by Actions).
+          # Import the certificate. -P passes the export password; GitHub Actions
+          # automatically masks the secret value in workflow logs.
           security import "$RUNNER_TEMP/cert.p12" \
             -k "$KEYCHAIN_PATH" \
             -P "$MACOS_CERTIFICATE_PASSWORD" \
@@ -147,6 +148,7 @@ jobs:
             | grep "Developer ID Application" \
             | sed -n '1s/.*"\([^"]*\)".*/\1/p'
           )
+          # Fail immediately if the identity could not be extracted.
           if [ -z "$SIGNING_IDENTITY" ]; then
             echo "::error::No Developer ID Application certificate found in keychain."
             exit 1
@@ -180,16 +182,19 @@ jobs:
           mkdir -p "$BUNDLE_DIR"
           cp prebuilt/darwin_amd64/carl "$BUNDLE_DIR/carl_amd64"
           cp prebuilt/darwin_arm64/carl "$BUNDLE_DIR/carl_arm64"
-          (cd "$BUNDLE_DIR" && zip -r "$BUNDLE_ZIP" .)
+          (cd "$BUNDLE_DIR" && zip -r "$BUNDLE_ZIP" .) \
+            || { echo "::error::Failed to create notarisation bundle."; exit 1; }
 
           # Submit for notarisation. Credentials are masked by GitHub Actions.
           # --wait blocks until Apple's service completes or the timeout expires.
+          # 20 minutes covers typical notarisation latency plus high-load periods
+          # at Apple's service; successful submissions complete well within this.
           xcrun notarytool submit "$BUNDLE_ZIP" \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
             --wait \
-            --timeout 15m
+            --timeout 20m
 
           # Clean up notarisation bundle; signed binaries remain in prebuilt/.
           rm -rf "$BUNDLE_DIR" "$BUNDLE_ZIP"
@@ -199,13 +204,18 @@ jobs:
         run: |
           # Stapling embeds the notarisation ticket so Gatekeeper can verify
           # offline. For plain executables (not .app/.dmg/.pkg) stapling is not
-          # applicable and xcrun stapler returns a non-zero exit code; this is
-          # expected and does not indicate a signing or notarisation failure.
+          # applicable — xcrun stapler returns non-zero. Capture the output to
+          # distinguish the known 'not applicable' case from unexpected errors.
           for ARCH in darwin_amd64 darwin_arm64; do
             BINARY="prebuilt/${ARCH}/carl"
-            xcrun stapler staple "$BINARY" \
-              && echo "Stapled: $BINARY" \
-              || echo "Stapling not applicable to plain executable (expected): $BINARY"
+            STAPLE_OUTPUT=$(xcrun stapler staple "$BINARY" 2>&1)
+            STAPLE_EXIT=$?
+            if [ $STAPLE_EXIT -eq 0 ]; then
+              echo "Stapled: $BINARY"
+            else
+              echo "Stapling not applicable to plain executable (expected): $BINARY"
+              echo "  stapler output: $STAPLE_OUTPUT"
+            fi
           done
 
       - name: Upload signed darwin binaries
@@ -222,10 +232,14 @@ jobs:
         # Always run so the keychain is removed even when earlier steps fail.
         if: always()
         run: |
-          if [ -n "$KEYCHAIN_PATH" ] && [ -f "$KEYCHAIN_PATH" ]; then
-            security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
+          if security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null; then
+            echo "Temporary keychain deleted."
+          else
+            # Non-zero exit means the keychain does not exist (e.g., the job
+            # failed before keychain creation). This is expected and not an error.
+            echo "Keychain deletion skipped (not created or already absent)."
           fi
-          # Belt-and-suspenders: also remove cert if it was not already deleted.
+          # Belt-and-suspenders: remove cert file if it was not already deleted.
           rm -f "$RUNNER_TEMP/cert.p12"
 
   release:
