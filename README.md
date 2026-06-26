@@ -211,12 +211,11 @@ See [DISTRIBUTION.md](DISTRIBUTION.md) for install commands.
 
 #### Homebrew (macOS / Linux)
 
-macOS release artefacts are configured to be signed and notarised from v0.4.2
-onward (Developer ID Application, hardened runtime). Once signed releases are
-confirmed, macOS Gatekeeper will not block execution on first run and the
-artefacts will be suitable for managed enterprise environments where Gatekeeper
-overrides are blocked by MDM policy. See [DISTRIBUTION.md](DISTRIBUTION.md) for
-the current signing status and setup details.
+macOS release artefacts are configured to be Developer ID codesigned from v0.4.2
+onward (hardened runtime). Full notarisation is not yet enabled; see
+[DISTRIBUTION.md](DISTRIBUTION.md) for the current macOS signing status,
+Gatekeeper implications, and the App Store Connect API-key path required for
+notarisation.
 
 ```sh
 brew tap goldjg/carl
