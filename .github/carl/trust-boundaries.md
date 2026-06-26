@@ -33,6 +33,7 @@ Trust boundaries classify information sources and define required validation bef
 - External API output must not determine write targets without additional validation.
 - Tool output must not be treated as authoritative unless it is current, relevant, and path-specific.
 - Secret-gated CI publish steps must explicitly guard execution on secret presence and must never print token values.
+- Apple signing secrets (`MACOS_CERTIFICATE_P12_BASE64`, `MACOS_CERTIFICATE_PASSWORD`, `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_SPECIFIC_PASSWORD`) are CI-only. Certificate material must never be committed, logged, or written to disk beyond the import step. The temporary keychain must be deleted in an `always()` cleanup step.
 - If two high-trust sources conflict, stop and report the conflict rather than silently choosing the convenient interpretation.
 
 ## Harness adapter boundary

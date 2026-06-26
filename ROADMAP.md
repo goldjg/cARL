@@ -185,7 +185,7 @@ are protected from repair. Health status is content-based (byte-comparison again
 embedded canonicals). Build-time version and commit injection via `-ldflags`.
 
 ### Release Workflow (CLI Binary Publishing)
-**Status:** Delivered (PR #3); migrated to GoReleaser
+**Status:** Delivered (PR #3); migrated to GoReleaser; macOS signing configured from v0.4.2
 **Workflow:** `.github/workflows/release.yml`
 **Description:** GitHub Actions workflow triggered on `v*` semantic version tags.
 Originally used a hand-rolled build matrix. Now uses GoReleaser to build the cARL CLI
@@ -198,7 +198,18 @@ GoReleaser publishes the cask definition automatically on each tagged release
 using `HOMEBREW_TAP_GITHUB_TOKEN`.
 WinGet submission is automated in the release workflow via `wingetcreate update`
 when `WINGETCREATE_TOKEN` is configured; manual submission remains a fallback.
-No secrets required for the basic release.
+The release job runs on `macos-latest` so that `codesign` is available.
+GoReleaser cross-compiles Linux and Windows binaries on the same
+runner. darwin binaries are signed inline by a GoReleaser post-hook
+(`.github/scripts/codesign-darwin.sh`) immediately after each darwin binary is
+built. GoReleaser then runs a single `goreleaser release --clean` which builds,
+signs (via hook), archives, checksums, and publishes the GitHub Release in one
+step. darwin artefacts are codesigned (Developer ID Application, hardened
+runtime) but not notarised; Gatekeeper may prompt on first run. Full
+notarisation requires switching to App Store Connect API key auth and configuring
+`notarize.macos` — see DISTRIBUTION.md. Uses OSS GoReleaser only —
+no GoReleaser Pro features. Two Apple repository secrets are required for macOS
+signing (see DISTRIBUTION.md).
 
 ### `carl status` Command
 **Status:** Delivered (PR #4)

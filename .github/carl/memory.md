@@ -46,6 +46,13 @@ The cARL CLI release pipeline uses **GoReleaser** (`.goreleaser.yaml`) as the ca
 - SHA-256 checksums
 - GitHub Release with all artefacts attached
 
+The release job runs on **`macos-latest`** so that `codesign` is available. GoReleaser cross-compiles Linux and Windows binaries on the same runner — no separate ubuntu job is needed. darwin binaries are signed inline by a GoReleaser `builds.hooks.post` script (`.github/scripts/codesign-darwin.sh`, Developer ID Application, hardened runtime) immediately after each darwin binary is built and before archiving. This ensures archives always contain signed binaries. The release workflow uses a single **`goreleaser release --clean`** which builds, signs (via hook), archives, checksums, and publishes the GitHub Release in one step.
+
+darwin artefacts are **codesigned but not notarised**. GoReleaser OSS `notarize.macos` only supports App Store Connect API key authentication; it does not support the apple-id + app-specific-password model. Until the project switches to API key auth and configures `notarize.macos`, darwin binaries are signed but Gatekeeper may prompt on first run. See DISTRIBUTION.md for the path forward.
+
+Two Apple repository secrets are required for macOS signing to succeed:
+`MACOS_CERTIFICATE_P12_BASE64` and `MACOS_CERTIFICATE_PASSWORD`. See DISTRIBUTION.md for setup.
+
 Homebrew tap publishing is **enabled** via the `goldjg/homebrew-carl` tap. GoReleaser publishes the cask definition automatically on each tagged release; `HOMEBREW_TAP_GITHUB_TOKEN` must be set as a repository secret with `Contents: write` access to `goldjg/homebrew-carl`. (Note: `skip_upload: true` was removed after `skip_upload: auto` caused a `401 Bad credentials` abort during v0.4.1 when the token was present but invalid.) WinGet submission is automated in the release workflow via `wingetcreate update` when `WINGETCREATE_TOKEN` is configured; otherwise manual submission remains available (see `DISTRIBUTION.md`). Enterprise mirroring into JFrog Artifactory or similar is documented in `DISTRIBUTION.md` but not automated in CI.
 
 ## Repository snapshot
@@ -218,4 +225,4 @@ The active authority order is:
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-24 by WinGet publishing workflow update
+2026-06-26 by macOS Developer ID signing and notarisation workflow update

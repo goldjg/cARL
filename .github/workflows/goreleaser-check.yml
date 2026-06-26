@@ -87,6 +87,8 @@ jobs:
           version: v2.16.0
           # --snapshot: build without requiring a git tag.
           # --skip=publish: do not upload to GitHub Releases or any other publisher.
+          # darwin binaries are cross-compiled on ubuntu-latest; the codesign
+          # post-hook skips gracefully when codesign is absent (non-macOS runner).
           args: release --snapshot --skip=publish --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
