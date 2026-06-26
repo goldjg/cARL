@@ -185,7 +185,7 @@ are protected from repair. Health status is content-based (byte-comparison again
 embedded canonicals). Build-time version and commit injection via `-ldflags`.
 
 ### Release Workflow (CLI Binary Publishing)
-**Status:** Delivered (PR #3); migrated to GoReleaser; macOS signing and notarisation added
+**Status:** Delivered (PR #3); migrated to GoReleaser; macOS signing and notarisation configured from v0.4.2
 **Workflow:** `.github/workflows/release.yml`
 **Description:** GitHub Actions workflow triggered on `v*` semantic version tags.
 Originally used a hand-rolled build matrix. Now uses GoReleaser to build the cARL CLI
@@ -198,13 +198,15 @@ GoReleaser publishes the cask definition automatically on each tagged release
 using `HOMEBREW_TAP_GITHUB_TOKEN`.
 WinGet submission is automated in the release workflow via `wingetcreate update`
 when `WINGETCREATE_TOKEN` is configured; manual submission remains a fallback.
-darwin binaries are built, codesigned (Developer ID Application, hardened runtime),
-and notarised via Apple notarytool in a separate `sign-darwin` job on `macos-latest`
-before the GoReleaser ubuntu job runs. GoReleaser consumes the signed darwin binaries
-via the prebuilt builder so archives, checksums, and Homebrew artefacts all reference
-the signed and notarised content. The ubuntu GoReleaser job remains unchanged for
-Linux, Windows, package, and checksum work. Five Apple repository secrets are required
-for macOS signing (see DISTRIBUTION.md).
+The release job runs on `macos-latest` so that `codesign` and `xcrun notarytool`
+are available. GoReleaser cross-compiles Linux and Windows binaries on the same
+runner. darwin binaries are signed inline by a GoReleaser post-hook
+(`.github/scripts/codesign-darwin.sh`) immediately after each darwin binary is
+built. Notarisation via `xcrun notarytool` runs after all builds and archives are
+complete but before GoReleaser publishes the GitHub Release, ensuring only signed
+and notarised darwin artefacts appear in the release. Uses OSS GoReleaser only —
+no GoReleaser Pro features. Five Apple repository secrets are required for macOS
+signing (see DISTRIBUTION.md).
 
 ### `carl status` Command
 **Status:** Delivered (PR #4)

@@ -97,12 +97,18 @@ automatically on each tagged release. The `HOMEBREW_TAP_GITHUB_TOKEN` repository
 secret must be set with `Contents: write` access to `goldjg/homebrew-carl` for
 publishing to succeed.
 
-macOS release artefacts are **Apple signed and notarised**. The darwin binaries
-are signed with a Developer ID Application certificate (hardened runtime enabled)
-and notarised via Apple's notarisation service before being packaged into release
-archives. This means macOS Gatekeeper will not block execution on first run, and
-the artefacts are suitable for managed enterprise environments where Gatekeeper
-overrides (such as `xattr -dr com.apple.quarantine`) are blocked by MDM policy.
+macOS release artefacts are **configured to be signed and notarised from v0.4.2
+onward** (Developer ID Application, hardened runtime). The release workflow builds
+darwin binaries on a macOS runner, signs each with `codesign`, and notarises via
+`xcrun notarytool` before the GitHub Release is published. Once a signed release
+has been produced and tested successfully, macOS Gatekeeper will not block
+execution on first run and the artefacts will be suitable for managed enterprise
+environments where Gatekeeper overrides are locked by MDM policy.
+
+> **Note:** The enterprise Gatekeeper compatibility claim should only be treated
+> as confirmed after the first successful signed and notarised release tag
+> (`v0.4.2` or later) has been produced, downloaded, and verified on a managed
+> macOS device.
 
 ```sh
 brew tap goldjg/carl
@@ -128,9 +134,9 @@ repository before tagging a release.
 | `APPLE_TEAM_ID` | 10-character Team ID from [developer.apple.com](https://developer.apple.com/account) → Membership |
 | `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password for notarytool. Generate at [appleid.apple.com](https://appleid.apple.com) → Sign-In and Security → App-Specific Passwords. **Not** your Apple ID password. |
 
-The `sign-darwin` CI job validates that all five secrets are present and fails
-with a clear error message if any are missing, before attempting to import the
-certificate or invoke Apple tooling.
+The release workflow validates that all five secrets are present and fails
+with a clear error message if any are missing, before importing the certificate
+or invoking Apple tooling.
 
 ### WinGet (Windows)
 
@@ -226,11 +232,10 @@ sha256sum --check --ignore-missing checksums.txt
 
 | Step | Tool | Status |
 |---|---|---|
-| Build (Linux, Windows) | GoReleaser (ubuntu-latest) | ✅ Automated |
-| Build darwin binaries | go build (macos-latest) | ✅ Automated |
-| macOS codesign (Developer ID, hardened runtime) | codesign (macos-latest) | ✅ Automated |
-| macOS notarisation | xcrun notarytool (macos-latest) | ✅ Automated |
-| Archives + checksums | GoReleaser (ubuntu-latest) | ✅ Automated |
+| Build (Linux, Windows, darwin) | GoReleaser (macos-latest) | ✅ Automated |
+| macOS codesign (Developer ID, hardened runtime) | codesign via GoReleaser post-hook (macos-latest) | ✅ Automated (first signed release: v0.4.2+) |
+| macOS notarisation | xcrun notarytool (macos-latest) | ✅ Automated (first signed release: v0.4.2+) |
+| Archives + checksums | GoReleaser (macos-latest) | ✅ Automated |
 | deb / rpm / apk package artefacts | GoReleaser + nfpm | ✅ Automated |
 | apt / yum / apk repository publishing | Internal/manual setup | 📋 Future — see mirroring section |
 | GitHub Release | GoReleaser | ✅ Automated |

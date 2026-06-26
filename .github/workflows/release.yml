@@ -22,6 +22,19 @@
 #     Generate at appleid.apple.com under Sign-In and Security > App-Specific
 #     Passwords. This is NOT your Apple ID password.
 #
+# Design:
+#   The release job runs on macos-latest so that codesign and xcrun notarytool
+#   are available for darwin binary signing and notarisation. GoReleaser
+#   cross-compiles Linux and Windows binaries on the same macOS runner (Go
+#   cross-compilation does not require the target OS). darwin binaries are signed
+#   inline by a GoReleaser post-hook (.github/scripts/codesign-darwin.sh)
+#   immediately after each darwin binary is built, before archiving. GoReleaser
+#   then runs with --skip=publish to build, archive, and compute checksums
+#   without creating the GitHub Release yet. Notarisation is performed on the
+#   signed darwin binaries in dist/ before GoReleaser publishes the release.
+#   This ensures the GitHub Release only ever contains signed and notarised
+#   darwin artefacts.
+#
 # Homebrew tap publishing remains configured in GoReleaser and is gated by
 # HOMEBREW_TAP_GITHUB_TOKEN.
 # See DISTRIBUTION.md for Homebrew, WinGet, and enterprise mirroring setup.
@@ -37,21 +50,16 @@ permissions:
   contents: write
 
 jobs:
-  # sign-darwin builds darwin binaries on a macOS runner, imports a Developer ID
-  # Application certificate, signs each binary with codesign (hardened runtime),
-  # notarises a zip bundle via xcrun notarytool, and uploads the signed binaries
-  # as a workflow artifact for the downstream GoReleaser release job.
-  #
-  # Running on macOS is required because codesign and xcrun notarytool are only
-  # available on macOS. The ubuntu release job remains unchanged for Linux,
-  # Windows, package, checksum, Homebrew, and WinGet work.
-  sign-darwin:
-    name: macOS sign and notarise
+  release:
+    name: GoReleaser
+    # macOS runner required for codesign and xcrun notarytool.
+    # Go cross-compilation handles Linux and Windows builds on the same runner.
     runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
+          # Full history is required for GoReleaser changelog generation.
           fetch-depth: 0
 
       - uses: actions/setup-go@v5
@@ -78,27 +86,6 @@ jobs:
             exit 1
           fi
           echo "All required Apple signing secrets are present."
-
-      - name: Build darwin binaries
-        run: |
-          # Derive version and commit to match GoReleaser ldflags exactly.
-          VERSION="${GITHUB_REF_NAME#v}"
-          COMMIT="$(git rev-parse HEAD)"
-          LDFLAGS="-s -w -X main.cliVersion=${VERSION} -X main.sourceCommit=${COMMIT}"
-
-          mkdir -p prebuilt/darwin_amd64 prebuilt/darwin_arm64
-
-          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build \
-            -ldflags="${LDFLAGS}" \
-            -o prebuilt/darwin_amd64/carl \
-            ./cmd/carl
-
-          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build \
-            -ldflags="${LDFLAGS}" \
-            -o prebuilt/darwin_arm64/carl \
-            ./cmd/carl
-
-          echo "Built darwin/amd64 and darwin/arm64 binaries."
 
       - name: Import Developer ID Application certificate
         env:
@@ -139,61 +126,93 @@ jobs:
           # Remove the decoded P12 immediately — the cert is now in the keychain.
           rm -f "$RUNNER_TEMP/cert.p12"
 
-      - name: Sign darwin binaries with codesign
-        run: |
-          # Discover the imported Developer ID Application identity.
-          # Only one certificate exists in the temporary keychain, so head -1 is safe.
-          # `security find-identity` always formats the identity as: N) <SHA1> "<name>"
+          # Extract the signing identity name for use in the GoReleaser post-hook.
+          # `security find-identity` formats each line as: N) <SHA1> "<name>"
           # The sed pattern extracts the quoted name from that standard format.
+          # Only one certificate exists in the temporary keychain, so head -1 is safe.
           SIGNING_IDENTITY=$(
             security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
             | grep "Developer ID Application" \
             | sed -n '1s/.*"\([^"]*\)".*/\1/p'
           )
-          # Fail immediately if the identity could not be extracted.
           if [ -z "$SIGNING_IDENTITY" ]; then
             echo "::error::No Developer ID Application certificate found in keychain."
             echo "Verify MACOS_CERTIFICATE_P12_BASE64 contains a valid Developer ID Application certificate."
             exit 1
           fi
-          echo "Signing with identity: $SIGNING_IDENTITY"
+          # SIGNING_IDENTITY is not a secret; it is the certificate display name.
+          # It is passed to the GoReleaser process so the codesign post-hook can use it.
+          echo "SIGNING_IDENTITY=${SIGNING_IDENTITY}" >> "$GITHUB_ENV"
+          echo "Signing identity: $SIGNING_IDENTITY"
 
-          for ARCH in darwin_amd64 darwin_arm64; do
-            BINARY="prebuilt/${ARCH}/carl"
-            codesign \
-              --force --verify --verbose \
-              --sign "$SIGNING_IDENTITY" \
-              --options runtime \
-              --timestamp \
-              "$BINARY"
-            # Verify the signature immediately after signing.
-            codesign --verify --deep --strict --verbose=2 "$BINARY"
-            echo "Signed and verified: $BINARY"
-          done
+      - name: Run GoReleaser (build, archive, checksum — skip publish)
+        # Build and archive all platforms. darwin binaries are signed inline by the
+        # codesign post-hook as each binary is produced. --skip=publish defers the
+        # GitHub Release and Homebrew cask upload until after notarisation below.
+        # goreleaser/goreleaser-action is a third-party action.
+        # The action tag (@v6) is pinned to the GoReleaser v2 major line.
+        # The GoReleaser tool version below is pinned to a specific release for
+        # determinism. Update both pins together when upgrading GoReleaser.
+        # Follow-up: pin the action itself to a commit SHA for supply-chain safety.
+        # See: https://github.com/goreleaser/goreleaser-action/releases
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: v2.16.0
+          args: release --skip=publish --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+          # SIGNING_IDENTITY is set above and inherited by the GoReleaser process.
+          # The codesign post-hook reads it to identify the Developer ID cert.
+          SIGNING_IDENTITY: ${{ env.SIGNING_IDENTITY }}
 
       - name: Notarise darwin binaries with notarytool
+        # Notarisation is performed after archiving but before publishing to
+        # GitHub Releases. This ensures the release only contains binaries that
+        # have been submitted to Apple and approved. For plain executables,
+        # notarisation does not modify the binary — it creates a record in Apple's
+        # database keyed to the binary's CD hash. Gatekeeper performs an online
+        # check (OCSP) when the user first runs the binary.
         env:
-          APPLE_ID:                  ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID:             ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_ID:                    ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID:               ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: |
-          # Bundle both signed darwin binaries into a single zip for submission.
+          # Locate signed darwin binaries produced by GoReleaser.
+          # GoReleaser places binaries at dist/<id>_<goos>_<goarch>[_<variant>]/<binary>.
+          mapfile -t DARWIN_BINARIES < <(find dist -type f -name carl -path '*darwin*' | sort)
+
+          if [ ${#DARWIN_BINARIES[@]} -eq 0 ]; then
+            echo "::error::No darwin binaries found in dist/ for notarisation."
+            echo "Expected paths matching: dist/carl_darwin_*/carl"
+            exit 1
+          fi
+
+          echo "Found darwin binaries for notarisation:"
+          printf '  %s\n' "${DARWIN_BINARIES[@]}"
+
+          # Bundle all signed darwin binaries into a single zip for submission.
           # Apple notarytool accepts a zip containing signed executables.
-          # Both binaries must be signed before this step runs.
           BUNDLE_DIR="$RUNNER_TEMP/notarisation_bundle"
           BUNDLE_ZIP="$RUNNER_TEMP/darwin_notarisation.zip"
           mkdir -p "$BUNDLE_DIR"
-          cp prebuilt/darwin_amd64/carl "$BUNDLE_DIR/carl_amd64"
-          cp prebuilt/darwin_arm64/carl "$BUNDLE_DIR/carl_arm64"
+
+          for binary in "${DARWIN_BINARIES[@]}"; do
+            # Derive a unique filename from the binary's parent directory name
+            # (e.g. carl_darwin_amd64_v1 → carl_darwin_amd64_v1) to avoid
+            # collisions when zipping multiple architectures.
+            parent=$(basename "$(dirname "$binary")")
+            cp "$binary" "$BUNDLE_DIR/${parent}_carl"
+          done
+
           # Use explicit filenames rather than '.' to avoid a leading directory
           # marker entry in the zip archive.
-          (cd "$BUNDLE_DIR" && zip "$BUNDLE_ZIP" carl_amd64 carl_arm64) \
+          (cd "$BUNDLE_DIR" && zip "$BUNDLE_ZIP" ./*) \
             || { echo "::error::Failed to create notarisation bundle."; exit 1; }
 
-          # Submit for notarisation. Credentials are masked by GitHub Actions.
-          # --wait blocks until Apple's service completes or the timeout expires.
-          # 20 minutes covers typical notarisation latency plus high-load periods
-          # at Apple's service; successful submissions complete well within this.
+          # Submit for notarisation. --wait blocks until Apple's service completes
+          # or the timeout expires. 20 minutes covers typical notarisation latency
+          # plus high-load periods at Apple's service.
           if ! xcrun notarytool submit "$BUNDLE_ZIP" \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
@@ -209,7 +228,7 @@ jobs:
             exit 1
           fi
 
-          # Clean up notarisation bundle; signed binaries remain in prebuilt/.
+          # Clean up notarisation bundle; signed binaries remain in dist/.
           rm -rf "$BUNDLE_DIR" "$BUNDLE_ZIP"
           echo "Notarisation complete."
 
@@ -224,8 +243,8 @@ jobs:
           # will work without further changes. Non-zero exit is treated as
           # expected for plain executables; unexpected Apple error strings
           # (not matching known "not applicable" patterns) are logged prominently.
-          for ARCH in darwin_amd64 darwin_arm64; do
-            BINARY="prebuilt/${ARCH}/carl"
+          mapfile -t DARWIN_BINARIES < <(find dist -type f -name carl -path '*darwin*' | sort)
+          for BINARY in "${DARWIN_BINARIES[@]}"; do
             STAPLE_OUTPUT=$(xcrun stapler staple "$BINARY" 2>&1)
             STAPLE_EXIT=$?
             if [ $STAPLE_EXIT -eq 0 ]; then
@@ -235,7 +254,6 @@ jobs:
               # database" are the expected messages for plain executables.
               # Note: Apple's tools use American spelling ("notarization") in
               # their output; the grep pattern intentionally matches that spelling.
-              # Any other error is logged as a warning for investigation.
               if echo "$STAPLE_OUTPUT" | grep -qiE "requires a bundle|not found in the notarization|does not support stapling"; then
                 echo "Stapling not applicable to plain executable (expected): $BINARY"
               else
@@ -245,18 +263,17 @@ jobs:
             fi
           done
 
-      - name: Upload signed darwin binaries
-        uses: actions/upload-artifact@v4
+      - name: Publish release artefacts
+        # Publish the pre-built, signed, and notarised artefacts to GitHub Releases
+        # and Homebrew tap. goreleaser publish reads from dist/artifacts.json
+        # produced by the build step above.
+        uses: goreleaser/goreleaser-action@v6
         with:
-          name: signed-darwin-binaries
-          # GoReleaser expects binaries at ./prebuilt/darwin_<arch>/carl
-          # (see .goreleaser.yaml prebuilt builder path template).
-          # IMPORTANT: this path layout must stay in sync with the prebuilt
-          # path template in .goreleaser.yaml (id: darwin). Changing the upload
-          # path here requires updating the template there, and vice versa.
-          path: prebuilt/
-          # Retain for one day — consumed immediately by the release job.
-          retention-days: 1
+          version: v2.16.0
+          args: publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
 
       - name: Delete temporary keychain
         # Always run so the keychain is removed even when earlier steps fail.
@@ -278,66 +295,6 @@ jobs:
           fi
           # Belt-and-suspenders: remove cert file if it was not already deleted.
           rm -f "$RUNNER_TEMP/cert.p12"
-
-  release:
-    name: GoReleaser
-    runs-on: ubuntu-latest
-    # sign-darwin must complete successfully so GoReleaser can consume the
-    # signed darwin binaries via the prebuilt builder.
-    needs:
-      - sign-darwin
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # Full history is required for GoReleaser changelog generation.
-          fetch-depth: 0
-
-      - name: Download signed darwin binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: signed-darwin-binaries
-          # Place at ./prebuilt/ — matches the GoReleaser prebuilt builder path.
-          path: prebuilt/
-
-      - name: Verify signed darwin binaries are present
-        # Catch desynchronisation between sign-darwin output paths and the
-        # GoReleaser prebuilt path template before GoReleaser runs.
-        run: |
-          MISSING=0
-          for ARCH in darwin_amd64 darwin_arm64; do
-            if [ ! -f "prebuilt/${ARCH}/carl" ]; then
-              echo "::error::Expected signed binary missing: prebuilt/${ARCH}/carl"
-              MISSING=1
-            fi
-          done
-          if [ "$MISSING" -eq 1 ]; then
-            echo "::error::Signed darwin binaries not found at expected paths."
-            echo "Ensure the sign-darwin job completed successfully and that the"
-            echo "prebuilt path template in .goreleaser.yaml matches the sign-darwin"
-            echo "job upload layout in .github/workflows/release.yml."
-            exit 1
-          fi
-          echo "All expected signed darwin binaries are present."
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-
-      - name: Run GoReleaser
-        # goreleaser/goreleaser-action is a third-party action.
-        # The action tag (@v6) is pinned to the GoReleaser v2 major line.
-        # The GoReleaser tool version below is pinned to a specific release for
-        # determinism. Update both pins together when upgrading GoReleaser.
-        # Follow-up: pin the action itself to a commit SHA for supply-chain safety.
-        # See: https://github.com/goreleaser/goreleaser-action/releases
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          version: v2.16.0
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
 
   winget:
     name: WinGet publish
