@@ -205,9 +205,9 @@ jobs:
             cp "$binary" "$BUNDLE_DIR/${parent}_carl"
           done
 
-          # Use explicit filenames rather than '.' to avoid a leading directory
-          # marker entry in the zip archive.
-          (cd "$BUNDLE_DIR" && zip "$BUNDLE_ZIP" ./*) \
+          # Use explicit glob rather than './*' to avoid leading './' path markers
+          # in the zip archive entries.
+          (cd "$BUNDLE_DIR" && zip "$BUNDLE_ZIP" *) \
             || { echo "::error::Failed to create notarisation bundle."; exit 1; }
 
           # Submit for notarisation. --wait blocks until Apple's service completes

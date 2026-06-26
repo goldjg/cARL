@@ -56,11 +56,12 @@ Promoted invariants from previous PRs remain in force:
 
 ## Approved scope
 
-- `.goreleaser.yaml` — split `builds`: keep `id: carl` for linux/windows; add `id: darwin` prebuilt builder pointing to `./prebuilt/`.
-- `.github/workflows/release.yml` — add `sign-darwin` macOS job; update `release` job to depend on `sign-darwin` and download signed darwin artifacts.
-- `.github/workflows/goreleaser-check.yml` — add unsigned placeholder darwin builds for snapshot dry-run.
-- `DISTRIBUTION.md` — replace unsigned macOS warning; add Apple signing secrets table; update release pipeline summary.
-- `README.md` — replace unsigned macOS warning with signed/notarised guidance.
+- `.goreleaser.yaml` — remove `id: darwin` prebuilt builder; add darwin targets to `id: carl` unified build; add `builds.hooks.post` calling `.github/scripts/codesign-darwin.sh`.
+- `.github/scripts/codesign-darwin.sh` — new post-hook script: signs darwin binaries inline; skips gracefully on non-macOS runners.
+- `.github/workflows/release.yml` — move release job to `macos-latest`; merge signing/notarisation inline; two-phase GoReleaser (`--skip=publish` then `publish`); remove separate `sign-darwin` job.
+- `.github/workflows/goreleaser-check.yml` — remove placeholder darwin build step (no longer needed with cross-compilation).
+- `DISTRIBUTION.md` — soften macOS signing claims to "configured from v0.4.2 onward"; update pipeline summary table; keep Apple signing secrets table.
+- `README.md` — soften macOS signing claims to "configured from v0.4.2 onward".
 - `ROADMAP.md` — update release workflow description.
 - `.github/carl/memory.md` — update release infrastructure durable truth.
 - `.github/carl/trust-boundaries.md` — add Apple signing secret trust-boundary rule.
@@ -142,7 +143,8 @@ When this PR is complete, supersede or close this contract.
 
 Durable lessons to carry forward:
 
-- macOS codesign and notarytool require a macOS runner; splitting the build into a macOS sign job and ubuntu GoReleaser publish job is the preferred architecture.
-- GoReleaser prebuilt builder allows signed darwin binaries to be consumed without rebuilding on ubuntu.
+- macOS codesign and notarytool require a macOS runner; running GoReleaser on `macos-latest` allows both cross-compilation (Linux/Windows) and inline darwin signing in a single job.
+- GoReleaser OSS supports `builds.hooks.post` for inline signing; the `builder: prebuilt` approach requires GoReleaser Pro and must not be used with standard GoReleaser.
+- Two-phase GoReleaser (`--skip=publish` → notarise → `goreleaser publish`) ensures unsigned darwin artefacts are never uploaded to a GitHub Release.
 - Temporary keychain cleanup must always run in CI to prevent certificate material persisting on runners.
-- Five Apple repository secrets are required for the `sign-darwin` job to succeed.
+- Five Apple repository secrets are required for macOS signing to succeed.
