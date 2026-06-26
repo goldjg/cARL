@@ -198,14 +198,17 @@ GoReleaser publishes the cask definition automatically on each tagged release
 using `HOMEBREW_TAP_GITHUB_TOKEN`.
 WinGet submission is automated in the release workflow via `wingetcreate update`
 when `WINGETCREATE_TOKEN` is configured; manual submission remains a fallback.
-The release job runs on `macos-latest` so that `codesign` and `xcrun notarytool`
-are available. GoReleaser cross-compiles Linux and Windows binaries on the same
+The release job runs on `macos-latest` so that `codesign` is available.
+GoReleaser cross-compiles Linux and Windows binaries on the same
 runner. darwin binaries are signed inline by a GoReleaser post-hook
 (`.github/scripts/codesign-darwin.sh`) immediately after each darwin binary is
-built. Notarisation via `xcrun notarytool` runs after all builds and archives are
-complete but before GoReleaser publishes the GitHub Release, ensuring only signed
-and notarised darwin artefacts appear in the release. Uses OSS GoReleaser only —
-no GoReleaser Pro features. Five Apple repository secrets are required for macOS
+built. GoReleaser then runs a single `goreleaser release --clean` which builds,
+signs (via hook), archives, checksums, and publishes the GitHub Release in one
+step. darwin artefacts are codesigned (Developer ID Application, hardened
+runtime) but not notarised; Gatekeeper may prompt on first run. Full
+notarisation requires switching to App Store Connect API key auth and configuring
+`notarize.macos` — see DISTRIBUTION.md. Uses OSS GoReleaser only —
+no GoReleaser Pro features. Two Apple repository secrets are required for macOS
 signing (see DISTRIBUTION.md).
 
 ### `carl status` Command

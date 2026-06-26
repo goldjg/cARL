@@ -7,8 +7,9 @@
 # snapshot builds on ubuntu-latest).
 #
 # Required environment variables (injected by GoReleaser hook env):
-#   ARTIFACT_PATH — absolute or relative path to the built binary
-#   ARTIFACT_OS   — target OS (darwin, linux, windows)
+#   ARTIFACT_PATH   — absolute or relative path to the built binary
+#   ARTIFACT_TARGET — GoReleaser build target string (e.g. darwin_amd64_v1,
+#                     linux_arm64). Sign only when this starts with "darwin_".
 #   SIGNING_IDENTITY — Developer ID Application identity name, extracted after
 #                      certificate import and stored in GITHUB_ENV before GoReleaser
 #                      runs. Not a secret value.
@@ -18,10 +19,10 @@
 set -euo pipefail
 
 ARTIFACT_PATH="${ARTIFACT_PATH:?ARTIFACT_PATH must be set by the GoReleaser hook env}"
-ARTIFACT_OS="${ARTIFACT_OS:?ARTIFACT_OS must be set by the GoReleaser hook env}"
+ARTIFACT_TARGET="${ARTIFACT_TARGET:?ARTIFACT_TARGET must be set by the GoReleaser hook env}"
 
 # Only sign darwin binaries; skip all other platforms without error.
-if [ "$ARTIFACT_OS" != "darwin" ]; then
+if [[ "$ARTIFACT_TARGET" != darwin_* ]]; then
   exit 0
 fi
 

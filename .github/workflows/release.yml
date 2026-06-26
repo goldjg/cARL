@@ -10,30 +10,28 @@
 #   WINGETCREATE_TOKEN — optional; when set, used to submit/update the
 #   `goldjg.cARL` package in microsoft/winget-pkgs.
 #
-# Apple signing/notarisation secrets (all required for macOS artefacts):
+# Apple signing secrets (both required for macOS artefacts to be signed):
 #   MACOS_CERTIFICATE_P12_BASE64 — base64-encoded Developer ID Application .p12
 #     exported from your Apple Developer keychain. Encode with:
 #     base64 -i cert.p12 | tr -d '\n'
 #   MACOS_CERTIFICATE_PASSWORD — password used when exporting the .p12 file.
-#   APPLE_ID — Apple ID email address used for notarytool authentication.
-#   APPLE_TEAM_ID — 10-character Apple Developer Team ID (visible in
-#     developer.apple.com under Membership).
-#   APPLE_APP_SPECIFIC_PASSWORD — app-specific password for notarytool.
-#     Generate at appleid.apple.com under Sign-In and Security > App-Specific
-#     Passwords. This is NOT your Apple ID password.
+#
+# Notarisation is NOT included in the current release flow.
+# GoReleaser OSS notarize.macos only supports App Store Connect API key
+# authentication (issuer_id + key_id + key). The current secrets use the
+# apple-id + app-specific-password model, which notarize.macos does not support.
+# To add full notarisation, switch to App Store Connect API key auth and
+# configure notarize.macos in .goreleaser.yaml. See DISTRIBUTION.md for details.
 #
 # Design:
-#   The release job runs on macos-latest so that codesign and xcrun notarytool
-#   are available for darwin binary signing and notarisation. GoReleaser
-#   cross-compiles Linux and Windows binaries on the same macOS runner (Go
-#   cross-compilation does not require the target OS). darwin binaries are signed
-#   inline by a GoReleaser post-hook (.github/scripts/codesign-darwin.sh)
-#   immediately after each darwin binary is built, before archiving. GoReleaser
-#   then runs with --skip=publish to build, archive, and compute checksums
-#   without creating the GitHub Release yet. Notarisation is performed on the
-#   signed darwin binaries in dist/ before GoReleaser publishes the release.
-#   This ensures the GitHub Release only ever contains signed and notarised
-#   darwin artefacts.
+#   The release job runs on macos-latest so that codesign is available for
+#   darwin binary signing. GoReleaser cross-compiles Linux and Windows binaries
+#   on the same macOS runner (Go cross-compilation does not require the target OS).
+#   darwin binaries are signed inline by a GoReleaser post-hook
+#   (.github/scripts/codesign-darwin.sh) immediately after each darwin binary is
+#   built, before archiving. GoReleaser then runs a single `goreleaser release
+#   --clean` which builds, signs (via hook), archives, computes checksums, and
+#   publishes the GitHub Release in one step.
 #
 # Homebrew tap publishing remains configured in GoReleaser and is gated by
 # HOMEBREW_TAP_GITHUB_TOKEN.
@@ -52,7 +50,7 @@ permissions:
 jobs:
   release:
     name: GoReleaser
-    # macOS runner required for codesign and xcrun notarytool.
+    # macOS runner required for codesign (darwin binary signing).
     # Go cross-compilation handles Linux and Windows builds on the same runner.
     runs-on: macos-latest
 
@@ -70,16 +68,10 @@ jobs:
         env:
           CERT_P12:  ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
           CERT_PASS: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-          _APPLE_ID: ${{ secrets.APPLE_ID }}
-          _APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          _APPLE_APP_PASS: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: |
           missing=""
-          [ -z "$CERT_P12" ]        && missing="$missing MACOS_CERTIFICATE_P12_BASE64"
-          [ -z "$CERT_PASS" ]       && missing="$missing MACOS_CERTIFICATE_PASSWORD"
-          [ -z "$_APPLE_ID" ]       && missing="$missing APPLE_ID"
-          [ -z "$_APPLE_TEAM_ID" ]  && missing="$missing APPLE_TEAM_ID"
-          [ -z "$_APPLE_APP_PASS" ] && missing="$missing APPLE_APP_SPECIFIC_PASSWORD"
+          [ -z "$CERT_P12" ]  && missing="$missing MACOS_CERTIFICATE_P12_BASE64"
+          [ -z "$CERT_PASS" ] && missing="$missing MACOS_CERTIFICATE_PASSWORD"
           if [ -n "$missing" ]; then
             echo "::error::Required Apple signing secrets are not configured:$missing"
             echo "See DISTRIBUTION.md for setup instructions."
@@ -145,11 +137,10 @@ jobs:
           echo "SIGNING_IDENTITY=${SIGNING_IDENTITY}" >> "$GITHUB_ENV"
           echo "Signing identity: $SIGNING_IDENTITY"
 
-      - name: Run GoReleaser (build, archive, checksum — skip publish)
-        # Build and archive all platforms. darwin binaries are signed inline by the
-        # codesign post-hook as each binary is produced. --skip=publish defers the
-        # GitHub Release and Homebrew cask upload until after notarisation below.
-        # goreleaser/goreleaser-action is a third-party action.
+      - name: Run GoReleaser
+        # Build and archive all platforms, sign darwin binaries inline via the
+        # codesign post-hook, and publish the GitHub Release and Homebrew cask
+        # in a single step. goreleaser/goreleaser-action is a third-party action.
         # The action tag (@v6) is pinned to the GoReleaser v2 major line.
         # The GoReleaser tool version below is pinned to a specific release for
         # determinism. Update both pins together when upgrading GoReleaser.
@@ -158,122 +149,13 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           version: v2.16.0
-          args: release --skip=publish --clean
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
           # SIGNING_IDENTITY is set above and inherited by the GoReleaser process.
           # The codesign post-hook reads it to identify the Developer ID cert.
           SIGNING_IDENTITY: ${{ env.SIGNING_IDENTITY }}
-
-      - name: Notarise darwin binaries with notarytool
-        # Notarisation is performed after archiving but before publishing to
-        # GitHub Releases. This ensures the release only contains binaries that
-        # have been submitted to Apple and approved. For plain executables,
-        # notarisation does not modify the binary — it creates a record in Apple's
-        # database keyed to the binary's CD hash. Gatekeeper performs an online
-        # check (OCSP) when the user first runs the binary.
-        env:
-          APPLE_ID:                    ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID:               ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-        run: |
-          # Locate signed darwin binaries produced by GoReleaser.
-          # GoReleaser places binaries at dist/<id>_<goos>_<goarch>[_<variant>]/<binary>.
-          mapfile -t DARWIN_BINARIES < <(find dist -type f -name carl -path '*darwin*' | sort)
-
-          if [ ${#DARWIN_BINARIES[@]} -eq 0 ]; then
-            echo "::error::No darwin binaries found in dist/ for notarisation."
-            echo "Expected paths matching: dist/carl_darwin_*/carl"
-            exit 1
-          fi
-
-          echo "Found darwin binaries for notarisation:"
-          printf '  %s\n' "${DARWIN_BINARIES[@]}"
-
-          # Bundle all signed darwin binaries into a single zip for submission.
-          # Apple notarytool accepts a zip containing signed executables.
-          BUNDLE_DIR="$RUNNER_TEMP/notarisation_bundle"
-          BUNDLE_ZIP="$RUNNER_TEMP/darwin_notarisation.zip"
-          mkdir -p "$BUNDLE_DIR"
-
-          for binary in "${DARWIN_BINARIES[@]}"; do
-            # Derive a unique filename from the binary's parent directory name
-            # (e.g. carl_darwin_amd64_v1 → carl_darwin_amd64_v1) to avoid
-            # collisions when zipping multiple architectures.
-            parent=$(basename "$(dirname "$binary")")
-            cp "$binary" "$BUNDLE_DIR/${parent}_carl"
-          done
-
-          # Use explicit glob rather than './*' to avoid leading './' path markers
-          # in the zip archive entries.
-          (cd "$BUNDLE_DIR" && zip "$BUNDLE_ZIP" *) \
-            || { echo "::error::Failed to create notarisation bundle."; exit 1; }
-
-          # Submit for notarisation. --wait blocks until Apple's service completes
-          # or the timeout expires. 20 minutes covers typical notarisation latency
-          # plus high-load periods at Apple's service.
-          if ! xcrun notarytool submit "$BUNDLE_ZIP" \
-            --apple-id "$APPLE_ID" \
-            --team-id "$APPLE_TEAM_ID" \
-            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-            --wait \
-            --timeout 20m; then
-            echo "::error::Notarisation failed."
-            echo "For detailed failure diagnostics, retrieve the submission log:"
-            echo "  xcrun notarytool log <submission-id> --apple-id <apple-id> --team-id <team-id> --password <app-specific-password>"
-            echo "Common causes: invalid credentials (check APPLE_ID/APPLE_TEAM_ID/APPLE_APP_SPECIFIC_PASSWORD),"
-            echo "  Apple service unavailability, or binary not properly signed before submission."
-            echo "See DISTRIBUTION.md (Apple signing secrets setup) for configuration guidance."
-            exit 1
-          fi
-
-          # Clean up notarisation bundle; signed binaries remain in dist/.
-          rm -rf "$BUNDLE_DIR" "$BUNDLE_ZIP"
-          echo "Notarisation complete."
-
-      - name: Staple notarisation tickets
-        run: |
-          # Stapling embeds the notarisation ticket so Gatekeeper can verify
-          # offline. For plain executables (not .app/.dmg/.pkg) stapling is not
-          # applicable; xcrun stapler returns non-zero in this case.
-          #
-          # cARL is distributed as a plain executable. The stapler is run here
-          # so that if a future release adds .pkg or .dmg packaging, stapling
-          # will work without further changes. Non-zero exit is treated as
-          # expected for plain executables; unexpected Apple error strings
-          # (not matching known "not applicable" patterns) are logged prominently.
-          mapfile -t DARWIN_BINARIES < <(find dist -type f -name carl -path '*darwin*' | sort)
-          for BINARY in "${DARWIN_BINARIES[@]}"; do
-            STAPLE_OUTPUT=$(xcrun stapler staple "$BINARY" 2>&1)
-            STAPLE_EXIT=$?
-            if [ $STAPLE_EXIT -eq 0 ]; then
-              echo "Stapled: $BINARY"
-            else
-              # "staple requires a bundle" and "was not found in the notarization
-              # database" are the expected messages for plain executables.
-              # Note: Apple's tools use American spelling ("notarization") in
-              # their output; the grep pattern intentionally matches that spelling.
-              if echo "$STAPLE_OUTPUT" | grep -qiE "requires a bundle|not found in the notarization|does not support stapling"; then
-                echo "Stapling not applicable to plain executable (expected): $BINARY"
-              else
-                echo "::warning::Unexpected stapling result for $BINARY (exit $STAPLE_EXIT) — investigate if distributing bundles."
-              fi
-              echo "  stapler output: $STAPLE_OUTPUT"
-            fi
-          done
-
-      - name: Publish release artefacts
-        # Publish the pre-built, signed, and notarised artefacts to GitHub Releases
-        # and Homebrew tap. goreleaser publish reads from dist/artifacts.json
-        # produced by the build step above.
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          version: v2.16.0
-          args: publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
 
       - name: Delete temporary keychain
         # Always run so the keychain is removed even when earlier steps fail.

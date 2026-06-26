@@ -57,7 +57,7 @@ builds:
         - cmd: bash .github/scripts/codesign-darwin.sh
           env:
             - ARTIFACT_PATH={{ .Path }}
-            - ARTIFACT_OS={{ .Os }}
+            - ARTIFACT_TARGET={{ .Target }}
 
 archives:
   - id: default
