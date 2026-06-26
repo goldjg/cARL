@@ -180,12 +180,14 @@ jobs:
           # Bundle both signed darwin binaries into a single zip for submission.
           # Apple notarytool accepts a zip containing signed executables.
           # Both binaries must be signed before this step runs.
-          BUNDLE_DIR="$RUNNER_TEMP/notarise_bundle"
-          BUNDLE_ZIP="$RUNNER_TEMP/darwin_notarise.zip"
+          BUNDLE_DIR="$RUNNER_TEMP/notarisation_bundle"
+          BUNDLE_ZIP="$RUNNER_TEMP/darwin_notarisation.zip"
           mkdir -p "$BUNDLE_DIR"
           cp prebuilt/darwin_amd64/carl "$BUNDLE_DIR/carl_amd64"
           cp prebuilt/darwin_arm64/carl "$BUNDLE_DIR/carl_arm64"
-          (cd "$BUNDLE_DIR" && zip -r "$BUNDLE_ZIP" .) \
+          # Use explicit filenames rather than '.' to avoid a leading directory
+          # marker entry in the zip archive.
+          (cd "$BUNDLE_DIR" && zip "$BUNDLE_ZIP" carl_amd64 carl_arm64) \
             || { echo "::error::Failed to create notarisation bundle."; exit 1; }
 
           # Submit for notarisation. Credentials are masked by GitHub Actions.
@@ -231,6 +233,8 @@ jobs:
             else
               # "staple requires a bundle" and "was not found in the notarization
               # database" are the expected messages for plain executables.
+              # Note: Apple's tools use American spelling ("notarization") in
+              # their output; the grep pattern intentionally matches that spelling.
               # Any other error is logged as a warning for investigation.
               if echo "$STAPLE_OUTPUT" | grep -qiE "requires a bundle|not found in the notarization|does not support stapling"; then
                 echo "Stapling not applicable to plain executable (expected): $BINARY"
@@ -247,6 +251,9 @@ jobs:
           name: signed-darwin-binaries
           # GoReleaser expects binaries at ./prebuilt/darwin_<arch>/carl
           # (see .goreleaser.yaml prebuilt builder path template).
+          # IMPORTANT: this path layout must stay in sync with the prebuilt
+          # path template in .goreleaser.yaml (id: darwin). Changing the upload
+          # path here requires updating the template there, and vice versa.
           path: prebuilt/
           # Retain for one day — consumed immediately by the release job.
           retention-days: 1
@@ -257,8 +264,11 @@ jobs:
         run: |
           # Guard against KEYCHAIN_PATH being unset (e.g., if the job failed
           # before the certificate import step could write to GITHUB_ENV).
+          # Also validate it is within RUNNER_TEMP as defense-in-depth.
           if [ -z "$KEYCHAIN_PATH" ]; then
             echo "KEYCHAIN_PATH not set; keychain was never created."
+          elif [[ "$KEYCHAIN_PATH" != "$RUNNER_TEMP"/* ]]; then
+            echo "::warning::KEYCHAIN_PATH is outside RUNNER_TEMP; skipping deletion for safety."
           elif security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null; then
             echo "Temporary keychain deleted."
           else
