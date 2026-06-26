@@ -97,20 +97,40 @@ automatically on each tagged release. The `HOMEBREW_TAP_GITHUB_TOKEN` repository
 secret must be set with `Contents: write` access to `goldjg/homebrew-carl` for
 publishing to succeed.
 
-> macOS binaries are not currently Apple signed or notarized. Homebrew installation works, but macOS Gatekeeper may require manual approval or removal of the quarantine attribute on first run. Signing and notarization are planned for a future release.
+macOS release artefacts are **Apple signed and notarised**. The darwin binaries
+are signed with a Developer ID Application certificate (hardened runtime enabled)
+and notarised via Apple's notarisation service before being packaged into release
+archives. This means macOS Gatekeeper will not block execution on first run, and
+the artefacts are suitable for managed enterprise environments where Gatekeeper
+overrides (such as `xattr -dr com.apple.quarantine`) are blocked by MDM policy.
 
 ```sh
 brew tap goldjg/carl
 brew trust goldjg/carl
 brew install --cask carl
 
-# macOS unsigned binary workaround, only needed if Gatekeeper blocks first run
-xattr -dr com.apple.quarantine "$(brew --prefix)/Caskroom/carl"
-
 brew uninstall --cask carl
 brew untrust goldjg/carl
 brew untap goldjg/carl
 ```
+
+#### Apple signing secrets setup
+
+The release workflow requires five repository secrets for macOS signing. Configure
+these under **Settings → Secrets and variables → Actions** in the `goldjg/cARL`
+repository before tagging a release.
+
+| Secret | Description |
+|---|---|
+| `MACOS_CERTIFICATE_P12_BASE64` | Base64-encoded Developer ID Application `.p12`. Export from Keychain Access (Certificate Assistant → Export), then encode: `base64 -i cert.p12 \| tr -d '\n'` |
+| `MACOS_CERTIFICATE_PASSWORD` | Password set when exporting the `.p12` |
+| `APPLE_ID` | Apple ID email address for notarytool authentication |
+| `APPLE_TEAM_ID` | 10-character Team ID from [developer.apple.com](https://developer.apple.com/account) → Membership |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password for notarytool. Generate at [appleid.apple.com](https://appleid.apple.com) → Sign-In and Security → App-Specific Passwords. **Not** your Apple ID password. |
+
+The `sign-darwin` CI job validates that all five secrets are present and fails
+with a clear error message if any are missing, before attempting to import the
+certificate or invoke Apple tooling.
 
 ### WinGet (Windows)
 
@@ -206,8 +226,11 @@ sha256sum --check --ignore-missing checksums.txt
 
 | Step | Tool | Status |
 |---|---|---|
-| Build (all platforms) | GoReleaser | ✅ Automated |
-| Archives + checksums | GoReleaser | ✅ Automated |
+| Build (Linux, Windows) | GoReleaser (ubuntu-latest) | ✅ Automated |
+| Build darwin binaries | go build (macos-latest) | ✅ Automated |
+| macOS codesign (Developer ID, hardened runtime) | codesign (macos-latest) | ✅ Automated |
+| macOS notarisation | xcrun notarytool (macos-latest) | ✅ Automated |
+| Archives + checksums | GoReleaser (ubuntu-latest) | ✅ Automated |
 | deb / rpm / apk package artefacts | GoReleaser + nfpm | ✅ Automated |
 | apt / yum / apk repository publishing | Internal/manual setup | 📋 Future — see mirroring section |
 | GitHub Release | GoReleaser | ✅ Automated |

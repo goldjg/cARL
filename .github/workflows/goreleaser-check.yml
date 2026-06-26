@@ -80,6 +80,20 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Build unsigned darwin placeholder binaries (snapshot only)
+        # In production releases, darwin binaries are built, codesigned, and
+        # notarised in the sign-darwin job (release.yml) and placed at
+        # ./prebuilt/darwin_<arch>/carl before GoReleaser runs. For snapshot
+        # dry-runs there is no macOS runner, so build unsigned placeholders so
+        # GoReleaser can complete the archive/checksum/Homebrew pipeline.
+        # These binaries are never published to a GitHub Release.
+        run: |
+          mkdir -p prebuilt/darwin_amd64 prebuilt/darwin_arm64
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build \
+            -o prebuilt/darwin_amd64/carl ./cmd/carl
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build \
+            -o prebuilt/darwin_arm64/carl ./cmd/carl
+
       - name: GoReleaser snapshot build
         # Keep version pin in sync with the check job above.
         uses: goreleaser/goreleaser-action@v6

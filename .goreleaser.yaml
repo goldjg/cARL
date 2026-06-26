@@ -18,6 +18,10 @@ before:
     - go mod verify
 
 builds:
+  # Build ID "carl" covers Linux and Windows only. darwin binaries are built,
+  # codesigned, and notarised separately in the sign-darwin CI job (see
+  # .github/workflows/release.yml) before GoReleaser runs. The darwin prebuilt
+  # entry below picks them up so they can be archived and checksummed correctly.
   - id: carl
     main: ./cmd/carl
     binary: carl
@@ -26,7 +30,6 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - darwin
       - windows
     goarch:
       - amd64
@@ -42,6 +45,21 @@ builds:
       - -s -w
       - -X main.cliVersion={{.Version}}
       - -X main.sourceCommit={{.FullCommit}}
+
+  # darwin binaries are codesigned (Developer ID Application, hardened runtime)
+  # and notarised in the sign-darwin CI job before GoReleaser runs. GoReleaser
+  # uses the prebuilt builder to pick up the signed binaries from ./prebuilt/
+  # so archives, checksums, and Homebrew cask all reference the signed artefacts.
+  # The prebuilt path must match the layout produced by the sign-darwin job.
+  - id: darwin
+    builder: prebuilt
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    prebuilt:
+      path: ./prebuilt/{{ .Os }}_{{ .Arch }}/{{ .Binary }}
 
 archives:
   - id: default

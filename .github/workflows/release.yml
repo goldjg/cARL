@@ -10,6 +10,18 @@
 #   WINGETCREATE_TOKEN — optional; when set, used to submit/update the
 #   `goldjg.cARL` package in microsoft/winget-pkgs.
 #
+# Apple signing/notarisation secrets (all required for macOS artefacts):
+#   MACOS_CERTIFICATE_P12_BASE64 — base64-encoded Developer ID Application .p12
+#     exported from your Apple Developer keychain. Encode with:
+#     base64 -i cert.p12 | tr -d '\n'
+#   MACOS_CERTIFICATE_PASSWORD — password used when exporting the .p12 file.
+#   APPLE_ID — Apple ID email address used for notarytool authentication.
+#   APPLE_TEAM_ID — 10-character Apple Developer Team ID (visible in
+#     developer.apple.com under Membership).
+#   APPLE_APP_SPECIFIC_PASSWORD — app-specific password for notarytool.
+#     Generate at appleid.apple.com under Sign-In and Security > App-Specific
+#     Passwords. This is NOT your Apple ID password.
+#
 # Homebrew tap publishing remains configured in GoReleaser and is gated by
 # HOMEBREW_TAP_GITHUB_TOKEN.
 # See DISTRIBUTION.md for Homebrew, WinGet, and enterprise mirroring setup.
@@ -25,15 +37,217 @@ permissions:
   contents: write
 
 jobs:
+  # sign-darwin builds darwin binaries on a macOS runner, imports a Developer ID
+  # Application certificate, signs each binary with codesign (hardened runtime),
+  # notarises a zip bundle via xcrun notarytool, and uploads the signed binaries
+  # as a workflow artifact for the downstream GoReleaser release job.
+  #
+  # Running on macOS is required because codesign and xcrun notarytool are only
+  # available on macOS. The ubuntu release job remains unchanged for Linux,
+  # Windows, package, checksum, Homebrew, and WinGet work.
+  sign-darwin:
+    name: macOS sign and notarise
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Check required Apple signing secrets
+        env:
+          CERT_P12:  ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          CERT_PASS: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          _APPLE_ID: ${{ secrets.APPLE_ID }}
+          _APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          _APPLE_APP_PASS: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          missing=""
+          [ -z "$CERT_P12" ]        && missing="$missing MACOS_CERTIFICATE_P12_BASE64"
+          [ -z "$CERT_PASS" ]       && missing="$missing MACOS_CERTIFICATE_PASSWORD"
+          [ -z "$_APPLE_ID" ]       && missing="$missing APPLE_ID"
+          [ -z "$_APPLE_TEAM_ID" ]  && missing="$missing APPLE_TEAM_ID"
+          [ -z "$_APPLE_APP_PASS" ] && missing="$missing APPLE_APP_SPECIFIC_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Required Apple signing secrets are not configured:$missing"
+            echo "See DISTRIBUTION.md for setup instructions."
+            exit 1
+          fi
+          echo "All required Apple signing secrets are present."
+
+      - name: Build darwin binaries
+        run: |
+          # Derive version and commit to match GoReleaser ldflags exactly.
+          VERSION="${GITHUB_REF_NAME#v}"
+          COMMIT="$(git rev-parse HEAD)"
+          LDFLAGS="-s -w -X main.cliVersion=${VERSION} -X main.sourceCommit=${COMMIT}"
+
+          mkdir -p prebuilt/darwin_amd64 prebuilt/darwin_arm64
+
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build \
+            -ldflags="${LDFLAGS}" \
+            -o prebuilt/darwin_amd64/carl \
+            ./cmd/carl
+
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build \
+            -ldflags="${LDFLAGS}" \
+            -o prebuilt/darwin_arm64/carl \
+            ./cmd/carl
+
+          echo "Built darwin/amd64 and darwin/arm64 binaries."
+
+      - name: Import Developer ID Application certificate
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD:   ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          # Decode the P12 into a temp file; remove it immediately after import.
+          echo "$MACOS_CERTIFICATE_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+
+          # Generate a random keychain password (never printed or stored long-term).
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+          KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+
+          # Persist path for subsequent steps; password is kept in environment only.
+          echo "KEYCHAIN_PATH=${KEYCHAIN_PATH}" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PASSWORD=${KEYCHAIN_PASSWORD}" >> "$GITHUB_ENV"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import the certificate; -P reads the export password (masked by Actions).
+          security import "$RUNNER_TEMP/cert.p12" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign
+
+          # Allow codesign to access the key without a GUI prompt.
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH"
+
+          # Make the keychain searchable by codesign.
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          # Remove the decoded P12 immediately — the cert is now in the keychain.
+          rm -f "$RUNNER_TEMP/cert.p12"
+
+      - name: Sign darwin binaries with codesign
+        run: |
+          # Discover the imported Developer ID Application identity.
+          # Only one certificate exists in the temporary keychain, so head -1 is safe.
+          SIGNING_IDENTITY=$(
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
+            | grep "Developer ID Application" \
+            | sed -n '1s/.*"\([^"]*\)".*/\1/p'
+          )
+          if [ -z "$SIGNING_IDENTITY" ]; then
+            echo "::error::No Developer ID Application certificate found in keychain."
+            exit 1
+          fi
+          echo "Signing with identity: $SIGNING_IDENTITY"
+
+          for ARCH in darwin_amd64 darwin_arm64; do
+            BINARY="prebuilt/${ARCH}/carl"
+            codesign \
+              --force --verify --verbose \
+              --sign "$SIGNING_IDENTITY" \
+              --options runtime \
+              --timestamp \
+              "$BINARY"
+            # Verify the signature immediately after signing.
+            codesign --verify --deep --strict --verbose=2 "$BINARY"
+            echo "Signed and verified: $BINARY"
+          done
+
+      - name: Notarise darwin binaries with notarytool
+        env:
+          APPLE_ID:                  ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID:             ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          # Bundle both signed darwin binaries into a single zip for submission.
+          # Apple notarytool accepts a zip containing signed executables.
+          # Both binaries must be signed before this step runs.
+          BUNDLE_DIR="$RUNNER_TEMP/notarise_bundle"
+          BUNDLE_ZIP="$RUNNER_TEMP/darwin_notarise.zip"
+          mkdir -p "$BUNDLE_DIR"
+          cp prebuilt/darwin_amd64/carl "$BUNDLE_DIR/carl_amd64"
+          cp prebuilt/darwin_arm64/carl "$BUNDLE_DIR/carl_arm64"
+          (cd "$BUNDLE_DIR" && zip -r "$BUNDLE_ZIP" .)
+
+          # Submit for notarisation. Credentials are masked by GitHub Actions.
+          # --wait blocks until Apple's service completes or the timeout expires.
+          xcrun notarytool submit "$BUNDLE_ZIP" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --wait \
+            --timeout 15m
+
+          # Clean up notarisation bundle; signed binaries remain in prebuilt/.
+          rm -rf "$BUNDLE_DIR" "$BUNDLE_ZIP"
+          echo "Notarisation complete."
+
+      - name: Staple notarisation tickets
+        run: |
+          # Stapling embeds the notarisation ticket so Gatekeeper can verify
+          # offline. For plain executables (not .app/.dmg/.pkg) stapling is not
+          # applicable and xcrun stapler returns a non-zero exit code; this is
+          # expected and does not indicate a signing or notarisation failure.
+          for ARCH in darwin_amd64 darwin_arm64; do
+            BINARY="prebuilt/${ARCH}/carl"
+            xcrun stapler staple "$BINARY" \
+              && echo "Stapled: $BINARY" \
+              || echo "Stapling not applicable to plain executable (expected): $BINARY"
+          done
+
+      - name: Upload signed darwin binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-darwin-binaries
+          # GoReleaser expects binaries at ./prebuilt/darwin_<arch>/carl
+          # (see .goreleaser.yaml prebuilt builder path template).
+          path: prebuilt/
+          # Retain for one day — consumed immediately by the release job.
+          retention-days: 1
+
+      - name: Delete temporary keychain
+        # Always run so the keychain is removed even when earlier steps fail.
+        if: always()
+        run: |
+          if [ -n "$KEYCHAIN_PATH" ] && [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
+          fi
+          # Belt-and-suspenders: also remove cert if it was not already deleted.
+          rm -f "$RUNNER_TEMP/cert.p12"
+
   release:
     name: GoReleaser
     runs-on: ubuntu-latest
+    # sign-darwin must complete successfully so GoReleaser can consume the
+    # signed darwin binaries via the prebuilt builder.
+    needs:
+      - sign-darwin
 
     steps:
       - uses: actions/checkout@v4
         with:
           # Full history is required for GoReleaser changelog generation.
           fetch-depth: 0
+
+      - name: Download signed darwin binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: signed-darwin-binaries
+          # Place at ./prebuilt/ — matches the GoReleaser prebuilt builder path.
+          path: prebuilt/
 
       - uses: actions/setup-go@v5
         with:

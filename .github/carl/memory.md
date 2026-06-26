@@ -46,6 +46,11 @@ The cARL CLI release pipeline uses **GoReleaser** (`.goreleaser.yaml`) as the ca
 - SHA-256 checksums
 - GitHub Release with all artefacts attached
 
+darwin binaries are built, codesigned (Developer ID Application, hardened runtime), and notarised via `xcrun notarytool` in a dedicated `sign-darwin` job on `macos-latest` before the ubuntu GoReleaser job runs. GoReleaser consumes signed darwin binaries via the prebuilt builder (`id: darwin`, `builder: prebuilt`, `path: ./prebuilt/{{ .Os }}_{{ .Arch }}/{{ .Binary }}`). Archives, checksums, and the Homebrew cask all reference signed and notarised content. Stapling is attempted but is not applicable to plain CLI executables (expected non-zero exit). The ubuntu GoReleaser job remains unchanged for Linux, Windows, packages, and checksums.
+
+Five Apple repository secrets are required for `sign-darwin` to succeed:
+`MACOS_CERTIFICATE_P12_BASE64`, `MACOS_CERTIFICATE_PASSWORD`, `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_SPECIFIC_PASSWORD`. See DISTRIBUTION.md for setup.
+
 Homebrew tap publishing is **enabled** via the `goldjg/homebrew-carl` tap. GoReleaser publishes the cask definition automatically on each tagged release; `HOMEBREW_TAP_GITHUB_TOKEN` must be set as a repository secret with `Contents: write` access to `goldjg/homebrew-carl`. (Note: `skip_upload: true` was removed after `skip_upload: auto` caused a `401 Bad credentials` abort during v0.4.1 when the token was present but invalid.) WinGet submission is automated in the release workflow via `wingetcreate update` when `WINGETCREATE_TOKEN` is configured; otherwise manual submission remains available (see `DISTRIBUTION.md`). Enterprise mirroring into JFrog Artifactory or similar is documented in `DISTRIBUTION.md` but not automated in CI.
 
 ## Repository snapshot
@@ -218,4 +223,4 @@ The active authority order is:
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-24 by WinGet publishing workflow update
+2026-06-26 by macOS Developer ID signing and notarisation workflow update

@@ -211,15 +211,15 @@ See [DISTRIBUTION.md](DISTRIBUTION.md) for install commands.
 
 #### Homebrew (macOS / Linux)
 
-> macOS binaries are not currently Apple signed or notarized. Homebrew installation works, but macOS Gatekeeper may require manual approval or removal of the quarantine attribute on first run. Signing and notarization are planned for a future release.
+macOS release artefacts are **Apple signed and notarised** (Developer ID Application,
+hardened runtime). macOS Gatekeeper will not block execution on first run, and the
+artefacts support managed enterprise environments where Gatekeeper overrides are
+blocked by MDM policy.
 
 ```sh
 brew tap goldjg/carl
 brew trust goldjg/carl
 brew install --cask carl
-
-# macOS unsigned binary workaround, only needed if Gatekeeper blocks first run
-xattr -dr com.apple.quarantine "$(brew --prefix)/Caskroom/carl"
 
 brew uninstall --cask carl
 brew untrust goldjg/carl
