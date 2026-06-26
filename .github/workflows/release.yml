@@ -143,6 +143,8 @@ jobs:
         run: |
           # Discover the imported Developer ID Application identity.
           # Only one certificate exists in the temporary keychain, so head -1 is safe.
+          # `security find-identity` always formats the identity as: N) <SHA1> "<name>"
+          # The sed pattern extracts the quoted name from that standard format.
           SIGNING_IDENTITY=$(
             security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
             | grep "Developer ID Application" \
@@ -151,6 +153,7 @@ jobs:
           # Fail immediately if the identity could not be extracted.
           if [ -z "$SIGNING_IDENTITY" ]; then
             echo "::error::No Developer ID Application certificate found in keychain."
+            echo "Verify MACOS_CERTIFICATE_P12_BASE64 contains a valid Developer ID Application certificate."
             exit 1
           fi
           echo "Signing with identity: $SIGNING_IDENTITY"
@@ -189,12 +192,20 @@ jobs:
           # --wait blocks until Apple's service completes or the timeout expires.
           # 20 minutes covers typical notarisation latency plus high-load periods
           # at Apple's service; successful submissions complete well within this.
-          xcrun notarytool submit "$BUNDLE_ZIP" \
+          if ! xcrun notarytool submit "$BUNDLE_ZIP" \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
             --wait \
-            --timeout 20m
+            --timeout 20m; then
+            echo "::error::Notarisation failed."
+            echo "For detailed failure diagnostics, retrieve the submission log:"
+            echo "  xcrun notarytool log <submission-id> --apple-id <apple-id> --team-id <team-id> --password <app-specific-password>"
+            echo "Common causes: invalid credentials (check APPLE_ID/APPLE_TEAM_ID/APPLE_APP_SPECIFIC_PASSWORD),"
+            echo "  Apple service unavailability, or binary not properly signed before submission."
+            echo "See DISTRIBUTION.md (Apple signing secrets setup) for configuration guidance."
+            exit 1
+          fi
 
           # Clean up notarisation bundle; signed binaries remain in prebuilt/.
           rm -rf "$BUNDLE_DIR" "$BUNDLE_ZIP"
@@ -204,8 +215,13 @@ jobs:
         run: |
           # Stapling embeds the notarisation ticket so Gatekeeper can verify
           # offline. For plain executables (not .app/.dmg/.pkg) stapling is not
-          # applicable — xcrun stapler returns non-zero. Capture the output to
-          # distinguish the known 'not applicable' case from unexpected errors.
+          # applicable; xcrun stapler returns non-zero in this case.
+          #
+          # cARL is distributed as a plain executable. The stapler is run here
+          # so that if a future release adds .pkg or .dmg packaging, stapling
+          # will work without further changes. Non-zero exit is treated as
+          # expected for plain executables; unexpected Apple error strings
+          # (not matching known "not applicable" patterns) are logged prominently.
           for ARCH in darwin_amd64 darwin_arm64; do
             BINARY="prebuilt/${ARCH}/carl"
             STAPLE_OUTPUT=$(xcrun stapler staple "$BINARY" 2>&1)
@@ -213,7 +229,14 @@ jobs:
             if [ $STAPLE_EXIT -eq 0 ]; then
               echo "Stapled: $BINARY"
             else
-              echo "Stapling not applicable to plain executable (expected): $BINARY"
+              # "staple requires a bundle" and "was not found in the notarization
+              # database" are the expected messages for plain executables.
+              # Any other error is logged as a warning for investigation.
+              if echo "$STAPLE_OUTPUT" | grep -qiE "requires a bundle|not found in the notarization|does not support stapling"; then
+                echo "Stapling not applicable to plain executable (expected): $BINARY"
+              else
+                echo "::warning::Unexpected stapling result for $BINARY (exit $STAPLE_EXIT) — investigate if distributing bundles."
+              fi
               echo "  stapler output: $STAPLE_OUTPUT"
             fi
           done
@@ -232,7 +255,11 @@ jobs:
         # Always run so the keychain is removed even when earlier steps fail.
         if: always()
         run: |
-          if security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null; then
+          # Guard against KEYCHAIN_PATH being unset (e.g., if the job failed
+          # before the certificate import step could write to GITHUB_ENV).
+          if [ -z "$KEYCHAIN_PATH" ]; then
+            echo "KEYCHAIN_PATH not set; keychain was never created."
+          elif security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null; then
             echo "Temporary keychain deleted."
           else
             # Non-zero exit means the keychain does not exist (e.g., the job
@@ -262,6 +289,26 @@ jobs:
           name: signed-darwin-binaries
           # Place at ./prebuilt/ — matches the GoReleaser prebuilt builder path.
           path: prebuilt/
+
+      - name: Verify signed darwin binaries are present
+        # Catch desynchronisation between sign-darwin output paths and the
+        # GoReleaser prebuilt path template before GoReleaser runs.
+        run: |
+          MISSING=0
+          for ARCH in darwin_amd64 darwin_arm64; do
+            if [ ! -f "prebuilt/${ARCH}/carl" ]; then
+              echo "::error::Expected signed binary missing: prebuilt/${ARCH}/carl"
+              MISSING=1
+            fi
+          done
+          if [ "$MISSING" -eq 1 ]; then
+            echo "::error::Signed darwin binaries not found at expected paths."
+            echo "Ensure the sign-darwin job completed successfully and that the"
+            echo "prebuilt path template in .goreleaser.yaml matches the sign-darwin"
+            echo "job upload layout in .github/workflows/release.yml."
+            exit 1
+          fi
+          echo "All expected signed darwin binaries are present."
 
       - uses: actions/setup-go@v5
         with:
