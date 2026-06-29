@@ -198,7 +198,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
 
-          if ($env:GITHUB_REF_NAME -notmatch '^v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$') {
+          if ($env:GITHUB_REF_NAME -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$') {
             throw "Invalid tag format '$env:GITHUB_REF_NAME'. Expected semantic version tag starting with 'v'."
           }
 
