@@ -1,20 +1,20 @@
-# Release workflow — builds and publishes cARL CLI binaries, archives, and
+# Release workflow - builds and publishes cARL CLI binaries, archives, and
 # native packages (deb/rpm/apk) using GoReleaser when a semantic version tag
 # (v*) is pushed.
 #
 # Permissions:
-#   contents: write — required to create GitHub Releases and upload assets.
+#   contents: write - required to create GitHub Releases and upload assets.
 #
 # Secrets:
-#   GITHUB_TOKEN — automatically provided; used for the release.
-#   WINGETCREATE_TOKEN — optional; when set, used to submit/update the
+#   GITHUB_TOKEN - automatically provided; used for the release.
+#   WINGETCREATE_TOKEN - optional; when set, used to submit/update the
 #   `goldjg.cARL` package in microsoft/winget-pkgs.
 #
 # Apple signing secrets (both required for macOS artefacts to be signed):
-#   MACOS_CERTIFICATE_P12_BASE64 — base64-encoded Developer ID Application .p12
+#   MACOS_CERTIFICATE_P12_BASE64 - base64-encoded Developer ID Application .p12
 #     exported from your Apple Developer keychain. Encode with:
 #     base64 -i cert.p12 | tr -d '\n'
-#   MACOS_CERTIFICATE_PASSWORD — password used when exporting the .p12 file.
+#   MACOS_CERTIFICATE_PASSWORD - password used when exporting the .p12 file.
 #
 # Notarisation is NOT included in the current release flow.
 # GoReleaser OSS notarize.macos only supports App Store Connect API key
@@ -121,7 +121,7 @@ jobs:
           # Make the keychain searchable by codesign.
           security list-keychain -d user -s "$KEYCHAIN_PATH"
 
-          # Remove the decoded P12 immediately — the cert is now in the keychain.
+          # Remove the decoded P12 immediately - the cert is now in the keychain.
           rm -f "$RUNNER_TEMP/cert.p12"
 
           # Extract the signing identity name for use in the GoReleaser post-hook.
