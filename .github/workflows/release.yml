@@ -48,6 +48,12 @@ permissions:
   contents: write
 
 jobs:
+  preflight:
+    name: Release preflight
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Release workflow accepted by Actions"
+
   release:
     name: GoReleaser
     # macOS runner required for codesign (darwin binary signing).
