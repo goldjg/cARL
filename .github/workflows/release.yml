@@ -48,17 +48,12 @@ permissions:
   contents: write
 
 jobs:
-  preflight:
-    name: Release preflight
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Release workflow accepted by Actions"
 
   release:
     name: GoReleaser
     # macOS runner required for codesign (darwin binary signing).
     # Go cross-compilation handles Linux and Windows builds on the same runner.
-    runs-on: macos-15-intel
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
