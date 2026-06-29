@@ -52,7 +52,7 @@ jobs:
     name: GoReleaser
     # macOS runner required for codesign (darwin binary signing).
     # Go cross-compilation handles Linux and Windows builds on the same runner.
-    runs-on: macos-latest
+    runs-on: macos14
 
     steps:
       - uses: actions/checkout@v4
