@@ -253,12 +253,31 @@ carl version
 
 Expected output:
 ```
-CLI Version:      1.0.0
-Runtime Version:  1.0.0
-Source:           goldjg/cARL
-...
-Runtime Status:
-  Healthy
+cARL CLI:
+  Version:          1.2.0
+Bundled Runtime:
+  Version:          1.1.0
+  Source:           goldjg/cARL
+  Tag:              v1.2.0
+  Commit:           98f680b3...
+Repository Runtime:
+  Version:          1.0.0
+  Source:           goldjg/cARL
+  Tag:              v1.0.0
+  Commit:           742ac661...
+  Status:           Upgrade available
+```
+
+Version semantics:
+
+- **CLI version** identifies the executable and command implementation.
+- **Bundled runtime version** identifies the canonical governance payload embedded in the executable.
+- **Repository runtime version** identifies the runtime currently installed in the repository (`.github/carl/runtime.json`).
+
+To inspect bundled vs installed pack/shim component versions directly:
+
+```sh
+carl version --components
 ```
 
 ### 4. Restore drift

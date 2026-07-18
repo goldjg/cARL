@@ -48,7 +48,7 @@ func newFakeArtifacts() *fakeArtifacts {
 func installedDir(t *testing.T, arts *fakeArtifacts) string {
 	t.Helper()
 	dir := t.TempDir()
-	ic := install.New(arts, "dev")
+	ic := install.New(arts, "1.0.0", "goldjg/cARL", "v1.0.0", "dev")
 	if err := ic.RunInDir(dir); err != nil {
 		t.Fatalf("init: %v", err)
 	}

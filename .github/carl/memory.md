@@ -146,6 +146,16 @@ Harness adapters bridge cARL canonical artefacts to agent context injection mech
 
 `carl status` includes a separate harness summary covering active, missing, drifted, and healthy harnesses without changing overall runtime status semantics.
 
+`carl version` reports three distinct version layers:
+
+- CLI version (the executable);
+- bundled runtime version and provenance (canonical payload embedded in the executable);
+- repository runtime version from `.github/carl/runtime.json` when installed.
+
+`carl version --components` compares bundled vs installed instruction packs and
+harness shims, reporting bundled version, installed version, and sync/drift
+state (`current`, `older`, `newer`, `missing`, `unknown`).
+
 Detection files:
 
 - Copilot: `.github/copilot-instructions.md`
@@ -199,7 +209,7 @@ Malformed managed convert block markers cause conversion to fail before writing 
 
 - Build CLI: `go build ./cmd/carl`
 - Run tests: `go test ./...`
-- Build tagged release: `go build -ldflags "-X main.cliVersion=<tag> -X main.sourceCommit=$(git rev-parse HEAD)" ./cmd/carl`
+- Build tagged release: `go build -ldflags "-X main.cliVersion=<tag> -X main.bundledRuntimeVersion=<runtime-version> -X main.bundledRuntimeSource=goldjg/cARL -X main.bundledRuntimeTag=<tag> -X main.bundledRuntimeCommit=$(git rev-parse HEAD)" ./cmd/carl`
 - Validate GoReleaser config: `goreleaser check`
 - GoReleaser snapshot dry-run (no publish): `goreleaser release --snapshot --skip=publish --clean`
 
@@ -226,4 +236,4 @@ The active authority order is:
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-06-26 by macOS Developer ID signing and notarisation workflow update
+2026-07-18 by three-layer version model and bundled/install component reporting update

@@ -15,7 +15,7 @@
 //	reconcile  Update repository-specific memory sections from current repo-map data
 //	repair     Restore modified managed cARL artefacts to their canonical state
 //	status     Report whether the installed cARL runtime is healthy, missing, or drifted
-//	version    Show CLI and installed runtime version information
+//	version    Show CLI, bundled runtime, and repository runtime version information
 package main
 
 import (
@@ -44,10 +44,23 @@ import (
 //	go build -ldflags "-X main.cliVersion=1.0.0"
 var cliVersion = "dev"
 
-// sourceCommit is the VCS commit hash baked in at build time via:
+// bundledRuntimeVersion is the canonical cARL runtime version embedded in
+// this CLI binary. It is set at build time and may differ from cliVersion.
+var bundledRuntimeVersion = "1.0.0"
+
+// bundledRuntimeSource is the canonical source repository for the embedded
+// runtime payload.
+var bundledRuntimeSource = "goldjg/cARL"
+
+// bundledRuntimeTag is the source release tag for the embedded runtime
+// payload.
+var bundledRuntimeTag = "v1.0.0"
+
+// bundledRuntimeCommit is the source commit for the embedded runtime payload.
+// It is set at build time via:
 //
-//	go build -ldflags "-X main.sourceCommit=<hash>"
-var sourceCommit = "dev"
+//	go build -ldflags "-X main.bundledRuntimeCommit=<hash>"
+var bundledRuntimeCommit = "dev"
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -57,13 +70,26 @@ func main() {
 		convert.New(),
 		doctor.New(embedded.Assets),
 		harness.New(embedded.Assets),
-		install.New(embedded.Assets, sourceCommit),
+		install.New(
+			embedded.Assets,
+			bundledRuntimeVersion,
+			bundledRuntimeSource,
+			bundledRuntimeTag,
+			bundledRuntimeCommit,
+		),
 		repomap.New(),
 		plan.New(),
 		reconcile.New(),
 		repair.New(embedded.Assets),
 		status.New(cliVersion, embedded.Assets),
-		version.New(cliVersion, embedded.Assets),
+		version.New(
+			cliVersion,
+			bundledRuntimeVersion,
+			bundledRuntimeSource,
+			bundledRuntimeTag,
+			bundledRuntimeCommit,
+			embedded.Assets,
+		),
 	}
 
 	if err := run(ctx, os.Args[1:], cmds); err != nil {

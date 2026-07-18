@@ -11,12 +11,6 @@ import (
 	"github.com/goldjg/carl/internal/manifest"
 )
 
-const (
-	runtimeVersion = "1.0.0"
-	source         = "goldjg/cARL"
-	sourceTag      = "v1.0.0"
-)
-
 // Artifacts provides read access to embedded runtime files.
 type Artifacts interface {
 	// List returns all embedded file paths relative to the repo root.
@@ -27,15 +21,30 @@ type Artifacts interface {
 
 // Command implements `carl init`.
 type Command struct {
-	arts         Artifacts
-	sourceCommit string
+	arts                  Artifacts
+	bundledRuntimeVersion string
+	bundledRuntimeSource  string
+	bundledRuntimeTag     string
+	bundledRuntimeCommit  string
 }
 
 // New returns a new init Command backed by the given Artifacts.
-// sourceCommit is the VCS commit hash recorded in runtime.json; set at build
-// time via -ldflags "-X main.sourceCommit=<hash>" and threaded in from main.
-func New(arts Artifacts, sourceCommit string) *Command {
-	return &Command{arts: arts, sourceCommit: sourceCommit}
+// Bundled runtime metadata is set at CLI build time and identifies the
+// canonical runtime payload embedded in the binary.
+func New(
+	arts Artifacts,
+	bundledRuntimeVersion string,
+	bundledRuntimeSource string,
+	bundledRuntimeTag string,
+	bundledRuntimeCommit string,
+) *Command {
+	return &Command{
+		arts:                  arts,
+		bundledRuntimeVersion: bundledRuntimeVersion,
+		bundledRuntimeSource:  bundledRuntimeSource,
+		bundledRuntimeTag:     bundledRuntimeTag,
+		bundledRuntimeCommit:  bundledRuntimeCommit,
+	}
 }
 
 // Name returns the command name.
@@ -102,10 +111,10 @@ func (c *Command) RunInDir(rootDir string) error {
 
 	// Create runtime.json.
 	rt := &manifest.Runtime{
-		RuntimeVersion:   runtimeVersion,
-		Source:           source,
-		SourceTag:        sourceTag,
-		SourceCommit:     c.sourceCommit,
+		RuntimeVersion:   c.bundledRuntimeVersion,
+		Source:           c.bundledRuntimeSource,
+		SourceTag:        c.bundledRuntimeTag,
+		SourceCommit:     c.bundledRuntimeCommit,
 		InstalledAt:      time.Now().UTC(),
 		ManagedArtifacts: files,
 	}

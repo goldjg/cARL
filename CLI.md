@@ -834,75 +834,110 @@ Syncing harness adapters...
 
 ## carl version
 
-Shows CLI and installed runtime version information, including installed packs
-and a health status.
+Shows three distinct version layers:
+
+1. **CLI version** — the `carl` executable version.
+2. **Bundled runtime version** — the canonical cARL governance payload embedded
+   in the executable (with source/tag/commit provenance).
+3. **Repository runtime version** — the runtime installed in the current
+   repository (`.github/carl/runtime.json`), when present.
 
 **Usage**
 
 ```
-carl version
+carl version [--components]
 ```
 
 Aliases: `carl --version`, `carl -v`
 
 **What it does**
 
-1. Reads `runtime.json` for the installed runtime version, source, and artefact list.
-2. Derives installed pack names from the managed artefact paths.
-3. Performs a content-based health check: compares each managed artefact against
-   its embedded canonical version and reports whether the runtime is healthy or
-   has drifted.
+1. Prints CLI and bundled runtime metadata (always, even outside an initialised repository).
+2. Reads repository runtime metadata from `runtime.json` only when it exists.
+3. Compares repository runtime version against bundled runtime version:
+   - `Current`
+   - `Upgrade available`
+   - `Repository runtime is newer`
+   - `Unknown` (non-semver comparison)
+4. When runtime is installed, prints installed instruction packs and installed versions
+   derived from each installed pack file metadata header: `<!-- version: X.Y.Z -->`.
+5. Prints harness shim versions from installed detection files.
+6. With `--components`, prints bundled vs installed component versions and drift state.
+
+**Output (runtime not installed)**
+
+```
+cARL CLI:
+  Version:          1.2.0
+Bundled Runtime:
+  Version:          1.1.0
+  Source:           goldjg/cARL
+  Tag:              v1.2.0
+  Commit:           98f680b3...
+Repository Runtime:
+  Not installed in the current repository.
+Harness Shims:
+  copilot      .github/copilot-instructions.md    2.1.0
+  claude       CLAUDE.md                          unknown
+  codex        AGENTS.md                          not installed
+  cursor       .cursor/rules/carl.mdc             not installed
+  antigravity  .agents/rules/carl.md              not installed
+```
 
 **Output (runtime installed)**
 
 ```
-CLI Version:      1.0.0
-Runtime Version:  1.0.0
-Source:           goldjg/cARL
-Tag:              v1.0.0
-Commit:           abc1234
+cARL CLI:
+  Version:          1.2.0
+Bundled Runtime:
+  Version:          1.1.0
+  Source:           goldjg/cARL
+  Tag:              v1.2.0
+  Commit:           98f680b3...
+Repository Runtime:
+  Version:          1.0.0
+  Source:           goldjg/cARL
+  Tag:              v1.0.0
+  Commit:           742ac661...
+  Status:           Upgrade available
 
 Installed Packs:
-  cloud/azure
-  cloud/entra
-  cloud/gcp
-  cloud/microsoft-graph
-  cloud/netlify
-  core/baseline
-  core/carl
-  core/cognition-governance
-  core/dependency
-  core/identity
-  core/memory-cache
-  core/pr-contract
-  core/security
-  core/tool-permission-tiers
-  languages/html
-  languages/javascript
-  languages/powershell
-  languages/python
-  languages/terraform
-  languages/typescript
-  platform/cicd
-  platform/docker
-  platform/kubernetes
+  cloud/azure                       1.0.1
+  core/baseline                     1.1.0
+  core/carl                         2.0.0
 
-Runtime Status:
-  Healthy
+Harness Shims:
+  copilot      .github/copilot-instructions.md    2.1.0
+  claude       CLAUDE.md                          1.0.0
+  codex        AGENTS.md                          unknown
+  cursor       .cursor/rules/carl.mdc             not installed
+  antigravity  .agents/rules/carl.md              not installed
 ```
 
-**Output (no runtime installed)**
+**`--components` output**
 
 ```
-No cARL runtime installed.
+Instruction Packs:
+  Pack                              Bundled   Installed  State
+  core/baseline                     1.1.0     1.0.0      older
+  core/carl                         2.0.0     2.0.0      current
+  cloud/azure                       1.0.1     missing    missing
+
+Harness Shims:
+  Harness       File                              Bundled   Installed  State
+  copilot       .github/copilot-instructions.md   2.1.0     1.0.0      older
+  claude        CLAUDE.md                         unknown   unknown    unknown
+  codex         AGENTS.md                         unknown   missing    missing
 ```
 
-**Runtime Status values**
+**Repository Runtime status values**
 
 | Status | Meaning |
 |---|---|
-| `Healthy` | All managed artefacts are present and match their canonical versions |
-| `Drift detected (N artefact(s) modified or missing)` | One or more artefacts differ; run `carl repair` |
+| `Current` | Repository runtime version equals bundled runtime version |
+| `Upgrade available` | Bundled runtime version is newer than repository runtime version |
+| `Repository runtime is newer` | Repository runtime version is newer than bundled runtime version |
+| `Unknown` | Either bundled or repository runtime version is not valid semantic versioning |
 
 ---
 
