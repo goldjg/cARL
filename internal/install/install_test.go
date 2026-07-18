@@ -31,9 +31,9 @@ func (f *fakeArtifacts) Open(path string) ([]byte, error) {
 func newFakeArtifacts() *fakeArtifacts {
 	return &fakeArtifacts{
 		files: map[string][]byte{
-			".github/copilot-instructions.md":              []byte("# Instructions"),
-			".github/carl/memory.md":                       []byte("# Memory"),
-			".github/carl/invariants.yml":                  []byte("invariants: []"),
+			".github/copilot-instructions.md":                []byte("# Instructions"),
+			".github/carl/memory.md":                         []byte("# Memory"),
+			".github/carl/invariants.yml":                    []byte("invariants: []"),
 			".github/instructions/core/carl.instructions.md": []byte("# carl pack"),
 		},
 	}
@@ -43,7 +43,7 @@ func newFakeArtifacts() *fakeArtifacts {
 func TestInit_Success(t *testing.T) {
 	dir := t.TempDir()
 	arts := newFakeArtifacts()
-	cmd := install.New(arts, "dev")
+	cmd := install.New(arts, "1.2.0", "goldjg/cARL", "v1.2.0", "deadbeef")
 
 	if err := cmd.RunInDir(dir); err != nil {
 		t.Fatalf("RunInDir: %v", err)
@@ -71,6 +71,12 @@ func TestInit_Success(t *testing.T) {
 	if len(rt.ManagedArtifacts) != len(files) {
 		t.Errorf("ManagedArtifacts count = %d; want %d", len(rt.ManagedArtifacts), len(files))
 	}
+	if rt.RuntimeVersion != "1.2.0" {
+		t.Errorf("RuntimeVersion = %q; want %q", rt.RuntimeVersion, "1.2.0")
+	}
+	if rt.Source != "goldjg/cARL" || rt.SourceTag != "v1.2.0" || rt.SourceCommit != "deadbeef" {
+		t.Errorf("unexpected bundled runtime metadata in manifest: %+v", rt)
+	}
 }
 
 // TestInit_AlreadyInstalled verifies that re-running init fails safely when
@@ -78,7 +84,7 @@ func TestInit_Success(t *testing.T) {
 func TestInit_AlreadyInstalled(t *testing.T) {
 	dir := t.TempDir()
 	arts := newFakeArtifacts()
-	cmd := install.New(arts, "dev")
+	cmd := install.New(arts, "1.0.0", "goldjg/cARL", "v1.0.0", "dev")
 
 	// First init succeeds.
 	if err := cmd.RunInDir(dir); err != nil {
@@ -110,7 +116,7 @@ func TestInit_ConflictingFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmd := install.New(arts, "dev")
+	cmd := install.New(arts, "1.0.0", "goldjg/cARL", "v1.0.0", "dev")
 	err := cmd.RunInDir(dir)
 	if err == nil {
 		t.Fatal("expected conflict error; got nil")
@@ -133,7 +139,7 @@ func TestInit_Run(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(orig) })
 
 	arts := newFakeArtifacts()
-	cmd := install.New(arts, "dev")
+	cmd := install.New(arts, "1.0.0", "goldjg/cARL", "v1.0.0", "dev")
 	if err := cmd.Run(context.Background(), nil); err != nil {
 		t.Fatalf("Run: %v", err)
 	}

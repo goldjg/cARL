@@ -43,11 +43,17 @@ builds:
         goarch: arm64
     ldflags:
       # Inject build-time metadata. Corresponds to vars in cmd/carl/main.go:
-      #   var cliVersion  = "dev"
-      #   var sourceCommit = "dev"
+      #   var cliVersion             = "dev"
+      #   var bundledRuntimeVersion  = "1.0.0"
+      #   var bundledRuntimeSource   = "goldjg/cARL"
+      #   var bundledRuntimeTag      = "v1.0.0"
+      #   var bundledRuntimeCommit   = "dev"
       - -s -w
       - -X main.cliVersion={{.Version}}
-      - -X main.sourceCommit={{.FullCommit}}
+      - -X main.bundledRuntimeVersion={{.Version}}
+      - -X main.bundledRuntimeSource=goldjg/cARL
+      - -X main.bundledRuntimeTag={{.Tag}}
+      - -X main.bundledRuntimeCommit={{.FullCommit}}
     hooks:
       # post runs after each individual binary is built, before archiving.
       # The script signs darwin binaries using the Developer ID Application cert

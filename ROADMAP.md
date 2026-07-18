@@ -192,7 +192,9 @@ Originally used a hand-rolled build matrix. Now uses GoReleaser to build the cAR
 for five platforms (linux/amd64, linux/arm64, darwin/amd64, darwin/arm64,
 windows/amd64), produce platform archives (tar.gz/zip), generate native Linux
 packages (deb/rpm/apk via nfpm), compute SHA-256 checksums, and publish a GitHub
-Release. Build-time `cliVersion` and `sourceCommit` are injected via `-ldflags`.
+Release. Build-time `cliVersion` plus bundled runtime provenance fields
+(`bundledRuntimeVersion`, `bundledRuntimeSource`, `bundledRuntimeTag`,
+`bundledRuntimeCommit`) are injected via `-ldflags`.
 Homebrew tap publishing is **enabled** via the `goldjg/homebrew-carl` tap.
 GoReleaser publishes the cask definition automatically on each tagged release
 using `HOMEBREW_TAP_GITHUB_TOKEN`.
