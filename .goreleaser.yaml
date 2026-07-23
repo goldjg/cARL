@@ -18,12 +18,7 @@ before:
     - go mod verify
 
 builds:
-  # Single build target covering all supported platforms. darwin binaries are
-  # signed immediately after each binary is produced by the codesign post-hook
-  # (.github/scripts/codesign-darwin.sh). On macOS runners the hook signs with
-  # the Developer ID Application certificate that was imported into the temporary
-  # keychain before GoReleaser runs. On Linux/Windows runners (snapshot builds)
-  # the hook skips gracefully because codesign is not available.
+  # Single build target covering all supported platforms.
   - id: carl
     main: ./cmd/carl
     binary: carl
@@ -54,16 +49,21 @@ builds:
       - -X main.bundledRuntimeSource=goldjg/cARL
       - -X main.bundledRuntimeTag={{.Tag}}
       - -X main.bundledRuntimeCommit={{.FullCommit}}
-    hooks:
-      # post runs after each individual binary is built, before archiving.
-      # The script signs darwin binaries using the Developer ID Application cert
-      # already in the temporary keychain. Non-darwin and non-macOS targets exit 0
-      # immediately, so the hook is safe for cross-compiled Linux/Windows builds.
-      post:
-        - cmd: bash .github/scripts/codesign-darwin.sh
-          env:
-            - ARTIFACT_PATH={{ .Path }}
-            - ARTIFACT_TARGET={{ .Target }}
+notarize:
+  macos:
+    - # Keep check/snapshot workflows usable without secrets.
+      enabled: '{{ and (isEnvSet "MACOS_CERTIFICATE_P12_BASE64") (isEnvSet "MACOS_CERTIFICATE_PASSWORD") (isEnvSet "NOTARIZE_ISSUER_ID") (isEnvSet "NOTARIZE_KEY_ID") (isEnvSet "NOTARIZE_KEY") }}'
+      ids:
+        - carl
+      sign:
+        certificate: "{{ .Env.MACOS_CERTIFICATE_P12_BASE64 }}"
+        password: "{{ .Env.MACOS_CERTIFICATE_PASSWORD }}"
+      notarize:
+        issuer_id: "{{ .Env.NOTARIZE_ISSUER_ID }}"
+        key_id: "{{ .Env.NOTARIZE_KEY_ID }}"
+        key: "{{ .Env.NOTARIZE_KEY }}"
+        wait: true
+        timeout: 20m
 
 archives:
   - id: default

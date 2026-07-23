@@ -97,29 +97,11 @@ automatically on each tagged release. The `HOMEBREW_TAP_GITHUB_TOKEN` repository
 secret must be set with `Contents: write` access to `goldjg/homebrew-carl` for
 publishing to succeed.
 
-macOS release artefacts are **codesigned from v0.4.2 onward** (Developer ID
-Application, hardened runtime). The release workflow builds darwin binaries on
-a macOS runner and signs each with `codesign` before archiving.
-
-> **Notarisation limitation:** GoReleaser OSS `notarize.macos` only supports
-> App Store Connect API key authentication (`issuer_id` + `key_id` + `key`).
-> It does not support the apple-id + app-specific-password authentication model.
-> The current release flow produces **codesigned but not notarised** darwin
-> artefacts. Gatekeeper may prompt users to allow the binary on first run.
-> To add full notarisation, switch to App Store Connect API key credentials and
-> configure `notarize.macos` in `.goreleaser.yaml`. Until then, enterprise
-> environments where Gatekeeper overrides are locked by MDM policy should note
-> this limitation.
->
-> **Path forward:** Create an App Store Connect API key at
-> [appstoreconnect.apple.com](https://appstoreconnect.apple.com) → Users and
-> Access → Integrations → App Store Connect API. Add three repository secrets
-> (`NOTARIZE_ISSUER_ID`, `NOTARIZE_KEY_ID`, `NOTARIZE_KEY`) and configure
-> `notarize.macos` in `.goreleaser.yaml` with `sign.certificate` +
-> `sign.password` + `notarize.issuer_id` + `notarize.key_id` + `notarize.key`.
-> This replaces both the external keychain import step and the manual notarytool
-> call, and allows a single `goreleaser release --clean` to sign and notarise
-> before archiving.
+macOS release artefacts are **codesigned and notarised** (Developer ID
+Application, hardened runtime + App Store Connect API key notarisation). The
+release workflow uses GoReleaser OSS `notarize.macos` so a single
+`goreleaser release --clean` signs and notarises darwin binaries before
+archiving.
 
 ```sh
 brew tap goldjg/carl
@@ -131,29 +113,22 @@ brew untrust goldjg/carl
 brew untap goldjg/carl
 ```
 
-#### Apple signing secrets setup
+#### Apple signing and notarisation secrets setup
 
-The release workflow requires two repository secrets for macOS codesigning.
-Configure these under **Settings → Secrets and variables → Actions** in the
-`goldjg/cARL` repository before tagging a release.
+The release workflow requires five repository secrets for macOS codesigning and
+notarisation. Configure these under **Settings → Secrets and variables → Actions**
+in the `goldjg/cARL` repository before tagging a release.
 
 | Secret | Description |
 |---|---|
 | `MACOS_CERTIFICATE_P12_BASE64` | Base64-encoded Developer ID Application `.p12`. Export from Keychain Access (Certificate Assistant → Export), then encode: `base64 -i cert.p12 | tr -d '\n'` |
 | `MACOS_CERTIFICATE_PASSWORD` | Password set when exporting the `.p12` |
+| `NOTARIZE_ISSUER_ID` | Issuer UUID from App Store Connect API key |
+| `NOTARIZE_KEY_ID` | Key ID from App Store Connect API key |
+| `NOTARIZE_KEY` | Base64-encoded contents of the App Store Connect `.p8` API key file |
 
-The release workflow validates that both secrets are present and fails with a
-clear error message if either is missing, before importing the certificate.
-
-> **For future notarisation:** Three additional secrets will be required once
-> the project switches to App Store Connect API key auth and configures
-> `notarize.macos`:
->
-> | Secret | Description |
-> |---|---|
-> | `NOTARIZE_ISSUER_ID` | Issuer UUID from App Store Connect API key |
-> | `NOTARIZE_KEY_ID` | Key ID from App Store Connect API key |
-> | `NOTARIZE_KEY` | Contents of the `.p8` API key file |
+The release workflow validates that all five secrets are present and fails with
+a clear error message if any are missing.
 
 ### WinGet (Windows)
 
@@ -250,8 +225,8 @@ sha256sum --check --ignore-missing checksums.txt
 | Step | Tool | Status |
 |---|---|---|
 | Build (Linux, Windows, darwin) | GoReleaser (macos-latest) | ✅ Automated |
-| macOS codesign (Developer ID, hardened runtime) | codesign via GoReleaser post-hook (macos-latest) | ✅ Automated (first signed release: v0.4.2+) |
-| macOS notarisation | Not included — requires App Store Connect API key + `notarize.macos`; see Homebrew section above | ⚠️ See limitation note |
+| macOS codesign (Developer ID, hardened runtime) | GoReleaser `notarize.macos.sign` (macos-latest) | ✅ Automated |
+| macOS notarisation | GoReleaser `notarize.macos.notarize` (App Store Connect API key) | ✅ Automated |
 | Archives + checksums | GoReleaser (macos-latest) | ✅ Automated |
 | deb / rpm / apk package artefacts | GoReleaser + nfpm | ✅ Automated |
 | apt / yum / apk repository publishing | Internal/manual setup | 📋 Future — see mirroring section |
