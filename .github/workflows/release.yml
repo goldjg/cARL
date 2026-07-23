@@ -29,7 +29,7 @@
 #   The workflow is serialized across this repository via workflow-level
 #   concurrency to avoid parallel notarization calls with the same Apple
 #   credentials.
-#   An outer retry wrapper retries once (after a 15-minute cooldown) only for
+#   An outer retry wrapper retries once (after a 1-hour cooldown) only for
 #   Apple rate-limit signatures: "429 Too Many Requests", "RATE_LIMIT", and
 #   "Exceeded hourly limit".
 #
@@ -161,6 +161,55 @@ jobs:
         run: |
           set -euo pipefail
           bash scripts/release-with-retry.sh
+
+      - name: Assert expected release assets exist
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.resolve_tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          version="${RELEASE_TAG#v}"
+          expected_assets=(
+            "carl_${version}_linux_amd64.tar.gz"
+            "carl_${version}_linux_arm64.tar.gz"
+            "carl_${version}_darwin_amd64.tar.gz"
+            "carl_${version}_darwin_arm64.tar.gz"
+            "carl_${version}_windows_amd64.zip"
+            "carl_${version}_linux_amd64.deb"
+            "carl_${version}_linux_arm64.deb"
+            "carl_${version}_linux_amd64.rpm"
+            "carl_${version}_linux_arm64.rpm"
+            "carl_${version}_linux_amd64.apk"
+            "carl_${version}_linux_arm64.apk"
+            "checksums.txt"
+          )
+
+          actual_assets=()
+          while IFS= read -r asset; do
+            [[ -n "${asset}" ]] && actual_assets+=("${asset}")
+          done < <(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq '.assets[].name')
+
+          missing_assets=()
+          for asset in "${expected_assets[@]}"; do
+            found=0
+            for actual in "${actual_assets[@]}"; do
+              if [[ "${actual}" == "${asset}" ]]; then
+                found=1
+                break
+              fi
+            done
+            if [[ "${found}" -eq 0 ]]; then
+              missing_assets+=("${asset}")
+            fi
+          done
+
+          if (( ${#missing_assets[@]} > 0 )); then
+            echo "::error::Missing expected release assets for ${RELEASE_TAG}: ${missing_assets[*]}"
+            exit 1
+          fi
 
   winget:
     name: WinGet publish

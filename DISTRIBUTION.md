@@ -73,11 +73,11 @@ The release workflow runs `goreleaser release --clean` via
   - `429 Too Many Requests`
   - `RATE_LIMIT`
   - `Exceeded hourly limit`
-  then the workflow emits a warning and sleeps **15 minutes**.
+  then the workflow emits a warning and sleeps **1 hour**.
 - After the cooldown, it performs exactly **one** retry.
 - If the second attempt fails, the workflow fails.
 
-Maximum automatic cooldown is **15 minutes** (single outer retry).
+Maximum automatic cooldown is **1 hour** (single outer retry).
 
 ### Failures deliberately not retried
 
@@ -89,6 +89,7 @@ No outer retry is performed for non-Apple-rate-limit failures, including:
 - auth/permission failures (GitHub, Homebrew, Apple credentials)
 - GitHub Release publication failures unrelated to the Apple 429 signatures
 - Homebrew publish failures
+- a second Apple 429 after the cooldown retry
 
 ### Partial-publication and idempotency caveats
 
@@ -97,6 +98,10 @@ The pipeline intentionally remains a single all-in-one
 If a run fails after some publication steps succeeded (for example, GitHub
 Release assets uploaded or Homebrew cask push partially completed), rerunning
 the workflow for the same tag may still fail due to already-published state.
+
+After a successful wrapper run, the release job asserts the expected GitHub
+Release assets exist for the resolved tag before the job is marked successful.
+Downstream jobs such as WinGet only run when the release job succeeds.
 
 The workflow does **not** automatically delete/recreate tags, releases, assets,
 or Homebrew artifacts. Manual recovery may require operator intervention in
@@ -298,7 +303,7 @@ sha256sum --check --ignore-missing checksums.txt
 |---|---|---|
 | Build (Linux, Windows, darwin) | GoReleaser (macos-latest) | ✅ Automated |
 | macOS codesign (Developer ID, hardened runtime) | GoReleaser `notarize.macos.sign` (macos-latest) | ✅ Automated |
-| macOS notarisation | GoReleaser `notarize.macos.notarize` (App Store Connect API key) + one 15-minute Apple-429 outer retry | ✅ Automated |
+| macOS notarisation | GoReleaser `notarize.macos.notarize` (App Store Connect API key) + one 1-hour Apple-429 outer retry | ✅ Automated |
 | Archives + checksums | GoReleaser (macos-latest) | ✅ Automated |
 | deb / rpm / apk package artefacts | GoReleaser + nfpm | ✅ Automated |
 | apt / yum / apk repository publishing | Internal/manual setup | 📋 Future — see mirroring section |
