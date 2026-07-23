@@ -1,4 +1,4 @@
-<!-- version: 1.2.0 -->
+<!-- version: 1.3.0 -->
 # Current PR Contract
 
 This contract constrains implementation scope for the active PR.
@@ -7,14 +7,8 @@ This contract constrains implementation scope for the active PR.
 
 ## Goal
 
-Update `carl version` to model and report three distinct version layers:
-
-1. CLI executable version.
-2. Bundled canonical runtime version + provenance.
-3. Repository-installed runtime version (from `.github/carl/runtime.json`).
-
-Also add component-level pack and harness shim version reporting, including
-bundled vs installed comparisons via `carl version --components`.
+Implement macOS notarisation in the release pipeline using App Store Connect API
+key authentication, as described in `DISTRIBUTION.md`.
 
 ## Contract status
 
@@ -22,82 +16,89 @@ active
 
 ## Non-goals
 
-- No changes to command semantics outside `version` and the metadata wiring needed
-  for `init` runtime manifest provenance.
-- No changes to security/auth flows.
+- No changes to CLI command behaviour.
+- No changes to harness adapter authority semantics.
 - No new dependencies.
-- No CI workflow behaviour changes.
-- No changes to runtime repair semantics.
+- No changes to release targets/platform matrix.
 
 ## Approved scope
 
-- `cmd/carl/main.go` — introduce explicit build-time metadata vars for CLI and bundled runtime.
-- `internal/install/install.go` (+ tests if required) — write runtime manifest from bundled runtime metadata.
-- `internal/version/version.go`
-- `internal/version/version_test.go`
-- `.goreleaser.yaml` — inject bundled runtime metadata at build time.
-- `CLI.md`, `README.md`, and `ROADMAP.md` — document the three-layer version model and updated build/version semantics.
-- `.github/carl/memory.md` — update durable command-behavior truth if command semantics change durably.
-- `embedded/assets/.github/carl/memory.md` — keep bundled canonical memory copy aligned when durable memory truth changes.
+- `.goreleaser.yaml` — add `notarize.macos` configuration for darwin artefacts.
+- `.github/workflows/release.yml` — wire required notarisation secrets and remove
+  obsolete manual signing-keychain steps no longer needed by GoReleaser notarize.
+- `.github/workflows/goreleaser-check.yml` — keep snapshot/check notes aligned
+  with notarisation gating behaviour.
+- `DISTRIBUTION.md` — update notarisation status, setup, and release summary.
+- `.github/carl/memory.md` and `.github/carl/trust-boundaries.md` — reconcile
+  durable release/trust assumptions changed by notarisation.
+- `embedded/assets/.github/carl/memory.md` and
+  `embedded/assets/.github/carl/trust-boundaries.md` — keep embedded canonical
+  copies aligned with source artefacts.
 - `.github/carl/current-pr-contract.md` — this contract update.
 
 ## Forbidden scope
 
-- No edits to unrelated commands (`doctor`, `status`, `repair`, `plan`, etc.) except compile-safe constructor signature propagation.
-- No harness adapter authority model changes.
-- No instruction-pack policy rewrites unrelated to version reporting.
-- No external API/network integration.
+- No edits to CLI implementation packages under `cmd/` or `internal/`.
+- No changes to unrelated workflows.
 - No destructive repository operations.
 
 ## Architectural constraints
 
-- CLI version and bundled runtime version must be represented by distinct fields.
-- Bundled runtime metadata must be available without reading repository state.
-- Repository runtime metadata is optional and only read from runtime manifest when present.
-- Pack and shim installed versions are derived from installed file metadata headers.
-- Harness shim listing must use the canonical harness adapter registry and avoid shared-loader duplication in shim rows.
-- Output must be deterministic.
+- Release continues through a single `goreleaser release --clean` step.
+- Notarisation config must use App Store Connect API key fields:
+  `issuer_id`, `key_id`, and `key`.
+- Snapshot/check workflows must remain functional without notarisation secrets.
 
 ## Security constraints
 
-- No secrets in code or tests.
-- No unsafe path handling; read files only under repository root derived from known paths.
-- Unknown/malformed metadata must degrade safely (`unknown`) rather than fail the command.
+- Never commit secrets or secret material.
+- Validate required notarisation secrets in release workflow before publish.
+- Keep CI token/secret values out of logs.
 
 ## Files expected to change
 
 - `.github/carl/current-pr-contract.md`
-- `cmd/carl/main.go`
-- `internal/install/install.go`
-- `internal/install/install_test.go` (if constructor/metadata assertions require updates)
-- `internal/version/version.go`
-- `internal/version/version_test.go`
 - `.goreleaser.yaml`
-- `CLI.md`
-- `README.md`
-- `ROADMAP.md`
+- `.github/workflows/release.yml`
+- `.github/workflows/goreleaser-check.yml`
+- `DISTRIBUTION.md`
 - `.github/carl/memory.md`
+- `.github/carl/trust-boundaries.md`
 - `embedded/assets/.github/carl/memory.md`
+- `embedded/assets/.github/carl/trust-boundaries.md`
+
+## Contract assertions
+
+1. Tagged releases must produce signed and notarised darwin artefacts when all
+   required secrets are present.
+2. Release workflow must fail early with explicit error messages when notarise
+   secrets are missing.
+3. `goreleaser check` and snapshot dry-run must stay usable without notarisation
+   secrets.
+4. Documentation and durable cARL artefacts must no longer describe darwin
+   artefacts as "codesigned but not notarised."
 
 ## Tests / validation
 
-- `go test ./internal/version ./internal/install`
+- `goreleaser check`
 - `go test ./...`
-- `go build ./cmd/carl`
 
 ## Stop conditions
 
 Stop and escalate if:
 
-- requested output requires changing runtime.json schema;
-- requested behaviour requires broad rewrites outside approved scope.
+- GoReleaser OSS cannot satisfy required notarisation behaviour with current
+  release structure.
+- implementing notarisation requires broad pipeline redesign outside approved
+  scope.
 
 ## Escalation triggers
 
 Escalate if:
 
-- compatibility requirements for existing `carl version` parsers conflict with requested output shape;
-- bundled metadata source-of-truth cannot be made immutable at build time without broader release-pipeline changes.
+- a required secret name or encoding model conflicts with deployment policy;
+- notarisation settings break snapshot/check workflows in a way that cannot be
+  resolved with scoped conditional config.
 
 ## Context reset notes
 

@@ -10,28 +10,21 @@
 #   WINGETCREATE_TOKEN - optional; when set, used to submit/update the
 #   `goldjg.cARL` package in microsoft/winget-pkgs.
 #
-# Apple signing secrets (both required for macOS artefacts to be signed):
+# Apple signing/notarisation secrets (all required for macOS artefacts):
 #   MACOS_CERTIFICATE_P12_BASE64 - base64-encoded Developer ID Application .p12
 #     exported from your Apple Developer keychain. Encode with:
 #     base64 -i cert.p12 | tr -d '\n'
 #   MACOS_CERTIFICATE_PASSWORD - password used when exporting the .p12 file.
-#
-# Notarisation is NOT included in the current release flow.
-# GoReleaser OSS notarize.macos only supports App Store Connect API key
-# authentication (issuer_id + key_id + key). The current secrets use the
-# apple-id + app-specific-password model, which notarize.macos does not support.
-# To add full notarisation, switch to App Store Connect API key auth and
-# configure notarize.macos in .goreleaser.yaml. See DISTRIBUTION.md for details.
+#   NOTARIZE_ISSUER_ID - App Store Connect API key issuer UUID.
+#   NOTARIZE_KEY_ID - App Store Connect API key ID.
+#   NOTARIZE_KEY - App Store Connect API private key (.p8), base64-encoded.
 #
 # Design:
-#   The release job runs on macos-latest so that codesign is available for
-#   darwin binary signing. GoReleaser cross-compiles Linux and Windows binaries
-#   on the same macOS runner (Go cross-compilation does not require the target OS).
-#   darwin binaries are signed inline by a GoReleaser post-hook
-#   (.github/scripts/codesign-darwin.sh) immediately after each darwin binary is
-#   built, before archiving. GoReleaser then runs a single `goreleaser release
-#   --clean` which builds, signs (via hook), archives, computes checksums, and
-#   publishes the GitHub Release in one step.
+#   The release job runs on macos-latest. GoReleaser cross-compiles Linux and
+#   Windows binaries on the same runner and performs darwin signing/notarisation
+#   through `notarize.macos` in .goreleaser.yaml using App Store Connect API key
+#   credentials. A single `goreleaser release --clean` builds, signs, notarises,
+#   archives, computes checksums, and publishes the GitHub Release.
 #
 # Homebrew tap publishing remains configured in GoReleaser and is gated by
 # HOMEBREW_TAP_GITHUB_TOKEN.
@@ -51,8 +44,7 @@ jobs:
 
   release:
     name: GoReleaser
-    # macOS runner required for codesign (darwin binary signing).
-    # Go cross-compilation handles Linux and Windows builds on the same runner.
+    # macOS runner required for darwin signing/notarisation.
     runs-on: macos-latest
 
     steps:
@@ -65,83 +57,31 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Check required Apple signing secrets
+      - name: Check required Apple signing/notarisation secrets
         env:
           CERT_P12:  ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
           CERT_PASS: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          NOTARIZE_ISSUER_ID: ${{ secrets.NOTARIZE_ISSUER_ID }}
+          NOTARIZE_KEY_ID: ${{ secrets.NOTARIZE_KEY_ID }}
+          NOTARIZE_KEY: ${{ secrets.NOTARIZE_KEY }}
         run: |
           missing=""
           [ -z "$CERT_P12" ]  && missing="$missing MACOS_CERTIFICATE_P12_BASE64"
           [ -z "$CERT_PASS" ] && missing="$missing MACOS_CERTIFICATE_PASSWORD"
+          [ -z "$NOTARIZE_ISSUER_ID" ] && missing="$missing NOTARIZE_ISSUER_ID"
+          [ -z "$NOTARIZE_KEY_ID" ] && missing="$missing NOTARIZE_KEY_ID"
+          [ -z "$NOTARIZE_KEY" ] && missing="$missing NOTARIZE_KEY"
           if [ -n "$missing" ]; then
-            echo "::error::Required Apple signing secrets are not configured:$missing"
+            echo "::error::Required Apple signing/notarisation secrets are not configured:$missing"
             echo "See DISTRIBUTION.md for setup instructions."
             exit 1
           fi
-          echo "All required Apple signing secrets are present."
-
-      - name: Import Developer ID Application certificate
-        env:
-          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
-          MACOS_CERTIFICATE_PASSWORD:   ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-        run: |
-          # Decode the P12 into a temp file; remove it immediately after import.
-          echo "$MACOS_CERTIFICATE_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
-
-          # Generate a random keychain password (never printed or stored long-term).
-          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
-          KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
-
-          # Persist path for subsequent steps; password is kept in environment only.
-          echo "KEYCHAIN_PATH=${KEYCHAIN_PATH}" >> "$GITHUB_ENV"
-          echo "KEYCHAIN_PASSWORD=${KEYCHAIN_PASSWORD}" >> "$GITHUB_ENV"
-
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
-          # Import the certificate. -P passes the export password; GitHub Actions
-          # automatically masks the secret value in workflow logs.
-          security import "$RUNNER_TEMP/cert.p12" \
-            -k "$KEYCHAIN_PATH" \
-            -P "$MACOS_CERTIFICATE_PASSWORD" \
-            -T /usr/bin/codesign
-
-          # Allow codesign to access the key without a GUI prompt.
-          security set-key-partition-list \
-            -S apple-tool:,apple: \
-            -s -k "$KEYCHAIN_PASSWORD" \
-            "$KEYCHAIN_PATH"
-
-          # Make the keychain searchable by codesign.
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
-
-          # Remove the decoded P12 immediately - the cert is now in the keychain.
-          rm -f "$RUNNER_TEMP/cert.p12"
-
-          # Extract the signing identity name for use in the GoReleaser post-hook.
-          # `security find-identity` formats each line as: N) <SHA1> "<name>"
-          # The sed pattern extracts the quoted name from that standard format.
-          # Only one certificate exists in the temporary keychain, so head -1 is safe.
-          SIGNING_IDENTITY=$(
-            security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
-            | grep "Developer ID Application" \
-            | sed -n '1s/.*"\([^"]*\)".*/\1/p'
-          )
-          if [ -z "$SIGNING_IDENTITY" ]; then
-            echo "::error::No Developer ID Application certificate found in keychain."
-            echo "Verify MACOS_CERTIFICATE_P12_BASE64 contains a valid Developer ID Application certificate."
-            exit 1
-          fi
-          # SIGNING_IDENTITY is not a secret; it is the certificate display name.
-          # It is passed to the GoReleaser process so the codesign post-hook can use it.
-          echo "SIGNING_IDENTITY=${SIGNING_IDENTITY}" >> "$GITHUB_ENV"
-          echo "Signing identity: $SIGNING_IDENTITY"
+          echo "All required Apple signing/notarisation secrets are present."
 
       - name: Run GoReleaser
-        # Build and archive all platforms, sign darwin binaries inline via the
-        # codesign post-hook, and publish the GitHub Release and Homebrew cask
-        # in a single step. goreleaser/goreleaser-action is a third-party action.
+        # Build and archive all platforms, sign + notarise darwin binaries via
+        # notarize.macos, and publish the GitHub Release and Homebrew cask in a
+        # single step. goreleaser/goreleaser-action is a third-party action.
         # The action tag (@v6) is pinned to the GoReleaser v2 major line.
         # The GoReleaser tool version below is pinned to a specific release for
         # determinism. Update both pins together when upgrading GoReleaser.
@@ -154,30 +94,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
-          # SIGNING_IDENTITY is set above and inherited by the GoReleaser process.
-          # The codesign post-hook reads it to identify the Developer ID cert.
-          SIGNING_IDENTITY: ${{ env.SIGNING_IDENTITY }}
-
-      - name: Delete temporary keychain
-        # Always run so the keychain is removed even when earlier steps fail.
-        if: always()
-        run: |
-          # Guard against KEYCHAIN_PATH being unset (e.g., if the job failed
-          # before the certificate import step could write to GITHUB_ENV).
-          # Also validate it is within RUNNER_TEMP as defense-in-depth.
-          if [ -z "$KEYCHAIN_PATH" ]; then
-            echo "KEYCHAIN_PATH not set; keychain was never created."
-          elif [[ "$KEYCHAIN_PATH" != "$RUNNER_TEMP"/* ]]; then
-            echo "::warning::KEYCHAIN_PATH is outside RUNNER_TEMP; skipping deletion for safety."
-          elif security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null; then
-            echo "Temporary keychain deleted."
-          else
-            # Non-zero exit means the keychain does not exist (e.g., the job
-            # failed before keychain creation). This is expected and not an error.
-            echo "Keychain deletion skipped (not created or already absent)."
-          fi
-          # Belt-and-suspenders: remove cert file if it was not already deleted.
-          rm -f "$RUNNER_TEMP/cert.p12"
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          NOTARIZE_ISSUER_ID: ${{ secrets.NOTARIZE_ISSUER_ID }}
+          NOTARIZE_KEY_ID: ${{ secrets.NOTARIZE_KEY_ID }}
+          NOTARIZE_KEY: ${{ secrets.NOTARIZE_KEY }}
 
   winget:
     name: WinGet publish
