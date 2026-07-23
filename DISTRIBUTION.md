@@ -9,9 +9,12 @@ fully automated.
 
 ## Release artefacts
 
-Every tagged release (`v*`) triggers the GoReleaser-based release workflow
-(`.github/workflows/release.yml`). The workflow attaches the following
-artefacts to the GitHub Release:
+Tag pushes matching `v*` trigger the GoReleaser release workflow
+(`.github/workflows/release.yml`) automatically. The same workflow also supports
+manual `workflow_dispatch` runs for an existing tag (input `tag`) so a failed
+tag release can be retried without deleting/recreating the Git tag.
+
+The workflow attaches the following artefacts to the GitHub Release:
 
 | Artefact | Platforms |
 |---|---|
@@ -29,6 +32,75 @@ artefacts to the GitHub Release:
 | `checksums.txt` | SHA-256 checksums for all artefacts |
 
 Archives contain a single binary named `carl` (or `carl.exe` on Windows).
+
+---
+
+## Release workflow orchestration and retry behavior
+
+### Trigger modes
+
+- **Automatic release:** push a tag matching `v*`.
+- **Manual recovery run:** run the **Release** workflow with `workflow_dispatch`
+  and provide `tag` (required).
+
+For manual runs:
+
+1. `tag` must start with `v`.
+2. The tag must already exist in `goldjg/cARL`.
+3. The workflow checks out that exact tag commit before running GoReleaser.
+
+### Concurrency and serialization
+
+Release workflow executions are serialized with workflow-level concurrency:
+
+```yaml
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+```
+
+This allows only one release workflow run at a time per repository, including
+different tags and manual reruns, reducing contention on Apple notarization
+credentials and App Store Connect rate limits.
+
+### Apple notarization 429 handling
+
+The release workflow runs `goreleaser release --clean` via
+`scripts/release-with-retry.sh`.
+
+- Attempt 1 runs normally.
+- If attempt 1 fails and logs include one of:
+  - `429 Too Many Requests`
+  - `RATE_LIMIT`
+  - `Exceeded hourly limit`
+  then the workflow emits a warning and sleeps **15 minutes**.
+- After the cooldown, it performs exactly **one** retry.
+- If the second attempt fails, the workflow fails.
+
+Maximum automatic cooldown is **15 minutes** (single outer retry).
+
+### Failures deliberately not retried
+
+No outer retry is performed for non-Apple-rate-limit failures, including:
+
+- build/compile failures
+- signing/certificate failures (except Apple 429 signatures)
+- GoReleaser config errors
+- auth/permission failures (GitHub, Homebrew, Apple credentials)
+- GitHub Release publication failures unrelated to the Apple 429 signatures
+- Homebrew publish failures
+
+### Partial-publication and idempotency caveats
+
+The pipeline intentionally remains a single all-in-one
+`goreleaser release --clean` flow (build/sign/notarize/archive/publish).
+If a run fails after some publication steps succeeded (for example, GitHub
+Release assets uploaded or Homebrew cask push partially completed), rerunning
+the workflow for the same tag may still fail due to already-published state.
+
+The workflow does **not** automatically delete/recreate tags, releases, assets,
+or Homebrew artifacts. Manual recovery may require operator intervention in
+GitHub Releases and/or the Homebrew tap before rerun.
 
 ---
 
@@ -226,7 +298,7 @@ sha256sum --check --ignore-missing checksums.txt
 |---|---|---|
 | Build (Linux, Windows, darwin) | GoReleaser (macos-latest) | ✅ Automated |
 | macOS codesign (Developer ID, hardened runtime) | GoReleaser `notarize.macos.sign` (macos-latest) | ✅ Automated |
-| macOS notarisation | GoReleaser `notarize.macos.notarize` (App Store Connect API key) | ✅ Automated |
+| macOS notarisation | GoReleaser `notarize.macos.notarize` (App Store Connect API key) + one 15-minute Apple-429 outer retry | ✅ Automated |
 | Archives + checksums | GoReleaser (macos-latest) | ✅ Automated |
 | deb / rpm / apk package artefacts | GoReleaser + nfpm | ✅ Automated |
 | apt / yum / apk repository publishing | Internal/manual setup | 📋 Future — see mirroring section |

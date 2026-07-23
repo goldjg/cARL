@@ -1,6 +1,7 @@
 # Release workflow - builds and publishes cARL CLI binaries, archives, and
-# native packages (deb/rpm/apk) using GoReleaser when a semantic version tag
-# (v*) is pushed.
+# native packages (deb/rpm/apk) using GoReleaser for a resolved release tag.
+# Triggered automatically on tag push (v*) or manually via workflow_dispatch
+# for an existing tag.
 #
 # Permissions:
 #   contents: write - required to create GitHub Releases and upload assets.
@@ -25,6 +26,12 @@
 #   through `notarize.macos` in .goreleaser.yaml using App Store Connect API key
 #   credentials. A single `goreleaser release --clean` builds, signs, notarises,
 #   archives, computes checksums, and publishes the GitHub Release.
+#   The workflow is serialized across this repository via workflow-level
+#   concurrency to avoid parallel notarization calls with the same Apple
+#   credentials.
+#   An outer retry wrapper retries once (after a 15-minute cooldown) only for
+#   Apple rate-limit signatures: "429 Too Many Requests", "RATE_LIMIT", and
+#   "Exceeded hourly limit".
 #
 # Homebrew tap publishing remains configured in GoReleaser and is gated by
 # HOMEBREW_TAP_GITHUB_TOKEN.
@@ -36,6 +43,16 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to run (must start with v and already exist)
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -46,12 +63,53 @@ jobs:
     name: GoReleaser
     # macOS runner required for darwin signing/notarisation.
     runs-on: macos-latest
+    outputs:
+      release_tag: ${{ steps.resolve_tag.outputs.tag }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           # Full history is required for GoReleaser changelog generation.
           fetch-depth: 0
+
+      - name: Resolve and validate release tag
+        id: resolve_tag
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            tag="${INPUT_TAG}"
+            if [[ "${tag}" != v* ]]; then
+              echo "::error::Invalid tag '${tag}'. Manual runs require a tag starting with 'v'."
+              exit 1
+            fi
+            git fetch --force --tags origin
+            if ! git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+              echo "::error::Tag '${tag}' does not exist in ${GITHUB_REPOSITORY}."
+              exit 1
+            fi
+            git checkout --detach "refs/tags/${tag}"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+
+          if ! git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "::error::Resolved tag '${tag}' does not exist."
+            exit 1
+          fi
+
+          tag_commit="$(git rev-list -n1 "refs/tags/${tag}")"
+          head_commit="$(git rev-parse HEAD)"
+          if [[ "${tag_commit}" != "${head_commit}" ]]; then
+            echo "::error::HEAD (${head_commit}) does not match tag ${tag} commit (${tag_commit})."
+            exit 1
+          fi
+
+          echo "RELEASE_TAG=${tag}" >> "${GITHUB_ENV}"
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
 
       - uses: actions/setup-go@v5
         with:
@@ -78,20 +136,21 @@ jobs:
           fi
           echo "All required Apple signing/notarisation secrets are present."
 
-      - name: Run GoReleaser
+      - name: Install GoReleaser
+        # goreleaser-action is third-party; pin to a full commit SHA.
+        # v7.2.3: https://github.com/goreleaser/goreleaser-action/releases/tag/v7.2.3
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94
+        with:
+          version: v2.17.0
+          install-only: true
+
+      - name: Run GoReleaser (Apple 429 outer retry wrapper)
         # Build and archive all platforms, sign + notarise darwin binaries via
         # notarize.macos, and publish the GitHub Release and Homebrew cask in a
-        # single step. goreleaser/goreleaser-action is a third-party action.
-        # The action tag (@v6) is pinned to the GoReleaser v2 major line.
-        # The GoReleaser tool version below is pinned to a specific release for
-        # determinism. Update both pins together when upgrading GoReleaser.
-        # Follow-up: pin the action itself to a commit SHA for supply-chain safety.
-        # See: https://github.com/goreleaser/goreleaser-action/releases
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          version: v2.16.0
-          args: release --clean
+        # single step, while allowing one targeted retry for Apple 429 responses.
+        shell: bash
         env:
+          RELEASE_TAG: ${{ steps.resolve_tag.outputs.tag }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
           MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
@@ -99,6 +158,9 @@ jobs:
           NOTARIZE_ISSUER_ID: ${{ secrets.NOTARIZE_ISSUER_ID }}
           NOTARIZE_KEY_ID: ${{ secrets.NOTARIZE_KEY_ID }}
           NOTARIZE_KEY: ${{ secrets.NOTARIZE_KEY }}
+        run: |
+          set -euo pipefail
+          bash scripts/release-with-retry.sh
 
   winget:
     name: WinGet publish
@@ -106,6 +168,7 @@ jobs:
     needs:
       - release
     env:
+      RELEASE_TAG: ${{ needs.release.outputs.release_tag }}
       WINGETCREATE_TOKEN: ${{ secrets.WINGETCREATE_TOKEN }}
     steps:
       - name: Skip when WinGet token is not configured
@@ -119,8 +182,8 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
 
-          if ($env:GITHUB_REF_NAME -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$') {
-            throw "Invalid tag format '$env:GITHUB_REF_NAME'. Expected semantic version tag starting with 'v'."
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$') {
+            throw "Invalid tag format '$env:RELEASE_TAG'. Expected semantic version tag starting with 'v'."
           }
 
           if ($env:GITHUB_REPOSITORY -notmatch '^[A-Za-z0-9_][A-Za-z0-9_.-]*/[A-Za-z0-9_][A-Za-z0-9_.-]*$') {
@@ -145,8 +208,8 @@ jobs:
 
           Add-AppxPackage -Path $bundlePath -ErrorAction Stop
 
-          $version = $env:GITHUB_REF_NAME.TrimStart('v')
-          $url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:GITHUB_REF_NAME/carl_${version}_windows_amd64.zip|x64"
+          $version = $env:RELEASE_TAG.TrimStart('v')
+          $url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:RELEASE_TAG/carl_${version}_windows_amd64.zip|x64"
 
           # wingetcreate requires --token; GitHub masks secret values in logs.
           Write-Host "Submitting WinGet PR for goldjg.cARL $version..." -ForegroundColor Green

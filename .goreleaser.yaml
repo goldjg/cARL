@@ -1,7 +1,7 @@
 # GoReleaser configuration for the cARL CLI.
 # https://goreleaser.com/customization/
 #
-# Requires GoReleaser v2 (goreleaser/goreleaser-action@v6 or later).
+# Requires GoReleaser v2.17.0+ (release workflow pins v2.17.0).
 # Run locally:
 #   goreleaser check              — validate this config
 #   goreleaser release --snapshot --skip=publish  — dry-run without publishing
@@ -9,6 +9,11 @@
 version: 2
 
 project_name: carl
+
+retry:
+  attempts: 12
+  delay: 30s
+  max_delay: 5m
 
 before:
   hooks:

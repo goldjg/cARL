@@ -55,14 +55,11 @@ jobs:
 
       - name: Check GoReleaser config
         # goreleaser/goreleaser-action is a third-party action.
-        # The action tag (@v6) is pinned to the GoReleaser v2 major line.
-        # The GoReleaser tool version below is pinned to a specific release for
-        # determinism. Update both pins together when upgrading GoReleaser.
-        # Follow-up: pin the action itself to a commit SHA for supply-chain safety.
-        # See: https://github.com/goreleaser/goreleaser-action/releases
-        uses: goreleaser/goreleaser-action@v6
+        # Pin action to full commit SHA.
+        # v7.2.3: https://github.com/goreleaser/goreleaser-action/releases/tag/v7.2.3
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94
         with:
-          version: v2.16.0
+          version: v2.17.0
           args: check
 
   snapshot:
@@ -82,9 +79,9 @@ jobs:
 
       - name: GoReleaser snapshot build
         # Keep version pin in sync with the check job above.
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94
         with:
-          version: v2.16.0
+          version: v2.17.0
           # --snapshot: build without requiring a git tag.
           # --skip=publish: do not upload to GitHub Releases or any other publisher.
           # darwin binaries are cross-compiled on ubuntu-latest; notarization is
