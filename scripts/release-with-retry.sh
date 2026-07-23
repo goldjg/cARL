@@ -13,7 +13,6 @@ trap cleanup EXIT
 
 run_release_attempt() {
   local log_file="$1"
-  set +e
   goreleaser release --clean 2>&1 | tee "${log_file}"
   local cmd_status=${PIPESTATUS[0]}
   return "${cmd_status}"
