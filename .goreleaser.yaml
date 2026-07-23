@@ -63,7 +63,7 @@ notarize:
         key_id: "{{ .Env.NOTARIZE_KEY_ID }}"
         key: "{{ .Env.NOTARIZE_KEY }}"
         wait: true
-        timeout: 20m
+        timeout: 45m
 
 archives:
   - id: default
