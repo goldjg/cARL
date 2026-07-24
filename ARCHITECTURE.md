@@ -1,4 +1,4 @@
-<!-- version: 1.0.0 -->
+<!-- version: 1.1.0 -->
 # cARL — Architecture Overview
 
 ---
@@ -94,6 +94,48 @@ Deployment and infrastructure conventions:
 
 Provider-specific security and operational guidance:
 - Azure, Microsoft Entra ID, Microsoft Graph, Google Cloud Platform, Netlify
+
+### Pack Metadata Model (schema version 1)
+
+Packs are addressable units of policy, not just files. Each pack has a
+versioned metadata record (`schemaVersion: 1`) derived from its canonical
+file plus runtime state:
+
+| Field | Meaning |
+|---|---|
+| `id` | Stable identity `<category>/<name>`, derived from the canonical path `.github/instructions/<category>/<name>.instructions.md` |
+| `version` | Semantic version from the pack's `<!-- version: X.Y.Z -->` header |
+| `title` / `description` | First `#` heading and first paragraph of the pack file |
+| `category` | `core`, `languages`, `platform`, or `cloud` — must match the ID prefix |
+| `source` | Where the pack was discovered: `bundled`, `repository-local`, or both |
+| `state` | `bundled` / `installed` / `selected` / `active` flags |
+| `ownedArtifacts` | Repository paths the pack owns (currently its own instruction file) |
+| `dependencies` | Pack IDs this pack requires (validated for existence and cycles) |
+| `compatibility` | Optional minimum CLI / runtime version constraints |
+| `precedence` | Optional priority + mode (`additive`, `overridable`, `restrictable-only`, `immutable`) — surfaced read-only today |
+
+Pack state is a chain of distinct facts:
+
+- **bundled** — shipped inside the `carl` binary,
+- **installed** — present as a file in the repository,
+- **selected** — recorded in `.github/carl/runtime.json` as managed,
+- **active** — in effect for agents (currently derived from *selected*;
+  explicit activation profiles are future work).
+
+Discovery merges bundled, repository-local, and manifest sources
+deterministically (sorted by pack ID); repository-local metadata takes
+precedence over bundled metadata for the same ID. Filesystem enumeration
+order is never policy order. `carl pack list` / `carl pack show` expose this
+model (see [CLI.md](CLI.md)).
+
+**Selection vs priority vs override authority.** These are deliberately
+separate concepts: *selection* decides which packs are in play; *priority*
+decides ordering among selected packs; *override authority* decides whether
+one pack may relax another's rules. Today only selection is modelled and
+composition is conservatively additive — packs may add constraints but no
+pack silently disables another. Priority and override semantics (and any
+future policy intermediate representation compiled from pack metadata) are
+explicitly future work and must never be inferred from load order.
 
 ---
 

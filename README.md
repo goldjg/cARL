@@ -1,4 +1,4 @@
-<!-- version: 1.0.0 -->
+<!-- version: 1.1.0 -->
 
 ![](cARL.png)
 
@@ -306,7 +306,22 @@ INFO    runtime is healthy — all managed artefacts are present and canonical
 
 See [CLI.md](CLI.md) for the full command reference.
 
-### 6. Migrate from AADLC (existing repositories)
+### 6. Explore available packs
+
+List every discoverable instruction pack (bundled in the binary, present in
+the repository, or selected in `runtime.json`), or inspect one pack's
+versioned metadata:
+
+```sh
+carl pack list
+carl pack show core/security
+```
+
+Both subcommands support `--json` for machine-readable output and work outside
+an initialised repository (bundled packs only). Ordering is deterministic
+(sorted by pack ID), never filesystem order.
+
+### 7. Migrate from AADLC (existing repositories)
 
 If your repository already contains governance knowledge under legacy AADLC
 artefacts (`.aadlc/`, `.github/aadlc/`, `AADLC.md`, ...), migrate that durable

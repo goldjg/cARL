@@ -1,4 +1,4 @@
-<!-- version: 1.0.0 -->
+<!-- version: 1.1.0 -->
 # cARL CLI Reference
 
 The `carl` CLI installs and manages the cARL governance runtime inside a repository.
@@ -365,6 +365,106 @@ Repo map updated: .github/carl/repo-map.json
 - The generated file itself appears in the `governance` section on subsequent runs.
 - Run `carl map` after adding new packages, workflows, or documentation to keep
   the map current.
+
+---
+
+### `carl pack`
+
+Discovers and inspects instruction packs. Works inside an initialised
+repository (merging bundled, repository-local, and selected packs) and outside
+one (bundled packs only).
+
+**Usage**
+
+```
+carl pack list [--json]
+carl pack show <pack-id> [--json]
+```
+
+**Subcommands**
+
+| Subcommand | Purpose |
+|---|---|
+| `list` | List every discoverable pack with version, category, source, state, and description |
+| `show <pack-id>` | Show full metadata for a single pack (e.g. `carl pack show core/security`) |
+
+**Behaviour**
+
+- Packs are identified by `<category>/<name>` IDs derived from their canonical
+  path `.github/instructions/<category>/<name>.instructions.md` — never from
+  filesystem enumeration order.
+- Discovery merges three sources deterministically (sorted by pack ID):
+  - **bundled** — packs embedded in the `carl` binary,
+  - **repository-local** — packs present under `.github/instructions/` in the
+    current repository (their metadata takes precedence over bundled copies),
+  - **selected** — packs recorded in `.github/carl/runtime.json`
+    (`managedArtifacts`) by `carl init`.
+- Pack metadata (version, title, description) is parsed from the
+  `<!-- version: X.Y.Z -->` header, first `#` heading, and first paragraph of
+  each pack file.
+- The metadata model is versioned: every payload carries `"schemaVersion": 1`.
+- The discovered pack set is validated before output: malformed IDs, duplicate
+  IDs, invalid versions, unknown schema versions, missing or cyclic
+  dependencies, invalid owned-artefact paths, and contradictory states are
+  reported as errors.
+
+**Output**
+
+`carl pack list` prints a deterministic table; with `--json` it prints:
+
+```json
+{
+  "schemaVersion": 1,
+  "packs": [
+    {
+      "schemaVersion": 1,
+      "id": "core/security",
+      "version": "1.2.0",
+      "title": "Security Pack",
+      "description": "...",
+      "category": "core",
+      "source": "bundled+repository-local",
+      "state": {
+        "bundled": true,
+        "installed": true,
+        "selected": false,
+        "active": false
+      },
+      "ownedArtifacts": [".github/instructions/core/security.instructions.md"],
+      "dependencies": []
+    }
+  ]
+}
+```
+
+`carl pack show <pack-id>` prints the same pack object under a `"pack"` key
+with `--json`, or a human-readable detail view without it.
+
+**Errors**
+
+| Error | Cause | Resolution |
+|---|---|---|
+| `unknown pack "<id>"` | The pack ID does not match any discoverable pack | Run `carl pack list` to see valid IDs |
+| `pack validation failed: ...` | Discovered pack set contains invalid metadata | Fix the reported pack file or manifest entry |
+
+With `--json`, errors are emitted as a structured payload on stderr with a
+non-zero exit code:
+
+```json
+{
+  "schemaVersion": 1,
+  "error": { "code": "pack_not_found", "message": "unknown pack \"x/y\"" }
+}
+```
+
+**Notes**
+
+- `state.active` is currently derived from `state.selected`; explicit
+  activation profiles are future work.
+- Pack *selection* (which packs are in play) is distinct from *priority*
+  (ordering among selected packs) and *override authority* (whether a pack may
+  relax another pack's rules). Only selection is modelled today; precedence
+  metadata is surfaced read-only and no override semantics are applied.
 
 ---
 

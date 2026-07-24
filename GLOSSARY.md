@@ -1,4 +1,4 @@
-<!-- version: 1.0.0 -->
+<!-- version: 1.1.0 -->
 # cARL — Glossary
 
 This glossary defines the terms used in cARL documentation, instruction packs, and governance artefacts.
@@ -76,7 +76,7 @@ See: Artefact.
 A governance rule that must be preserved unless explicitly amended through a user-approved governance change. Invariants are defined in `.github/carl/invariants.yml`.
 
 ### Instruction pack
-A single-concern `.md` file in `.github/instructions/` that provides focused guidance for a language, platform, cloud provider, or core engineering concern.
+A single-concern `.md` file in `.github/instructions/` that provides focused guidance for a language, platform, cloud provider, or core engineering concern. Each pack has a stable ID of the form `<category>/<name>` derived from its canonical path, a semantic version header, and versioned metadata (schema version 1) discoverable via `carl pack list` / `carl pack show`.
 
 ---
 
@@ -107,6 +107,9 @@ A high-impact unresolved question persisted in the memory cache so future tasks 
 
 ### Pack
 See: Instruction pack.
+
+### Pack state
+The lifecycle facts recorded in pack metadata: **bundled** (shipped inside the `carl` binary), **installed** (present as a file in the repository), **selected** (recorded in `.github/carl/runtime.json` as managed), and **active** (in effect for agents — currently derived from selected). Selection is distinct from priority (ordering among selected packs) and override authority (whether one pack may relax another's rules); only selection is modelled today.
 
 ### Phase
 One of the five cARLv2 work phases: shaping, planning, execution, validation, context reset. Phases should be kept distinct to reduce hidden branching.
