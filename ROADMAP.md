@@ -1,4 +1,4 @@
-<!-- version: 1.2.0 -->
+<!-- version: 1.3.0 -->
 # cARL — Roadmap
 
 This roadmap describes the strategic direction and future evolution of cARL. None of the items marked as not started are implemented in the current codebase. Items are recorded here to preserve intent and prevent rediscovery.
@@ -12,6 +12,8 @@ cARL is evolving from a GitHub Copilot-focused governance system into a **harnes
 The goal is to provide consistent governance — memory, contracts, policies, and operating modes — across heterogeneous coding agents. cARL does not aim to replace agent runtimes (that is a separate concern). It provides the governance layer that any agent runtime can consume.
 
 **Canonical principle:** Governance lives in cARL artefacts. Harness files are adapters that consume governance, not alternate sources of truth.
+
+Beyond harness independence, cARL is evolving towards **policy-as-code for AI coding agents** — the closest conceptual comparison is Open Policy Agent, applied to coding agents, repository context, agent instructions, engineering constraints, validation, and governed execution. cARL should provide a coherent policy layer between repositories, engineering teams, organisational policy, coding-agent harnesses, agent roles, development workflows, and validation/evidence. This direction must not turn cARL into a generic package manager, orchestration platform, agent framework, or enterprise governance monolith, and must preserve its existing strengths: deterministic behaviour, repository-local operation, offline-first design, a self-contained Go binary, explicit committed artefacts, inspectable state, reproducibility, agent-harness independence, and strong validation/reconciliation.
 
 ---
 
@@ -367,6 +369,72 @@ inside and outside an initialised repository. Explicitly out of scope (future
 phases): pack selection/activation commands, priority and override semantics,
 a compiled policy intermediate representation, and any remote registry or
 dependency downloading.
+
+---
+
+## Pack Runtime Phase Plan (Policy-as-Code Direction)
+
+Planned evolution of the versioned pack runtime. Phase 1 is delivered (see
+above). Each later phase is a candidate vertical slice; constraints noted per
+phase are binding until explicitly revisited. Each entry is intended to be a
+self-sufficient specification: together with `.github/carl/memory.md`, the
+existing pack model (`internal/pack`), and the cross-phase constraints below,
+"implement pack phase N" should be a complete task prompt. Every slice must
+ship with tests, documentation updates (CLI.md, ARCHITECTURE.md, README.md,
+GLOSSARY.md as applicable), a refreshed PR contract, and a memory.md
+reconciliation decision.
+
+### Pack Phase 2: Pack Composition
+**Status:** Not started
+**Description:** Repository pack selection commands, dependency expansion,
+computation of the effective pack set, conflict detection, precedence rules,
+and explicit override handling. Composition must remain conservative:
+packs add constraints; no pack silently disables another. Override authority
+must be explicit metadata, never inferred from load order.
+
+### Pack Phase 3: Profiles and Agent Roles
+**Status:** Not started
+**Description:** Named policy profiles, role-specific context, task-specific
+pack selection, repository and organisation defaults, and controlled
+customisation. This is where `state.active` stops being derived from
+`selected` and becomes profile-driven.
+
+### Pack Phase 4: Registry and Installation
+**Status:** Not started — do not implement prematurely
+**Description:** Optional remote discovery, signed or verifiable pack sources,
+version resolution, provenance, and install/update workflows.
+**Constraint:** Do not create registry abstractions that imply security
+guarantees (signing, verification) which do not yet exist. Offline-first
+behaviour must be preserved; remote access stays optional.
+
+### Pack Phase 5: Policy Provenance and Explanation
+**Status:** Not started
+**Description:** Candidate commands `carl explain` / `carl trace` that report
+which policy applied, where it came from, which pack selected it, which
+profile activated it, whether it overrode or strengthened another rule, why a
+conflict was resolved, and which source artefact holds the canonical
+definition. This is policy provenance and evaluation tracing — it must not
+claim to expose hidden model reasoning or chain-of-thought.
+
+### Pack Phase 6: Cognitive Repository Graph
+**Status:** Exploratory
+**Description:** Evolve the repository map beyond a static inventory towards a
+graph of components, ownership, dependencies, trust boundaries, data flows,
+criticality, policy attachment points, agent-relevant context, and change
+impact. The pack metadata model must not preclude this; no repo-map redesign
+until this phase is taken up.
+
+### Pack Phase 7: Publishing
+**Status:** Not started — do not implement prematurely
+**Description:** Internal pack distribution, organisation policy catalogues,
+signed releases, compatibility metadata, and reusable profiles.
+
+**Cross-phase constraints:** remain offline-capable with no runtime network
+dependencies; self-contained Go binary; avoid unnecessary third-party
+dependencies; preserve initialised repositories and existing CLI/exit-code
+conventions; explicit schema versioning; deterministic output; handle absent
+new metadata gracefully; no harness-specific core architecture. The effective
+rule set and material policy meaning must remain equivalent across refactors.
 
 ---
 
