@@ -1,4 +1,4 @@
-<!-- version: 1.3.0 -->
+<!-- version: 1.4.0 -->
 # Durable Architectural Truth Cache
 
 This cache stores durable project truths that should persist beyond a
@@ -12,8 +12,23 @@ instruction packs, durable memory artefacts, and cARLv2 cognition
 governance for consistent, secure, maintainable, and governed
 AI-assisted development.
 
+Strategic direction: cARL is evolving towards policy-as-code for AI coding
+agents (closest analogy: Open Policy Agent, applied to coding agents,
+repository context, agent instructions, engineering constraints, validation,
+and governed execution). The staged plan lives in ROADMAP.md under "Pack
+Runtime Phase Plan" — when asked to "implement the next roadmap item" or
+"implement pack phase N", treat that ROADMAP section plus this memory file as
+the authoritative specification.
+
 ## Non-goals
-<!-- Populate with explicitly out-of-scope outcomes to prevent scope creep. -->
+cARL must not become a generic package manager, orchestration platform,
+agent framework, or enterprise governance monolith. Preserve: deterministic
+behaviour, repository-local operation, offline-first design, self-contained
+Go binary, explicit committed artefacts, inspectable state, reproducibility,
+agent-harness independence, strong validation and reconciliation. No runtime
+network dependencies; remote access (future registry) stays optional. Never
+infer policy order from filesystem order; never treat generated files as
+canonical.
 
 ## Architecture summary
 
