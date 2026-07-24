@@ -11,6 +11,7 @@
 //	harness    Manage and inspect harness adapters for AI coding agents
 //	init       Install the cARL runtime into the current repository
 //	map        Generate and update .github/carl/repo-map.json from repository structure
+//	pack       Discover and inspect available instruction packs
 //	plan       Discover, validate, and summarise plans in .github/carl/plans/
 //	reconcile  Update repository-specific memory sections from current repo-map data
 //	repair     Restore modified managed cARL artefacts to their canonical state
@@ -20,6 +21,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -31,6 +33,7 @@ import (
 	"github.com/goldjg/carl/internal/doctor"
 	"github.com/goldjg/carl/internal/harness"
 	"github.com/goldjg/carl/internal/install"
+	"github.com/goldjg/carl/internal/pack"
 	"github.com/goldjg/carl/internal/plan"
 	"github.com/goldjg/carl/internal/reconcile"
 	"github.com/goldjg/carl/internal/repair"
@@ -78,6 +81,7 @@ func main() {
 			bundledRuntimeCommit,
 		),
 		repomap.New(),
+		pack.New(embedded.Assets),
 		plan.New(),
 		reconcile.New(),
 		repair.New(embedded.Assets),
@@ -93,6 +97,21 @@ func main() {
 	}
 
 	if err := run(ctx, os.Args[1:], cmds); err != nil {
+		var exitErr *cmdutil.ExitError
+		if errors.As(err, &exitErr) {
+			if exitErr.Message != "" {
+				if exitErr.SuppressPrefix {
+					fmt.Fprintln(os.Stderr, exitErr.Message)
+				} else {
+					fmt.Fprintf(os.Stderr, "carl: %s\n", exitErr.Message)
+				}
+			}
+			code := exitErr.Code
+			if code == 0 {
+				code = 1
+			}
+			os.Exit(code)
+		}
 		fmt.Fprintf(os.Stderr, "carl: %v\n", err)
 		os.Exit(1)
 	}

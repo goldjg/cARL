@@ -1,4 +1,4 @@
-<!-- version: 1.1.0 -->
+<!-- version: 1.2.0 -->
 # cARL — Roadmap
 
 This roadmap describes the strategic direction and future evolution of cARL. None of the items marked as not started are implemented in the current codebase. Items are recorded here to preserve intent and prevent rediscovery.
@@ -347,6 +347,26 @@ never overwritten. If the generated content is unchanged, reports
 `No reconciliation needed.` without writing any files. Idempotent. Does not
 modify `runtime.json`, harness adapter files, or any other managed artefact.
 No network access required.
+
+---
+
+### `carl pack list` / `carl pack show` — Pack Discovery & Metadata
+**Status:** Delivered
+**Command:** `carl pack list [--json]`, `carl pack show <pack-id> [--json]`
+**Description:** First vertical slice of the versioned pack runtime. Introduces
+a schema-versioned pack metadata model (`schemaVersion: 1`) with stable
+`<category>/<name>` IDs, semantic versions, source (`bundled` /
+`repository-local`), state (bundled / installed / selected / active),
+owned artefacts, and dependency declarations. Discovery merges bundled,
+repository-local, and `runtime.json`-selected packs deterministically (sorted
+by ID — never filesystem order) and validates the set (malformed or duplicate
+IDs, invalid versions, unknown schema versions, missing or cyclic
+dependencies, invalid owned artefacts, contradictory state). Human-readable
+and `--json` output; structured JSON errors with non-zero exit codes. Works
+inside and outside an initialised repository. Explicitly out of scope (future
+phases): pack selection/activation commands, priority and override semantics,
+a compiled policy intermediate representation, and any remote registry or
+dependency downloading.
 
 ---
 
