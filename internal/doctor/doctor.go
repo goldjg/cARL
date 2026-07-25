@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/goldjg/carl/internal/harness"
@@ -82,10 +83,14 @@ func (c *Command) diagnose(rootDir string) ([]Finding, error) {
 	var findings []Finding
 
 	if !manifest.Exists(rootDir) {
+		action := "run `carl init`"
+		if hasExistingArtifacts(rootDir, c.arts) {
+			action = "run `carl init --adopt` to preserve and adopt the existing cARL artefacts"
+		}
 		findings = append(findings, Finding{
 			Level:   LevelError,
 			Message: "missing runtime manifest (.github/carl/runtime.json)",
-			Action:  "run `carl init`",
+			Action:  action,
 		})
 		return findings, nil
 	}
@@ -162,6 +167,25 @@ func (c *Command) diagnose(rootDir string) ([]Finding, error) {
 	})
 
 	return findings, nil
+}
+
+func hasExistingArtifacts(rootDir string, arts Artifacts) bool {
+	lister, ok := arts.(interface {
+		List() ([]string, error)
+	})
+	if !ok {
+		return false
+	}
+	files, err := lister.List()
+	if err != nil {
+		return false
+	}
+	for _, file := range files {
+		if _, err := os.Stat(filepath.Join(rootDir, filepath.FromSlash(file))); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 // printFindings writes the findings to stdout in a consistent, human-readable

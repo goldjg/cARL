@@ -26,6 +26,14 @@ func (f *fakeArts) Open(p string) ([]byte, error) {
 	return data, nil
 }
 
+func (f *fakeArts) List() ([]string, error) {
+	files := make([]string, 0, len(f.files))
+	for path := range f.files {
+		files = append(files, path)
+	}
+	return files, nil
+}
+
 // harnessContent is the standard content used for all harness adapter source
 // files in tests. All tests that create a fakeArts and pass it to doctor/status
 // commands must include these entries so harness.Inspect can compare each
@@ -298,6 +306,28 @@ func TestDoctor_AlwaysReturnsSuccess(t *testing.T) {
 			t.Errorf("RunInDir returned non-nil error; want nil; got: %v", err)
 		}
 	})
+}
+
+func TestDoctor_MissingRuntimeWithExistingArtifactsRecommendsAdoption(t *testing.T) {
+	dir := t.TempDir()
+	arts := newFakeArts(nil)
+	target := filepath.Join(dir, ".github", "copilot-instructions.md")
+	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(target, []byte("repository content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := doctor.New(arts)
+	output := captureStdout(t, func() {
+		if err := cmd.RunInDir(dir); err != nil {
+			t.Fatalf("RunInDir: %v", err)
+		}
+	})
+	if !strings.Contains(output, "carl init --adopt") {
+		t.Errorf("expected adoption guidance; got: %q", output)
+	}
 }
 
 // Contract assertion H4: a drifted harness adapter produces a WARNING with

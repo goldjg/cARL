@@ -45,11 +45,47 @@ func Write(rootDir string, r *Runtime) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err
 	}
-	data, err := json.MarshalIndent(r, "", "  ")
+	data, err := marshal(r)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(data, '\n'), 0644)
+	return os.WriteFile(path, data, 0644)
+}
+
+// WriteNew serialises and creates the runtime manifest without replacing an
+// existing file. It is used when an explicit installation or adoption must
+// not race with, or overwrite, another manifest creator.
+func WriteNew(rootDir string, r *Runtime) error {
+	path := filepath.Join(rootDir, FileName)
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
+	data, err := marshal(r)
+	if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(data); err != nil {
+		_ = f.Close()
+		_ = os.Remove(path)
+		return err
+	}
+	if err := f.Close(); err != nil {
+		_ = os.Remove(path)
+		return err
+	}
+	return nil
+}
+
+func marshal(r *Runtime) ([]byte, error) {
+	data, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return append(data, '\n'), nil
 }
 
 // Exists reports whether the runtime manifest exists at rootDir/FileName.

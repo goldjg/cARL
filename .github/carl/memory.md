@@ -62,6 +62,13 @@ provenance live in `packs.json`, `profiles.json`, `registries.json`, and
 `installed-packs.json` respectively. The current binary embeds 37 runtime
 artefacts.
 
+`carl init --adopt` is the explicit recovery path when embedded cARL artefacts
+already exist but `runtime.json` is absent. Adoption preserves every existing
+artefact, installs only missing bundled artefacts, and creates the manifest
+last. Ordinary `carl init` retains collision-safe failure. Adoption establishes
+future repair ownership, but repair continues to protect `memory.md` and
+`runtime.json`.
+
 ## Release infrastructure
 
 The cARL CLI release pipeline uses **GoReleaser** (`.goreleaser.yaml`) as the canonical packaging layer. Releases are tag-triggered (`v*`). GoReleaser produces:

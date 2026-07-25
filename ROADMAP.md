@@ -170,7 +170,10 @@ selection fallback; user-owned pack selection, profiles, registries, and install
 provenance live in their separate schema-versioned artefacts. `memory.md` and
 `runtime.json` are protected from repair. Health status is content-based
 (byte-comparison against embedded canonicals). Build-time version and commit
-injection via `-ldflags`.
+injection via `-ldflags`. Repositories containing cARL artefacts without a
+manifest can use explicit non-destructive `carl init --adopt`: existing files
+are preserved, missing bundled files are installed, and `runtime.json` is
+created last so the normal doctor/repair lifecycle becomes available.
 
 ### Release Workflow (CLI Binary Publishing)
 **Status:** Delivered (PR #3); migrated to GoReleaser; macOS signing configured from v0.4.2
