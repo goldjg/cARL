@@ -1,4 +1,4 @@
-<!-- version: 1.3.0 -->
+<!-- version: 1.4.0 -->
 # cARL — Roadmap
 
 This roadmap describes the strategic direction and future evolution of cARL. None of the items marked as not started are implemented in the current codebase. Items are recorded here to preserve intent and prevent rediscovery.
@@ -374,8 +374,9 @@ dependency downloading.
 
 ## Pack Runtime Phase Plan (Policy-as-Code Direction)
 
-Planned evolution of the versioned pack runtime. Phases 1 and 2 are delivered
-(see above and the Phase 2 entry below). Each later phase is a candidate vertical slice; constraints noted per
+Planned evolution of the versioned pack runtime. Phases 1 through 3 are
+delivered (see above and the Phase 2/3 entries below). Each later phase is a
+candidate vertical slice; constraints noted per
 phase are binding until explicitly revisited. Each entry is intended to be a
 self-sufficient specification: together with `.github/carl/memory.md`, the
 existing pack model (`internal/pack`), and the cross-phase constraints below,
@@ -406,11 +407,21 @@ explicit metadata (target must declare `precedence-mode: overridable`),
 never inferred from load order.
 
 ### Pack Phase 3: Profiles and Agent Roles
-**Status:** Not started
+**Status:** Delivered
+**Commands:** `carl pack profile list`, `show`, `activate`, `clear`
 **Description:** Named policy profiles, role-specific context, task-specific
 pack selection, repository and organisation defaults, and controlled
-customisation. This is where `state.active` stops being derived from
-`selected` and becomes profile-driven.
+customisation. Profile policy is stored in the schema-versioned, user-owned
+`.github/carl/profiles.json` artefact. Organisation defaults, repository
+defaults, active-profile packs, and active role/task overlays compose
+additively and provide explicit activation reasons. Every referenced pack
+must already be selected; profile activation never changes selection,
+precedence, or override authority. `state.active` and `carl pack effective`
+are profile-driven when the artefact exists, with selected-as-active retained
+only as a compatibility fallback for repositories without `profiles.json`.
+Profile commands provide human-readable and schema-versioned JSON output,
+validate all identifiers and references, and write only `profiles.json`;
+`runtime.json` remains init-only.
 
 ### Pack Phase 4: Registry and Installation
 **Status:** Not started — do not implement prematurely

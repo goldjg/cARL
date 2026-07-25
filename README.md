@@ -119,6 +119,7 @@ Repositories already running AADLC can migrate their accumulated durable knowled
 │   ├── memory.md                    # Durable architectural truth cache
 │   ├── current-pr-contract.md          # Active PR contract (populate before each PR)
 │   ├── current-pr-contract.template.md # Blank template — copy to current-pr-contract.md
+│   ├── profiles.json                   # User-owned named profiles and active role/task context (when configured)
 │   ├── invariants.yml               # Machine-readable governance invariants
 │   ├── trust-boundaries.md          # Trust boundary definitions and crossing rules
 │   ├── tool-policy.yml              # Tool permission tier policy (Tier 0/1/2)
@@ -314,22 +315,29 @@ See [CLI.md](CLI.md) for the full command reference.
 
 List every discoverable instruction pack (bundled in the binary, present in
 the repository, or selected in `.github/carl/packs.json`), inspect one pack's
-versioned metadata, select packs for the repository, and compute the effective
-pack set:
+versioned metadata, select packs for the repository, activate a named
+profile/role/task context, and compute the effective pack set:
 
 ```sh
 carl pack list
 carl pack show core/security
 carl pack select languages/go core/security
+carl pack profile list
+# After defining .github/carl/profiles.json:
+carl pack profile activate developer
 carl pack effective
 ```
 
 All subcommands support `--json` for machine-readable output; `list`, `show`,
-and `effective` work outside an initialised repository (bundled packs only).
+`profile list`, and `effective` work outside an initialised repository
+(bundled packs only).
 Ordering is deterministic (sorted by pack ID; effective output in precedence
 order), never filesystem order. Composition is conservative: packs add
 constraints, required dependencies are expanded with explicit reasons, and no
-pack silently disables another — overrides require explicit metadata.
+pack silently disables another — overrides require explicit metadata. Named
+profiles are defined in the committed `.github/carl/profiles.json` artefact;
+organisation/repository defaults and role/task overlays compose additively.
+When that artefact is absent, selected packs remain active for compatibility.
 
 ### 7. Migrate from AADLC (existing repositories)
 

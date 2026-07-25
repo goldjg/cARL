@@ -1,4 +1,4 @@
-<!-- version: 1.1.0 -->
+<!-- version: 1.2.0 -->
 # cARL — Glossary
 
 This glossary defines the terms used in cARL documentation, instruction packs, and governance artefacts.
@@ -112,10 +112,16 @@ A high-impact unresolved question persisted in the memory cache so future tasks 
 See: Instruction pack.
 
 ### Pack state
-The lifecycle facts recorded in pack metadata: **bundled** (shipped inside the `carl` binary), **installed** (present as a file in the repository), **selected** (recorded in `.github/carl/packs.json` by `carl pack select`, falling back to the legacy `.github/carl/runtime.json` derivation when absent), and **active** (in effect for agents — currently derived from selected). Selection is distinct from priority (ordering among selected packs) and override authority (whether one pack may relax another's rules); all three are modelled, with priority and override authority coming only from explicit pack metadata headers, never load order.
+The lifecycle facts recorded in pack metadata: **bundled** (shipped inside the `carl` binary), **installed** (present as a file in the repository), **selected** (recorded in `.github/carl/packs.json` by `carl pack select`, falling back to the legacy `.github/carl/runtime.json` derivation when absent), and **active** (an explicit seed from organisation/repository defaults or the active profile/role/task context in `.github/carl/profiles.json`). When no profile artefact exists, active falls back to selected for compatibility. Selection is distinct from activation, priority (ordering), and override authority (whether one pack may relax another's rules).
 
 ### Pack selection
 The explicit, committed record of which packs are in play for a repository, stored in `.github/carl/packs.json` (schema version 1) and managed by `carl pack select` / `carl pack unselect`. Selection is deterministic (deduplicated, sorted by pack ID) and user-owned; pack commands never write `runtime.json`.
+
+### Policy profile
+A named, committed policy context in `.github/carl/profiles.json` (schema version 1). A profile declares base packs plus optional role-specific and task-specific overlays. Organisation defaults, repository defaults, profile packs, and the active overlays compose additively; every referenced pack must already be selected.
+
+### Profile activation
+The explicit profile, role, and task context stored under `active` in `.github/carl/profiles.json`. `carl pack profile activate` changes that context and `clear` removes it while retaining organisation/repository defaults. Profile activation determines `state.active`; it does not change selection, precedence, or override authority.
 
 ### Phase
 One of the five cARLv2 work phases: shaping, planning, execution, validation, context reset. Phases should be kept distinct to reduce hidden branching.

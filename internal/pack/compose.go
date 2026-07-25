@@ -46,15 +46,21 @@ func ComputeEffectiveSet(packs []PackMetadata) (*EffectiveSet, error) {
 		index[p.ID] = p
 	}
 
-	// Seed with explicitly selected packs, deterministically.
+	// Seed with explicitly active packs, deterministically. Repositories
+	// without profiles.json mark every selected pack active as a compatibility
+	// fallback.
 	var queue []string
 	reasons := map[string][]string{}
 	inSet := map[string]bool{}
 	for _, p := range packs {
-		if p.State.Selected {
+		if p.State.Active {
 			queue = append(queue, p.ID)
 			inSet[p.ID] = true
-			reasons[p.ID] = append(reasons[p.ID], "selected")
+			if len(p.State.ActiveReasons) == 0 {
+				reasons[p.ID] = append(reasons[p.ID], "selected")
+			} else {
+				reasons[p.ID] = append(reasons[p.ID], p.State.ActiveReasons...)
+			}
 		}
 	}
 	sort.Strings(queue)

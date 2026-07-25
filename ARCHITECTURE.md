@@ -1,4 +1,4 @@
-<!-- version: 1.1.0 -->
+<!-- version: 1.2.0 -->
 # cARL — Architecture Overview
 
 ---
@@ -121,8 +121,10 @@ Pack state is a chain of distinct facts:
 - **selected** — recorded in `.github/carl/packs.json` (written by
   `carl pack select` / `unselect`; falls back to the legacy
   `.github/carl/runtime.json` derivation when `packs.json` is absent),
-- **active** — in effect for agents (currently derived from *selected*;
-  explicit activation profiles are future work).
+- **active** — explicitly activated by organisation/repository defaults plus
+  the current named profile and its role/task overlays in
+  `.github/carl/profiles.json`. When that artefact is absent, active falls
+  back to selected for compatibility.
 
 Discovery merges bundled, repository-local, and manifest sources
 deterministically (sorted by pack ID); repository-local metadata takes
@@ -150,6 +152,24 @@ a non-zero exit. Ordering is priority descending with pack-ID tie-breaks. Any
 future policy intermediate representation compiled from pack metadata builds
 on this effective set and must never be inferred from load order.
 
+### Profiles and Agent Roles (schema version 1)
+
+`.github/carl/profiles.json` is a user-owned committed policy artefact. It
+contains:
+
+- additive organisation and repository default pack sets;
+- named profiles with base pack sets;
+- per-profile role and task overlays;
+- one explicit active profile/role/task context.
+
+Every referenced pack must already be selected. Profile resolution is
+deterministic and additive: defaults, profile packs, the active role overlay,
+and the active task overlay form the active seeds; Phase 2 dependency,
+precedence, override, and conflict rules then produce the effective set.
+`carl pack profile activate` and `clear` write only `profiles.json`;
+`runtime.json` remains init-only. Invalid profile IDs, duplicate profiles,
+unknown contexts, and unselected pack references are explicit errors.
+
 ---
 
 ## Layer 3: Governance Artefacts
@@ -166,6 +186,7 @@ Templates and data artefacts used by cARLv2 packs. These are not instruction-pac
 | `invariants.yml` | Machine-readable invariant set: secrets policy, scope discipline, security baseline, plan-first, dependency approval |
 | `trust-boundaries.md` | Trust boundary classification table and crossing rules |
 | `tool-policy.yml` | Tier 0/1/2 tool permission policy |
+| `profiles.json` | User-owned named profiles, defaults, role/task overlays, and active context (created only when configured) |
 | `repo-map.example.json` | Cognitive repository map for fast agent orientation |
 | `plans/README.md` | Prompt-as-code guidance and when to use it |
 | `plans/plan-template.md` | Reusable planning contract template |

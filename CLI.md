@@ -1,4 +1,4 @@
-<!-- version: 1.2.0 -->
+<!-- version: 1.3.0 -->
 # cARL CLI Reference
 
 The `carl` CLI installs and manages the cARL governance runtime inside a repository.
@@ -381,6 +381,10 @@ carl pack list [--json]
 carl pack show <pack-id> [--json]
 carl pack select <pack-id>... [--json]
 carl pack unselect <pack-id>... [--json]
+carl pack profile list [--json]
+carl pack profile show <profile-id> [--json]
+carl pack profile activate <profile-id> [--role <role-id>] [--task <task-id>] [--json]
+carl pack profile clear [--json]
 carl pack effective [--json]
 ```
 
@@ -392,7 +396,11 @@ carl pack effective [--json]
 | `show <pack-id>` | Show full metadata for a single pack (e.g. `carl pack show core/security`) |
 | `select <pack-id>...` | Add packs to the repository selection in `.github/carl/packs.json` |
 | `unselect <pack-id>...` | Remove packs from the repository selection |
-| `effective` | Compute and print the effective pack set (selection + required dependencies, precedence order, overrides, conflicts) |
+| `profile list` | List named policy profiles and the active profile/role/task context |
+| `profile show <profile-id>` | Show one profile's base packs and role/task overlays |
+| `profile activate <profile-id>` | Activate a profile with optional `--role` and `--task` overlays |
+| `profile clear` | Clear the active profile and overlays; organisation/repository defaults remain active |
+| `effective` | Compute and print the effective pack set (active profile seeds + required dependencies, precedence order, overrides, conflicts) |
 
 **Behaviour**
 
@@ -421,6 +429,11 @@ carl pack effective [--json]
   Malformed headers are explicit errors; a repository-local pack's composition
   headers take precedence over the bundled copy's when it declares any.
 - The metadata model is versioned: every payload carries `"schemaVersion": 1`.
+- When `.github/carl/profiles.json` exists, `state.active` is driven by the
+  additive union of organisation defaults, repository defaults, the active
+  profile, and its active role/task overlays. Every profile pack reference
+  must already be selected. When `profiles.json` is absent, selected packs
+  remain active as a compatibility fallback.
 - The discovered pack set is validated before output: malformed IDs, duplicate
   IDs, invalid versions, unknown schema versions, missing or cyclic
   dependencies, invalid owned-artefact paths, and contradictory states are
@@ -473,13 +486,55 @@ selection deterministically (deduplicated, sorted by pack ID) in
 `.github/carl/runtime.json`. Selecting validates that every named pack is
 discoverable. Unselecting a pack that other selected packs still require
 leaves it in the *effective* set as a dependency (with its reason reported by
-`carl pack effective`).
+`carl pack effective`). A pack referenced by any configured profile/default/
+role/task cannot be unselected until that profile reference is removed.
+
+`profiles.json` is also user-owned and committed. Profile definitions are
+edited as policy-as-code; the CLI validates and activates them:
+
+```json
+{
+  "schemaVersion": 1,
+  "defaults": {
+    "organization": ["core/security"],
+    "repository": ["core/baseline", "languages/go"]
+  },
+  "profiles": [
+    {
+      "id": "developer",
+      "description": "Default implementation context.",
+      "packs": ["core/carl"],
+      "roles": {
+        "reviewer": ["core/pr-contract"]
+      },
+      "tasks": {
+        "security-review": ["core/identity"]
+      }
+    }
+  ],
+  "active": {
+    "profile": "developer",
+    "role": "reviewer",
+    "task": "security-review"
+  }
+}
+```
+
+Profile, role, and task IDs use lower-case kebab-case. Defaults and overlays
+compose additively; they never remove a selected pack or imply override
+authority. `carl pack profile activate` and `clear` write only
+`profiles.json`, deterministically. Unknown profiles, roles, tasks, duplicate
+profile IDs, malformed fields, and references to unselected packs are errors.
 
 `carl pack effective` computes the effective pack set:
 
-1. Start from the explicitly selected packs.
+1. Start from profile-driven active packs: organisation/repository defaults,
+   active-profile packs, and active role/task overlays. Without
+   `profiles.json`, start from selected packs for compatibility.
 2. Expand required dependencies transitively; every entry carries explicit
-   reasons (`selected`, `dependency of <id>`).
+   reasons (`organization default`, `profile <id>`,
+   `role <id> in profile <id>`, `task <id> in profile <id>`,
+   `selected` for legacy fallback, or `dependency of <id>`).
 3. Apply explicit override declarations: an override is honoured only when
    the overriding pack declares it in metadata **and** the target pack
    declares `precedence-mode: overridable`. Overridden packs remain in the
@@ -522,6 +577,8 @@ overrides) are reported and cause a non-zero exit. With `--json`:
 | `unknown pack "<id>"` | The pack ID does not match any discoverable pack | Run `carl pack list` to see valid IDs |
 | `pack validation failed: ...` | Discovered pack set contains invalid metadata | Fix the reported pack file or manifest entry |
 | `parse .github/carl/packs.json: ...` | Selection artefact is malformed | Fix or delete `.github/carl/packs.json` |
+| `.github/carl/profiles.json validation failed: ...` | Profile schema, context, or references are invalid | Fix the reported profile/default/overlay entry |
+| `unknown profile "<id>"` | The requested profile is not configured | Run `carl pack profile list` |
 | `pack composition conflicts detected` | `carl pack effective` found override or dependency conflicts | Fix the conflicting pack metadata or selection |
 
 With `--json`, errors are emitted as a structured payload on stderr with a
@@ -536,8 +593,9 @@ non-zero exit code:
 
 **Notes**
 
-- `state.active` is currently derived from `state.selected`; explicit
-  activation profiles are future work (Pack Phase 3).
+- `state.selected` identifies the repository's eligible policy packs;
+  `state.active` identifies profile-driven active seeds. Required dependencies
+  appear in the effective set even when they are not active seeds.
 - Pack *selection* (which packs are in play) is distinct from *priority*
   (ordering among selected packs) and *override authority* (whether a pack may
   relax another pack's rules). All three are modelled: selection lives in
