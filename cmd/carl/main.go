@@ -8,6 +8,7 @@
 //
 //	convert    Migrate durable governance knowledge from legacy sources into cARL artefacts
 //	doctor     Diagnose runtime issues and provide actionable remediation guidance
+//	explain    Explain pack-level policy provenance and evaluation
 //	harness    Manage and inspect harness adapters for AI coding agents
 //	init       Install the cARL runtime into the current repository
 //	map        Generate and update .github/carl/repo-map.json from repository structure
@@ -16,6 +17,7 @@
 //	reconcile  Update repository-specific memory sections from current repo-map data
 //	repair     Restore modified managed cARL artefacts to their canonical state
 //	status     Report whether the installed cARL runtime is healthy, missing, or drifted
+//	trace      Trace the effective pack-level policy evaluation
 //	version    Show CLI, bundled runtime, and repository runtime version information
 package main
 
@@ -72,6 +74,7 @@ func main() {
 	cmds := []cmdutil.Command{
 		convert.New(),
 		doctor.New(embedded.Assets),
+		pack.NewExplain(embedded.Assets),
 		harness.New(embedded.Assets),
 		install.New(
 			embedded.Assets,
@@ -86,6 +89,7 @@ func main() {
 		reconcile.New(),
 		repair.New(embedded.Assets),
 		status.New(cliVersion, embedded.Assets),
+		pack.NewTrace(embedded.Assets),
 		version.New(
 			cliVersion,
 			bundledRuntimeVersion,

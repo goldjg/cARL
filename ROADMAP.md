@@ -1,4 +1,4 @@
-<!-- version: 1.6.0 -->
+<!-- version: 1.7.0 -->
 # cARL — Roadmap
 
 This roadmap describes the strategic direction and future evolution of cARL. None of the items marked as not started are implemented in the current codebase. Items are recorded here to preserve intent and prevent rediscovery.
@@ -377,7 +377,7 @@ dependency downloading.
 
 ## Pack Runtime Phase Plan (Policy-as-Code Direction)
 
-Planned evolution of the versioned pack runtime. Phases 1 through 4 are
+Planned evolution of the versioned pack runtime. Phases 1 through 5 are
 delivered (see above and the Phase 2/3 entries below). Each later phase is a
 candidate vertical slice; constraints noted per
 phase are binding until explicitly revisited. Each entry is intended to be a
@@ -444,13 +444,17 @@ support fully offline workflows. SHA-256 is accurately scoped as integrity
 against the configured index, not publisher authentication or signing.
 
 ### Pack Phase 5: Policy Provenance and Explanation
-**Status:** Not started
-**Description:** Candidate commands `carl explain` / `carl trace` that report
-which policy applied, where it came from, which pack selected it, which
-profile activated it, whether it overrode or strengthened another rule, why a
-conflict was resolved, and which source artefact holds the canonical
-definition. This is policy provenance and evaluation tracing — it must not
-claim to expose hidden model reasoning or chain-of-thought.
+**Status:** Delivered
+**Commands:** `carl explain <pack-id>`, `carl trace`
+**Description:** Deterministic, schema-versioned, read-only commands report
+pack-level policy provenance: which packs are effective, where their canonical
+definitions came from, which selection/profile/default/dependency activated
+them, their precedence, whether they add constraints, and which explicit
+overrides resolved or remained conflicts. Trace order reuses the existing
+effective-pack evaluator and unresolved conflicts keep their non-zero exit.
+Both commands are local-only and network-free. The policy unit is an
+instruction pack; the commands do not interpret individual natural-language
+rules or claim to expose prompts, hidden model reasoning, or chain-of-thought.
 
 ### Pack Phase 6: Cognitive Repository Graph
 **Status:** Exploratory
