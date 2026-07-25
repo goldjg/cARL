@@ -1,4 +1,4 @@
-<!-- version: 1.1.0 -->
+<!-- version: 1.2.0 -->
 # cARL CLI Reference
 
 The `carl` CLI installs and manages the cARL governance runtime inside a repository.
@@ -370,15 +370,18 @@ Repo map updated: .github/carl/repo-map.json
 
 ### `carl pack`
 
-Discovers and inspects instruction packs. Works inside an initialised
-repository (merging bundled, repository-local, and selected packs) and outside
-one (bundled packs only).
+Discovers, inspects, selects, and composes instruction packs. Works inside an
+initialised repository (merging bundled, repository-local, and selected packs)
+and outside one (bundled packs only).
 
 **Usage**
 
 ```
 carl pack list [--json]
 carl pack show <pack-id> [--json]
+carl pack select <pack-id>... [--json]
+carl pack unselect <pack-id>... [--json]
+carl pack effective [--json]
 ```
 
 **Subcommands**
@@ -387,6 +390,9 @@ carl pack show <pack-id> [--json]
 |---|---|
 | `list` | List every discoverable pack with version, category, source, state, and description |
 | `show <pack-id>` | Show full metadata for a single pack (e.g. `carl pack show core/security`) |
+| `select <pack-id>...` | Add packs to the repository selection in `.github/carl/packs.json` |
+| `unselect <pack-id>...` | Remove packs from the repository selection |
+| `effective` | Compute and print the effective pack set (selection + required dependencies, precedence order, overrides, conflicts) |
 
 **Behaviour**
 
@@ -397,11 +403,23 @@ carl pack show <pack-id> [--json]
   - **bundled** — packs embedded in the `carl` binary,
   - **repository-local** — packs present under `.github/instructions/` in the
     current repository (their metadata takes precedence over bundled copies),
-  - **selected** — packs recorded in `.github/carl/runtime.json`
-    (`managedArtifacts`) by `carl init`.
+  - **selected** — packs recorded in `.github/carl/packs.json` (written by
+    `carl pack select` / `unselect`); when that file is absent, selection
+    falls back to the legacy derivation from `.github/carl/runtime.json`
+    (`managedArtifacts`) written by `carl init`.
 - Pack metadata (version, title, description) is parsed from the
   `<!-- version: X.Y.Z -->` header, first `#` heading, and first paragraph of
   each pack file.
+- Composition metadata is parsed from optional explicit comment headers in the
+  first ten lines of a pack file — absent headers default to no dependencies,
+  `additive` mode, priority `0`, and no overrides:
+  - `<!-- requires: <pack-id>[, <pack-id>...] -->` — required dependencies,
+  - `<!-- precedence-mode: additive|overridable|restrictable-only|immutable -->`,
+  - `<!-- priority: <non-negative integer> -->`,
+  - `<!-- overrides: <pack-id>[, <pack-id>...] -->` — explicit override
+    declarations.
+  Malformed headers are explicit errors; a repository-local pack's composition
+  headers take precedence over the bundled copy's when it declares any.
 - The metadata model is versioned: every payload carries `"schemaVersion": 1`.
 - The discovered pack set is validated before output: malformed IDs, duplicate
   IDs, invalid versions, unknown schema versions, missing or cyclic
@@ -440,12 +458,71 @@ carl pack show <pack-id> [--json]
 `carl pack show <pack-id>` prints the same pack object under a `"pack"` key
 with `--json`, or a human-readable detail view without it.
 
+`carl pack select` / `carl pack unselect` persist the repository pack
+selection deterministically (deduplicated, sorted by pack ID) in
+`.github/carl/packs.json`:
+
+```json
+{
+  "schemaVersion": 1,
+  "selected": ["core/baseline", "languages/go"]
+}
+```
+
+`packs.json` is a user-owned committed artefact; pack commands never write
+`.github/carl/runtime.json`. Selecting validates that every named pack is
+discoverable. Unselecting a pack that other selected packs still require
+leaves it in the *effective* set as a dependency (with its reason reported by
+`carl pack effective`).
+
+`carl pack effective` computes the effective pack set:
+
+1. Start from the explicitly selected packs.
+2. Expand required dependencies transitively; every entry carries explicit
+   reasons (`selected`, `dependency of <id>`).
+3. Apply explicit override declarations: an override is honoured only when
+   the overriding pack declares it in metadata **and** the target pack
+   declares `precedence-mode: overridable`. Overridden packs remain in the
+   set, flagged with `overriddenBy` — no pack silently disables another.
+4. Order by precedence: priority descending, ties broken by pack ID — never
+   filesystem or load order.
+
+Conflicts (missing dependencies, overriding a non-overridable pack, mutual
+overrides) are reported and cause a non-zero exit. With `--json`:
+
+```json
+{
+  "schemaVersion": 1,
+  "packs": [
+    {
+      "id": "languages/go",
+      "version": "1.0.0",
+      "priority": 0,
+      "mode": "additive",
+      "reasons": ["selected"]
+    },
+    {
+      "id": "core/baseline",
+      "version": "1.2.0",
+      "priority": 0,
+      "mode": "additive",
+      "reasons": ["dependency of languages/go"]
+    }
+  ],
+  "conflicts": [
+    { "code": "override_not_permitted", "message": "..." }
+  ]
+}
+```
+
 **Errors**
 
 | Error | Cause | Resolution |
 |---|---|---|
 | `unknown pack "<id>"` | The pack ID does not match any discoverable pack | Run `carl pack list` to see valid IDs |
 | `pack validation failed: ...` | Discovered pack set contains invalid metadata | Fix the reported pack file or manifest entry |
+| `parse .github/carl/packs.json: ...` | Selection artefact is malformed | Fix or delete `.github/carl/packs.json` |
+| `pack composition conflicts detected` | `carl pack effective` found override or dependency conflicts | Fix the conflicting pack metadata or selection |
 
 With `--json`, errors are emitted as a structured payload on stderr with a
 non-zero exit code:
@@ -460,11 +537,14 @@ non-zero exit code:
 **Notes**
 
 - `state.active` is currently derived from `state.selected`; explicit
-  activation profiles are future work.
+  activation profiles are future work (Pack Phase 3).
 - Pack *selection* (which packs are in play) is distinct from *priority*
   (ordering among selected packs) and *override authority* (whether a pack may
-  relax another pack's rules). Only selection is modelled today; precedence
-  metadata is surfaced read-only and no override semantics are applied.
+  relax another pack's rules). All three are modelled: selection lives in
+  `packs.json`, priority and override authority come only from explicit pack
+  metadata headers — never from load order.
+- Composition is conservative: packs add constraints, overridden packs are
+  flagged but never removed, and no pack silently disables another.
 
 ---
 

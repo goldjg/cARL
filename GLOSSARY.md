@@ -58,6 +58,9 @@ See: Memory cache.
 
 ## E
 
+### Effective pack set
+The composed policy surface computed by `carl pack effective`: explicitly selected packs plus transitively expanded required dependencies, each entry carrying explicit reasons, ordered by precedence (priority descending, pack-ID tie-break). Composition is conservative: overridden packs remain in the set flagged `overriddenBy`; an override is honoured only when explicitly declared and the target pack declares mode `overridable`; conflicts fail with a non-zero exit.
+
 ### Escalation trigger
 A condition defined in the PR contract or plan that requires the agent to stop and seek user confirmation before proceeding. Examples: ambiguous scope, trust boundary change, out-of-contract action.
 
@@ -109,7 +112,10 @@ A high-impact unresolved question persisted in the memory cache so future tasks 
 See: Instruction pack.
 
 ### Pack state
-The lifecycle facts recorded in pack metadata: **bundled** (shipped inside the `carl` binary), **installed** (present as a file in the repository), **selected** (recorded in `.github/carl/runtime.json` as managed), and **active** (in effect for agents — currently derived from selected). Selection is distinct from priority (ordering among selected packs) and override authority (whether one pack may relax another's rules); only selection is modelled today.
+The lifecycle facts recorded in pack metadata: **bundled** (shipped inside the `carl` binary), **installed** (present as a file in the repository), **selected** (recorded in `.github/carl/packs.json` by `carl pack select`, falling back to the legacy `.github/carl/runtime.json` derivation when absent), and **active** (in effect for agents — currently derived from selected). Selection is distinct from priority (ordering among selected packs) and override authority (whether one pack may relax another's rules); all three are modelled, with priority and override authority coming only from explicit pack metadata headers, never load order.
+
+### Pack selection
+The explicit, committed record of which packs are in play for a repository, stored in `.github/carl/packs.json` (schema version 1) and managed by `carl pack select` / `carl pack unselect`. Selection is deterministic (deduplicated, sorted by pack ID) and user-owned; pack commands never write `runtime.json`.
 
 ### Phase
 One of the five cARLv2 work phases: shaping, planning, execution, validation, context reset. Phases should be kept distinct to reduce hidden branching.

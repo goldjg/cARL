@@ -306,20 +306,26 @@ INFO    runtime is healthy — all managed artefacts are present and canonical
 
 See [CLI.md](CLI.md) for the full command reference.
 
-### 6. Explore available packs
+### 6. Explore and compose packs
 
 List every discoverable instruction pack (bundled in the binary, present in
-the repository, or selected in `runtime.json`), or inspect one pack's
-versioned metadata:
+the repository, or selected in `.github/carl/packs.json`), inspect one pack's
+versioned metadata, select packs for the repository, and compute the effective
+pack set:
 
 ```sh
 carl pack list
 carl pack show core/security
+carl pack select languages/go core/security
+carl pack effective
 ```
 
-Both subcommands support `--json` for machine-readable output and work outside
-an initialised repository (bundled packs only). Ordering is deterministic
-(sorted by pack ID), never filesystem order.
+All subcommands support `--json` for machine-readable output; `list`, `show`,
+and `effective` work outside an initialised repository (bundled packs only).
+Ordering is deterministic (sorted by pack ID; effective output in precedence
+order), never filesystem order. Composition is conservative: packs add
+constraints, required dependencies are expanded with explicit reasons, and no
+pack silently disables another — overrides require explicit metadata.
 
 ### 7. Migrate from AADLC (existing repositories)
 

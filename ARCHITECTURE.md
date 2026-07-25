@@ -110,15 +110,17 @@ file plus runtime state:
 | `source` | Where the pack was discovered: `bundled`, `repository-local`, or both |
 | `state` | `bundled` / `installed` / `selected` / `active` flags |
 | `ownedArtifacts` | Repository paths the pack owns (currently its own instruction file) |
-| `dependencies` | Pack IDs this pack requires (validated for existence and cycles) |
+| `dependencies` | Pack IDs this pack requires, parsed from the `<!-- requires: ... -->` header (validated for existence and cycles) |
 | `compatibility` | Optional minimum CLI / runtime version constraints |
-| `precedence` | Optional priority + mode (`additive`, `overridable`, `restrictable-only`, `immutable`) — surfaced read-only today |
+| `precedence` | Optional priority + mode (`additive`, `overridable`, `restrictable-only`, `immutable`) + explicit overrides, parsed from `<!-- priority: N -->`, `<!-- precedence-mode: ... -->`, and `<!-- overrides: ... -->` headers |
 
 Pack state is a chain of distinct facts:
 
 - **bundled** — shipped inside the `carl` binary,
 - **installed** — present as a file in the repository,
-- **selected** — recorded in `.github/carl/runtime.json` as managed,
+- **selected** — recorded in `.github/carl/packs.json` (written by
+  `carl pack select` / `unselect`; falls back to the legacy
+  `.github/carl/runtime.json` derivation when `packs.json` is absent),
 - **active** — in effect for agents (currently derived from *selected*;
   explicit activation profiles are future work).
 
@@ -131,11 +133,22 @@ model (see [CLI.md](CLI.md)).
 **Selection vs priority vs override authority.** These are deliberately
 separate concepts: *selection* decides which packs are in play; *priority*
 decides ordering among selected packs; *override authority* decides whether
-one pack may relax another's rules. Today only selection is modelled and
-composition is conservatively additive — packs may add constraints but no
-pack silently disables another. Priority and override semantics (and any
-future policy intermediate representation compiled from pack metadata) are
-explicitly future work and must never be inferred from load order.
+one pack may relax another's rules. All three are modelled as of Pack
+Phase 2: selection is an explicit committed artefact
+(`.github/carl/packs.json`), while priority and override authority come only
+from explicit pack metadata headers — never from load order.
+
+**Effective pack set.** `carl pack effective` computes the composed policy
+surface: explicitly selected packs plus transitively expanded required
+dependencies, each entry carrying explicit reasons. Composition is
+conservative — packs add constraints; an override is honoured only when
+declared in explicit metadata *and* the target pack declares itself
+`overridable`; overridden packs remain in the set flagged with
+`overriddenBy`, so no pack silently disables another. Conflicts (missing
+dependencies, overriding a non-overridable pack, mutual overrides) fail with
+a non-zero exit. Ordering is priority descending with pack-ID tie-breaks. Any
+future policy intermediate representation compiled from pack metadata builds
+on this effective set and must never be inferred from load order.
 
 ---
 
