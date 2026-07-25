@@ -1,4 +1,4 @@
-<!-- version: 1.3.0 -->
+<!-- version: 1.4.0 -->
 
 ![](cARL.png)
 
@@ -89,13 +89,15 @@ Agent frameworks (LangChain, AutoGen, CrewAI, etc.) are code. They orchestrate a
 cARL is behavioural governance. It does not execute code. It shapes how an
 agent reasons, plans, and acts inside an existing coding-agent harness.
 GitHub Copilot, Claude Code, and Codex are production-supported. No new
-runtime dependencies. No code to run.
+runtime dependencies. No code to run. Cursor and Antigravity adapters are
+implemented and synchronised, but remain theoretical until they are tested
+end-to-end in their native harnesses.
 
 | | Agent Frameworks | cARL |
 |---|---|---|
 | **Nature** | Code libraries | Committed governance files |
 | **Deployment** | Runtime dependency | Repository files |
-| **Target** | New agent applications | Existing coding agents (Copilot, Claude Code, Codex) |
+| **Target** | New agent applications | Existing coding agents (Copilot, Claude Code, Codex, Cursor, Antigravity) |
 | **Concern** | Orchestration and tooling | Behavioural governance and discipline |
 | **Language coupling** | Yes | Language-agnostic |
 
@@ -194,6 +196,10 @@ CLI.md
    artefacts, repository-local Go dependencies, direct change impact,
    trust-boundary classifications, policy attachment points, and evidence
    coverage. It does not guess owners, runtime data flows, or active policy.
+
+`carl harness status` can prove only that an adapter entrypoint is present and
+that its managed files match embedded canonical sources. That local evidence
+does not prove that a native harness loaded or obeyed governance.
 
 ---
 
@@ -432,8 +438,9 @@ graph—to determine which instruction packs are active.
 ### Using this repository directly
 
 Fork or copy into your GitHub account or organisation. Run
-`carl harness sync` to generate the production-supported Copilot, Claude Code,
-and Codex adapters from the canonical embedded artefacts.
+`carl harness sync` to generate all five adapters from the canonical embedded
+artefacts. Copilot, Claude Code, and Codex are production-supported; Cursor and
+Antigravity are implemented but await native-harness validation.
 
 ### Copying packs into another repository
 

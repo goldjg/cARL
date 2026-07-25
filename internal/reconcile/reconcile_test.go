@@ -160,6 +160,11 @@ func TestReconcile_R3_UpdatesSnapshot(t *testing.T) {
 	if !strings.Contains(content, "Go") {
 		t.Error("memory.md must contain language 'Go' from repo-map")
 	}
+	for lineNumber, line := range strings.Split(content, "\n") {
+		if strings.HasSuffix(line, " ") || strings.HasSuffix(line, "\t") {
+			t.Errorf("memory.md line %d has trailing whitespace: %q", lineNumber+1, line)
+		}
+	}
 
 	// Must contain entry point.
 	if !strings.Contains(content, "go.mod") {

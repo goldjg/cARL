@@ -101,9 +101,6 @@
       "path": "AGENTS.md"
     },
     {
-      "path": "ANTIGRAVITY.md"
-    },
-    {
       "path": "ARCHITECTURE.md",
       "purpose": "Architecture documentation"
     },
@@ -529,15 +526,6 @@
         "trust_boundary": "repository",
         "policy_attachment_point": false,
         "agent_context": "documentation artefact at AGENTS.md."
-      },
-      {
-        "id": "documentation:ANTIGRAVITY.md",
-        "kind": "documentation",
-        "path": "ANTIGRAVITY.md",
-        "criticality": "low",
-        "trust_boundary": "repository",
-        "policy_attachment_point": false,
-        "agent_context": "documentation artefact at ANTIGRAVITY.md."
       },
       {
         "id": "documentation:ARCHITECTURE.md",
@@ -1549,14 +1537,6 @@
         "type": "contains",
         "evidence": [
           "AGENTS.md"
-        ]
-      },
-      {
-        "from": "repository:.",
-        "to": "documentation:ANTIGRAVITY.md",
-        "type": "contains",
-        "evidence": [
-          "ANTIGRAVITY.md"
         ]
       },
       {

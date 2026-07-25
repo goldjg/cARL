@@ -1,4 +1,4 @@
-<!-- version: 1.1.0 -->
+<!-- version: 1.1.1 -->
 # Tool Permission Tiers Pack
 
 Defines tiered governance for tool usage to reduce hidden branching, autonomous overreach, and accidental scope expansion.
@@ -91,8 +91,8 @@ Treat these files as at least Tier 1 when edited:
 - `.github/copilot-instructions.md`
 - `CLAUDE.md`
 - `AGENTS.md`
-- `.cursorrules`
-- `ANTIGRAVITY.md`
+- `.cursor/rules/carl.mdc`
+- `.agents/rules/carl.md`
 
 Treat broad changes to harness authority semantics as Tier 2 unless the active PR contract explicitly covers them.
 

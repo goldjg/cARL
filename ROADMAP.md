@@ -1,4 +1,4 @@
-<!-- version: 1.8.0 -->
+<!-- version: 1.9.0 -->
 # cARL — Roadmap
 
 This roadmap describes the strategic direction and future evolution of cARL. None of the items marked as not started are implemented in the current codebase. Items are recorded here to preserve intent and prevent rediscovery.
@@ -30,9 +30,15 @@ Beyond harness independence, cARL is evolving towards **policy-as-code for AI co
 
 ## Architectural Direction: Multi-Harness Governance Runtime
 
-Recent field testing revealed that different coding agents consume governance differently. GitHub Copilot is effectively solved through `.github/copilot-instructions.md`. Claude Code, however, does not reliably operate under cARL governance through `CLAUDE.md` alone — successful operation required a dedicated `/carl` skill that explicitly discovers, loads, and activates governance before work begins.
+The repository implements the same shared-loader architecture for five coding
+agent harnesses. Maintainer validation has proven GitHub Copilot, Claude Code,
+and Codex end-to-end on this baseline. Cursor and Antigravity have complete,
+synchronised harness shims but have not yet been tested in their native
+harnesses, so they remain in the `theoretical` tier.
 
-This experience defines the architectural model for all future harness support.
+This evidence defines the current architectural model: support starts with a
+small harness-native entrypoint that loads the shared cARL adapter, while
+end-to-end testing determines whether the support tier can be promoted.
 
 ### Canonical Governance (Harness-Independent)
 
@@ -54,7 +60,6 @@ Harness-specific files are adapters and bootloaders — generated from cARL cano
 
 - `.github/copilot-instructions.md` (Copilot — shared loader and Copilot entrypoint)
 - `CLAUDE.md` (Claude Code shim)
-- `.claude/skills/carl.md` (Claude cARL skill)
 - `AGENTS.md` (Codex shim)
 - `.cursor/rules/carl.mdc` (Cursor shim)
 - `.agents/rules/carl.md` (Antigravity shim)
@@ -64,92 +69,65 @@ Harness-specific files are adapters and bootloaders — generated from cARL cano
 
 Adapters should be generated via `carl harness sync` and never manually edited. Drift between an adapter and its canonical source is a health issue, not a design choice.
 
-> **Current state:** The shim model is implemented. `carl harness sync` writes the shared loader once plus the harness-specific shim for each synced harness. A shim harness is healthy only when both the shared loader and the shim are present and synced.
+> **Current state:** The shim model is implemented for all five harnesses.
+> `carl harness sync` writes the shared loader once plus the harness-specific
+> shim for each synced harness. A shim harness is locally healthy only when
+> both the shared loader and the shim are present and synced. Local health does
+> not prove that the native harness loaded or obeyed governance.
 
 ### Runtime Activation Lifecycle
 
-Governance file presence is not the same as governance activation. A harness adapter is not considered successful merely because governance files exist. Every harness must complete the following lifecycle:
+Governance file presence is not the same as governance activation. Local
+adapter detection and byte-for-byte sync are diagnostic evidence, not a claim
+about agent behavior. End-to-end harness validation evaluates the following
+lifecycle:
 
-1. **Bootstrap** — the harness-specific bootloader or skill runs before any work begins
+1. **Bootstrap** — the harness-specific entrypoint runs before any work begins
 2. **Governance discovery** — the agent locates canonical cARL artefacts in the repository
 3. **Governance loading** — the agent reads and internalises the governance content
 4. **Governance verification** — the agent confirms its operating mode, active contract, and constraints
 5. **Governed execution** — all subsequent work operates under the loaded governance context
 
-Implementation details differ per harness (skills, instruction files, rules files, etc.), but the lifecycle is invariant.
+Implementation details differ per harness (instruction files, rules files, or
+future native extensions), but the lifecycle is invariant. A harness-native
+skill is an optional future mechanism, not a prerequisite for Claude Code
+production support.
 
 ### Verification Over Assumption
 
 Future tooling should measure governance activation rather than assume it. This includes:
 
-- Harness readiness validation (is the adapter present, current, and bootstrapped?)
+- Harness readiness validation (is the adapter present, current, and tested in
+  the native harness?)
 - Governance bootstrap confirmation signal (did the agent emit a structured acknowledgement that governance was loaded? — note: self-reported; not independently verified)
 - Adapter health reporting (drift detection between generated adapter and canonical source)
 - Cross-harness lifecycle conformance checks
 
 ---
 
-## Claude Code Support
+## Harness Support Evidence
 
-Claude Code is the primary post-Copilot validation target. Field testing has confirmed that `CLAUDE.md` alone is insufficient for reliable governance activation. The following work items formalise the Claude harness as a first-class supported adapter.
-
-### Claude Bootstrap Model
-**Status:** Not started  
-**Description:** Implement the tooling and workflow for generating and managing Claude-specific governance bootstrap artefacts:
-
-- `CLAUDE.md` generation via `carl harness sync`
-- cARL skill generation (`.claude/skills/carl.md`)
-- Skill installation workflow (how to install the skill into a Claude Code project)
-- Skill update workflow (how to update the skill when cARL canonical content changes)
-- Skill versioning (version header in the skill file; drift detection against the embedded canonical)
-
-The skill must be treated as a generated adapter output, regenerated by `carl harness sync`, and health-checked by `carl harness status` and `carl doctor`.
-
-### Claude Governance Loader (the `/carl` Skill)
-**Status:** Not started  
-**Description:** Formalise the `/carl` skill concept as the canonical Claude Code governance bootloader. The skill must implement the full runtime activation lifecycle:
-
-1. Locate canonical cARL governance artefacts in the repository
-2. Load and summarise the governance content (memory, tool policy, instruction packs)
-3. Report the active operating mode (Plan-only, Assisted implementation, Automatic)
-4. Report the active PR contract state (active, draft, none)
-5. Report memory cache and tool policy status
-6. Explicitly confirm governed operating mode before any work begins
-
-The skill content should be generated from a canonical template embedded in the cARL CLI binary and served via `carl harness sync claude`.
-
-### Claude Harness Validation
-**Status:** Not started  
-**Description:** Define the validation criteria for determining whether a Claude Code installation is governance-ready:
-
-- Skill installed (`.claude/skills/carl.md` present)
-- Skill version matches the current canonical (not drifted)
-- Governance artefacts present (memory, tool policy, instructions)
-- Bootstrap operational (skill can be invoked and loads governance)
-- Governance successfully loaded (operating mode confirmed, not just artefacts present)
-
-Surface this as a `carl harness status --verbose claude` report and as `carl doctor` findings.
-
-### Claude Support Tier
-**Status:** Delivered (PR #37)
-**Current tier:** Production
-**Target tier:** Production
-**Description:** Claude Code is registered as a production-supported harness.
-The production baseline includes the shared governance loader, canonical
-adapter generation, drift/health checks, and consistent support-tier
-visibility across CLI commands and documentation. Additional bootstrap and
-end-to-end conformance tooling remains a roadmap enhancement rather than a
-support-tier gate.
-
-Codex is also production-supported on the same adapter baseline. GitHub
-Copilot, Claude Code, and Codex are the current production harnesses.
+Support tiers describe validation evidence, not implementation completeness.
+All five adapters have generation, detection, and sync-health support. The
+maintainer has additionally proven the full shared-loader workflow in Copilot,
+Claude Code, and Codex. Cursor and Antigravity are waiting for the equivalent
+native-harness test.
 
 **Support tiers:**
+
 | Tier | Meaning |
 |---|---|
 | Production | Tested, validated, governance reliably activates end-to-end |
 | Experimental | Adapter exists, partial validation, governance loading under investigation |
-| Theoretical | Adapter exists, no end-to-end validation performed |
+| Theoretical | Adapter is implemented, but no end-to-end native-harness validation has been performed |
+
+| Harness | Entrypoint | Current tier | Evidence |
+|---|---|---|---|
+| GitHub Copilot | `.github/copilot-instructions.md` | Production | Proven end-to-end |
+| Claude Code | `CLAUDE.md` | Production | Proven end-to-end |
+| Codex | `AGENTS.md` | Production | Proven end-to-end |
+| Cursor | `.cursor/rules/carl.mdc` | Theoretical | Shim implemented and synced; native harness not yet tested |
+| Antigravity | `.agents/rules/carl.md` | Theoretical | Shim implemented and synced; native harness not yet tested |
 
 ---
 
@@ -159,7 +137,7 @@ Every future harness must implement the same five-stage lifecycle, regardless of
 
 | Stage | Description |
 |---|---|
-| 1. Bootstrap | Harness-specific bootloader or skill runs before any task begins |
+| 1. Bootstrap | Harness-specific entrypoint runs before any task begins |
 | 2. Governance discovery | Agent locates cARL canonical artefacts in the repository |
 | 3. Governance loading | Agent reads and internalises memory, contracts, policies, and instruction packs |
 | 4. Governance verification | Agent confirms operating mode, active contract, and active constraints |
@@ -170,10 +148,11 @@ Implementation mechanisms differ across harnesses. The lifecycle does not:
 | Harness | Bootstrap mechanism |
 |---|---|
 | GitHub Copilot | `.github/copilot-instructions.md` instruction file |
-| Claude Code | `.claude/skills/carl.md` skill invoked via `/carl` |
-| Cursor | `.cursor/rules/carl.mdc` rules file |
+| Claude Code | `CLAUDE.md` shim to the shared loader |
 | Codex | `AGENTS.md` agent instructions file |
-| Future harnesses | TBD — mechanism differs, lifecycle is invariant |
+| Cursor | `.cursor/rules/carl.mdc` rules file |
+| Antigravity | `.agents/rules/carl.md` rules file |
+| Future harnesses | Mechanism differs; lifecycle is invariant |
 
 When adding support for a new harness, the first question is: **how does this harness complete all five lifecycle stages?** Adapter file presence alone is not sufficient. If a harness cannot reliably complete stages 2–4, it remains in the Theoretical tier.
 
@@ -185,10 +164,13 @@ When adding support for a new harness, the first question is: **how does this ha
 **Status:** Delivered (PR #2)
 **Commands:** `carl init`, `carl repair`, `carl version`
 **Description:** Self-contained Go binary that manages repository-local cARL runtime
-installations. All 32 artefacts are embedded in the binary (no network required).
-`runtime.json` is the authoritative runtime state. `memory.md` and `runtime.json`
-are protected from repair. Health status is content-based (byte-comparison against
-embedded canonicals). Build-time version and commit injection via `-ldflags`.
+installations. All 37 current runtime artefacts are embedded in the binary (no
+network required). `runtime.json` is the installation manifest and legacy pack-
+selection fallback; user-owned pack selection, profiles, registries, and installed
+provenance live in their separate schema-versioned artefacts. `memory.md` and
+`runtime.json` are protected from repair. Health status is content-based
+(byte-comparison against embedded canonicals). Build-time version and commit
+injection via `-ldflags`.
 
 ### Release Workflow (CLI Binary Publishing)
 **Status:** Delivered (PR #3); migrated to GoReleaser; macOS signing configured from v0.4.2
@@ -206,18 +188,16 @@ GoReleaser publishes the cask definition automatically on each tagged release
 using `HOMEBREW_TAP_GITHUB_TOKEN`.
 WinGet submission is automated in the release workflow via `wingetcreate update`
 when `WINGETCREATE_TOKEN` is configured; manual submission remains a fallback.
-The release job runs on `macos-latest` so that `codesign` is available.
-GoReleaser cross-compiles Linux and Windows binaries on the same
-runner. darwin binaries are signed inline by a GoReleaser post-hook
-(`.github/scripts/codesign-darwin.sh`) immediately after each darwin binary is
-built. GoReleaser then runs a single `goreleaser release --clean` which builds,
-signs (via hook), archives, checksums, and publishes the GitHub Release in one
-step. darwin artefacts are codesigned (Developer ID Application, hardened
-runtime) but not notarised; Gatekeeper may prompt on first run. Full
-notarisation requires switching to App Store Connect API key auth and configuring
-`notarize.macos` — see DISTRIBUTION.md. Uses OSS GoReleaser only —
-no GoReleaser Pro features. Two Apple repository secrets are required for macOS
-signing (see DISTRIBUTION.md).
+The release job runs on `macos-latest`; GoReleaser cross-compiles Linux and
+Windows binaries on the same runner. GoReleaser OSS `notarize.macos` signs
+darwin binaries with a Developer ID Application certificate and hardened
+runtime, notarises them through App Store Connect API credentials, then
+archives, checksums, and publishes in one `goreleaser release --clean` flow.
+The workflow invokes that flow through `scripts/release-with-retry.sh`, which
+allows one bounded retry for Apple 429 rate limits, and asserts the expected
+release assets before downstream WinGet publication. Five Apple repository
+secrets are required: the certificate and password plus the notarisation
+issuer ID, key ID, and key (see DISTRIBUTION.md).
 
 ### `carl status` Command
 **Status:** Delivered (PR #4)
@@ -283,8 +263,10 @@ Supports GitHub Copilot, Claude Code, and Codex as production adapters.
 Cursor and Antigravity remain theoretical (adapters exist but have not been
 validated end-to-end). `carl harness list`
 shows all known adapters with support tier. `carl harness status` detects which
-harnesses are active in the current repository. Both subcommands are read-only and
-always exit 0. Designed for extensibility as new agents are validated.
+adapter entrypoints are present in the current repository and reports canonical
+sync health; it does not claim that the native harness activated governance.
+Both subcommands are read-only and always exit 0. Designed for extensibility as
+new agents are validated.
 
 ### `carl harness sync` — Harness Adapter File Generation
 **Status:** Delivered (PR #11)
@@ -309,7 +291,7 @@ presence plus sync health (`Present`, `Missing`, `Drifted`, `Synced`) by
 comparing adapter bytes against the embedded canonical source. `carl doctor`
 surfaces missing or drifted harness adapters as `WARNING` findings with
 `carl harness sync` remediation. `carl status` adds a dedicated harness summary
-section (active, missing, drifted, healthy) without changing overall runtime
+section (detected, missing, drifted, healthy) without changing overall runtime
 status semantics.
 
 ### `carl convert` Command (AADLC Migration)
@@ -505,13 +487,22 @@ rule set and material policy meaning must remain equivalent across refactors.
 **Status:** Not started  
 **Description:** C#/.NET instruction pack. Should cover: nullable reference types, async/await discipline, Entity Framework safety, and .NET-specific secret management.
 
-### 6. Harness Adapter Generation — Skill Support
-**Status:** Not started  
-**Description:** Extend `carl harness sync` to generate not only flat adapter files (e.g. `CLAUDE.md`) but also structured skill artefacts (e.g. `.claude/skills/carl.md`). The skill template should be embedded in the CLI binary alongside other canonical artefacts, health-checked by `carl doctor`, and regenerated by `carl harness sync claude`.
+### 6. Harness-Native Extensions
+**Status:** Exploratory
+**Description:** Add harness-native skills or commands only where native-harness
+testing shows that the shared-loader shim is insufficient or a native extension
+adds clear value. Such extensions must remain generated adapters rather than
+canonical governance sources. No harness-native extension is currently required
+for production support.
 
-### 7. Harness Readiness Validation
+### 7. End-to-End Harness Conformance Validation
 **Status:** Not started  
-**Description:** Add a `carl harness validate [<harness-id>]` command (or extend `carl harness status --verbose`) that reports whether a harness has completed all five lifecycle stages, not just whether adapter files are present. For Claude Code this means verifying the skill is installed, current, and can load governance. Surface failures as actionable `carl doctor` findings with specific remediation steps.
+**Description:** Define a repeatable native-harness validation protocol for the
+five lifecycle stages and add a `carl harness validate [<harness-id>]` command
+(or equivalent evidence surface) that distinguishes local adapter health from
+end-to-end conformance. Cursor and Antigravity are the first unvalidated
+targets. Any self-reported agent signal must remain explicitly weaker evidence
+than an externally observed test.
 
 ### 8. Governance Bootstrap Confirmation Signal (Exploratory)
 **Status:** Not started  
@@ -540,31 +531,42 @@ rule set and material policy meaning must remain equivalent across refactors.
 **Description:** Step-by-step guide for teams adopting cARL into an existing repository. Should cover: minimal adoption (root instructions only), partial adoption (core packs + carl/ artefacts), and full adoption (all packs + plans workflow).
 
 ### 13. cARL Pack Health Checks
-**Status:** Not started  
-**Description:** Tooling to detect stale packs (outdated versions), missing artefacts (memory.md not populated), or pack composition gaps (no cloud pack for a cloud-heavy repository).
+**Status:** Partially delivered
+**Description:** Current discovery and composition already reject malformed or
+unsupported schemas, invalid semantic versions, missing/cyclic dependencies,
+contradictory state, invalid ownership, unresolved conflicts, and installed-
+provenance drift. Remaining health work is advisory rather than foundational:
+detecting that newer pack versions are available, identifying unpopulated
+durable artefacts, and recommending composition gaps such as a missing cloud
+pack for a cloud-heavy repository.
 
 ### 14. Adapter Drift Detection in CI
 **Status:** Not started  
 **Description:** A CI check that detects drift between generated harness adapter files and their canonical embedded sources. Fails if an adapter file has been manually edited or if `carl harness sync` has not been re-run after a cARL upgrade. Prevents governance divergence from going unnoticed between releases.
+
+Local adapter drift detection is already delivered through `carl harness
+status`, `carl status`, and `carl doctor`; this item is specifically the missing
+CI enforcement layer.
 
 ---
 
 ## Long-Term / Exploratory
 
 ### 15. Multi-Harness Governance Runtime
-**Status:** In progress — harness framework and adapter file generation delivered (PR #9, #11); Claude Code bootstrap model and cross-harness validation pending  
-**Description:** Implements the multi-harness governance runtime architecture defined above. Current state:
+**Status:** Delivered baseline (PR #9, #11, #37); automated cross-harness conformance remains not started
+**Description:** Implements the multi-harness governance runtime architecture
+defined above. Delivered state:
 
 - All five harness adapters are implemented with detection files and adapter file definitions (copilot, claude, codex, cursor, antigravity)
 - `carl harness sync` generates adapter files from canonical embedded artefacts
 - `carl harness status` and `carl doctor` surface adapter health
-- Copilot, Claude Code, and Codex are production-supported; Cursor and Antigravity are theoretical
+- Copilot, Claude Code, and Codex are proven and production-supported
+- Cursor and Antigravity are implemented but remain theoretical pending native-harness testing
 
-Next milestones (see Claude Code Support and Cross-Harness sections above):
+Remaining generic milestones (see Cross-Harness and Near-Term sections above):
 
-- Claude bootstrap model (skill generation, installation, update, versioning)
-- Claude governance loader (formalised `/carl` skill implementing the full activation lifecycle)
-- Claude harness validation (skill health checks, governance activation verification)
+- Repeatable native-harness evidence capture for Cursor and Antigravity
+- A clear distinction between locally detected/synced adapters and validated activation
 - Cross-harness lifecycle conformance tooling
 
 ### 16. cARL Runtime Metrics
@@ -574,7 +576,12 @@ Next milestones (see Claude Code Support and Cross-Harness sections above):
 
 ### 17. cARL Marketplace
 **Status:** Speculative  
-**Description:** A curated, versioned pack registry where teams can discover and adopt community packs for additional languages, platforms, or cloud providers. Similar to GitHub Actions Marketplace.  
+**Description:** A curated public discovery and quality layer where teams can
+find community packs for additional languages, platforms, or cloud providers.
+The explicit registry, verified installation, update, and provenance plumbing
+is already delivered in Pack Phase 4; this item is the curated catalogue,
+review, and publisher-trust experience above that plumbing. Similar to GitHub
+Actions Marketplace.
 **Design question:** How are packs versioned and reviewed for quality and security?
 
 ### 18. Cross-Session Memory Persistence
@@ -582,8 +589,12 @@ Next milestones (see Claude Code Support and Cross-Harness sections above):
 **Description:** Explore mechanisms for memory persistence that survive repository forks, renames, and migrations. Currently `memory.md` is tied to a single repository.
 
 ### 19. Agent Capability Profile
-**Status:** Speculative  
-**Description:** A machine-readable declaration of which cARL packs are active in a repository, enabling IDE tooling to surface relevant governance context to developers.
+**Status:** Delivered runtime surface; IDE integration not started
+**Description:** `.github/carl/packs.json` and `.github/carl/profiles.json`
+provide machine-readable selection and active profile context, while
+`carl pack effective --json`, `carl explain --json`, and `carl trace --json`
+report the evaluated capability/policy set and provenance. IDE tooling that
+surfaces this context to developers remains future work.
 
 ---
 
@@ -599,7 +610,7 @@ These questions should be resolved before implementing related roadmap items:
 6. **Version pinning** — Should repositories pin specific pack versions or always use latest?
 7. **Agent compatibility** — Which agent-specific features (e.g. Copilot instruction packs capability) should cARL depend on vs avoid for portability?
 8. **Bootstrap confirmation signal format** — If an agent self-reports governance activation, what is the right format for that structured confirmation signal? YAML artefact, PR comment, or structured log? How do we distinguish signal from proof (see item 8 in Near-Term)?
-9. **Skill versioning** — Should the `/carl` skill embed a version header, and should `carl doctor` detect version mismatches vs the current CLI binary?
+9. **Harness-native extension versioning** — If a future harness requires a native skill or command beyond its shim, how should that generated extension be versioned and health-checked?
 10. **Cross-harness lifecycle conformance** — How should `carl harness validate` determine that governance loading (not just discovery) succeeded for a given harness?
 
 ---
@@ -610,5 +621,5 @@ The following were considered for the initial bootstrap PR and explicitly deferr
 
 - Structured memory schema (deferred — current freeform markdown is sufficient for v1)
 - CI integration tooling (deferred — governance via agent compliance is the v1 model)
-- Community pack registry (deferred — single-repository adoption first)
-- Non-Copilot agent support (deferred — Copilot is the primary target for v1; superseded by roadmap item 15, Multi-Harness Governance Runtime)
+- Curated public pack marketplace (deferred; explicit registry plumbing is delivered)
+- Additional harness validation (the multi-harness baseline is delivered; Cursor and Antigravity native-harness testing remains)

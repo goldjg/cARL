@@ -178,7 +178,7 @@ func TestStatus_Healthy(t *testing.T) {
 		"Missing Artefacts:",
 		"Drifted Artefacts:",
 		"Harness Summary:",
-		"Active adapters:  5",
+		"Detected adapters: 5",
 		"Missing adapters: 0",
 		"Drifted adapters: 0",
 		"Healthy adapters: 5",
@@ -318,7 +318,7 @@ func TestStatus_ProtectedArtefactsIgnored(t *testing.T) {
 	}
 }
 
-// Contract assertion H5: harness summary counts distinguish active, missing,
+// Contract assertion H5: harness summary counts distinguish detected, missing,
 // drifted, and healthy adapters accurately.
 func TestStatus_HarnessSummaryCounts(t *testing.T) {
 	dir := t.TempDir()
@@ -351,7 +351,7 @@ func TestStatus_HarnessSummaryCounts(t *testing.T) {
 
 	for _, want := range []string{
 		"Harness Summary:",
-		"Active adapters:  4",
+		"Detected adapters: 4",
 		"Missing adapters: 1",
 		"Drifted adapters: 1",
 		"Healthy adapters: 3",
@@ -361,6 +361,9 @@ func TestStatus_HarnessSummaryCounts(t *testing.T) {
 		if !strings.Contains(output, want) {
 			t.Errorf("output missing %q\nfull output:\n%s", want, output)
 		}
+	}
+	if strings.Contains(output, "Active adapters:") {
+		t.Errorf("status output must not present detection as activation:\n%s", output)
 	}
 }
 

@@ -1,4 +1,4 @@
-<!-- version: 1.5.0 -->
+<!-- version: 1.6.0 -->
 # cARL — Architecture Overview
 
 ---
@@ -10,7 +10,7 @@ cARL is a three-layer system:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Agent Session                           │
-│  (Copilot, Claude Code, or Codex)                           │
+│  (Copilot, Claude, Codex; Cursor/Antigravity unvalidated)   │
 └──────────────────────┬──────────────────────────────────────┘
                        │ reads at session start
 ┌──────────────────────▼──────────────────────────────────────┐
@@ -46,7 +46,9 @@ cARL is a three-layer system:
 
 This is the root governance file and shared adapter loader. GitHub Copilot
 reads it directly; the production Claude Code and Codex adapters route their
-agent sessions through it. It defines:
+agent sessions through it. Cursor and Antigravity use the same shim pattern,
+but have not yet been validated end-to-end in their native harnesses. It
+defines:
 
 - The agent's default operating mode (plan-first)
 - Mode selection logic (plan-only / assisted / automatic)
@@ -57,6 +59,26 @@ agent sessions through it. It defines:
 - Required final response headings
 
 This file acts as the repository constitution. It should be stable and modified only via deliberate governance change.
+
+---
+
+## Harness Adapter Boundary
+
+The five implemented entrypoints are:
+
+| Harness | Entrypoint | Evidence tier |
+|---|---|---|
+| GitHub Copilot | `.github/copilot-instructions.md` | Production |
+| Claude Code | `CLAUDE.md` | Production |
+| Codex | `AGENTS.md` | Production |
+| Cursor | `.cursor/rules/carl.mdc` | Theoretical — implemented, native harness untested |
+| Antigravity | `.agents/rules/carl.md` | Theoretical — implemented, native harness untested |
+
+Except for Copilot's direct entrypoint, each shim routes to the shared loader.
+`carl harness status` observes detection-file presence and byte-for-byte sync
+health. Those are local filesystem facts, not proof that an agent loaded or
+followed governance; production status additionally requires end-to-end
+native-harness evidence.
 
 ---
 

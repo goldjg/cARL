@@ -33,8 +33,14 @@ type AdapterHealth struct {
 	DriftedFiles []string
 }
 
-// Active reports whether the adapter detection file is present.
-func (h AdapterHealth) Active() bool { return h.Presence == PresencePresent }
+// Detected reports whether the adapter detection file is present.
+// Detection is local filesystem evidence; it does not prove that the harness
+// loaded or activated cARL governance.
+func (h AdapterHealth) Detected() bool { return h.Presence == PresencePresent }
+
+// Active is retained for compatibility. It reports detection-file presence,
+// not verified governance activation. New callers should use Detected.
+func (h AdapterHealth) Active() bool { return h.Detected() }
 
 // Healthy reports whether all managed adapter files are present and canonical.
 func (h AdapterHealth) Healthy() bool { return h.Sync == SyncSynced }
@@ -88,6 +94,9 @@ func Inspect(rootDir string, arts Artifacts) ([]AdapterHealth, error) {
 
 // Summary aggregates harness health counts for presentation in other commands.
 type Summary struct {
+	Detected int
+	// Active is a compatibility alias for Detected. It does not represent
+	// verified governance activation.
 	Active  int
 	Missing int
 	Drifted int
@@ -98,7 +107,8 @@ type Summary struct {
 func Summarize(health []AdapterHealth) Summary {
 	var summary Summary
 	for _, h := range health {
-		if h.Active() {
+		if h.Detected() {
+			summary.Detected++
 			summary.Active++
 		}
 		switch h.Sync {

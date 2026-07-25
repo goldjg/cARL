@@ -1,4 +1,4 @@
-<!-- version: 1.5.0 -->
+<!-- version: 1.6.0 -->
 # cARL — Glossary
 
 This glossary defines the terms used in cARL documentation, instruction packs, and governance artefacts.
@@ -72,6 +72,34 @@ A condition defined in the PR contract or plan that requires the agent to stop a
 
 ### Governance artefact
 See: Artefact.
+
+---
+
+## H
+
+### Harness activation
+End-to-end evidence that a native coding-agent harness discovered, loaded,
+verified, and applied cARL governance during execution. Activation is distinct
+from local adapter detection and sync health.
+
+### Harness adapter
+A generated harness-specific entrypoint that routes a coding agent to the
+shared cARL loader and canonical governance artefacts. The implemented adapters
+are `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`,
+`.cursor/rules/carl.mdc`, and `.agents/rules/carl.md`. Adapters are disposable
+loaders, not governance authorities.
+
+### Harness detection
+The local filesystem observation that an adapter's detection file is present.
+`carl harness status` reports this as `Present` and aggregates it as
+`detected`; detection does not prove harness activation.
+
+### Harness support tier
+The validation evidence attached to an implemented adapter: **production**
+means proven end-to-end, **experimental** means partially validated, and
+**theoretical** means implemented without native-harness end-to-end validation.
+Copilot, Claude Code, and Codex are production; Cursor and Antigravity are
+theoretical pending testing.
 
 ---
 
