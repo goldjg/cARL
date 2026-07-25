@@ -1,4 +1,4 @@
-<!-- version: 1.3.0 -->
+<!-- version: 1.4.0 -->
 # cARL CLI Reference
 
 The `carl` CLI installs and manages the cARL governance runtime inside a repository.
@@ -156,7 +156,7 @@ carl doctor
 2. Detects and categorises findings as ERROR, WARNING, or INFO:
    - **ERROR** — missing runtime manifest, unreadable manifest, artefact absent from disk
    - **WARNING** — artefact content differs from its canonical version (drifted), or a harness adapter is missing/drifted
-   - **INFO** — no issues found; runtime is healthy
+   - **INFO** — runtime health and production harness support
 3. For each finding, provides a suggested remediation action.
 4. Exits with code `0` regardless of whether issues are found — the command is
    diagnostic only and never modifies any files.
@@ -179,6 +179,7 @@ ERROR   missing runtime manifest (.github/carl/runtime.json)
 
 ```
 INFO    runtime is healthy — all managed artefacts are present and canonical
+INFO    production harnesses: copilot, claude, codex
 ```
 
 **Output (missing and drifted artefacts)**
@@ -190,8 +191,9 @@ WARNING .github/copilot-instructions.md — artefact has drifted from its canoni
         Action: run `carl repair`
 WARNING claude (CLAUDE.md) — harness adapter file has drifted from its canonical version
         Action: run `carl harness sync`
+INFO    production harnesses: copilot, claude, codex
 
-1 error(s), 2 warning(s), 0 info(s) found.
+1 error(s), 2 warning(s), 1 info(s) found.
 ```
 
 **Finding levels**
@@ -220,7 +222,7 @@ carl status
    version (byte-for-byte), classifying files as missing (absent from disk) or
    drifted (present but content differs).
 4. Inspects harness adapters and reports a separate summary of active, missing,
-   drifted, and healthy adapters.
+   drifted, healthy, and production adapters.
 5. Reports overall runtime status: `Healthy`, `Drifted`, or `Incomplete`.
 
 **Protected files** — the following are never reported as missing or drifted:
@@ -253,6 +255,7 @@ Harness Summary:
   Missing adapters: 0
   Drifted adapters: 0
   Healthy adapters: 5
+  Production:       copilot, claude, codex
 
 Status:           Healthy
 ```
@@ -272,6 +275,7 @@ Harness Summary:
   Missing adapters: 1
   Drifted adapters: 1
   Healthy adapters: 3
+  Production:       copilot, claude, codex
 
 Status:           Incomplete
 ```
@@ -915,12 +919,12 @@ This subcommand is purely informational — it does not check the filesystem.
 Harness Adapters:
 
   copilot       GitHub Copilot       production
-  claude        Claude Code          experimental
-  codex         Codex                theoretical
+  claude        Claude Code          production
+  codex         Codex                production
   cursor        Cursor               theoretical
   antigravity   Antigravity          theoretical
 
-1 production, 1 experimental, 3 theoretical (5 total).
+3 production, 0 experimental, 2 theoretical (5 total).
 ```
 
 **Support status values**
@@ -958,8 +962,8 @@ carl harness status
 Harness Adapter Status:
 
   copilot       GitHub Copilot       production    Present  Synced
-  claude        Claude Code          experimental  Missing  Missing
-  codex         Codex                theoretical   Missing  Missing
+  claude        Claude Code          production    Missing  Missing
+  codex         Codex                production    Missing  Missing
   cursor        Cursor               theoretical   Missing  Missing
   antigravity   Antigravity          theoretical   Missing  Missing
 
@@ -972,8 +976,8 @@ Harness Adapter Status:
 Harness Adapter Status:
 
   copilot       GitHub Copilot       production    Present  Synced
-  claude        Claude Code          experimental  Present  Drifted
-  codex         Codex                theoretical   Missing  Missing
+  claude        Claude Code          production    Present  Drifted
+  codex         Codex                production    Missing  Missing
   cursor        Cursor               theoretical   Missing  Missing
   antigravity   Antigravity          theoretical   Missing  Missing
 
@@ -1099,8 +1103,9 @@ Aliases: `carl --version`, `carl -v`
    - `Unknown` (non-semver comparison)
 4. When runtime is installed, prints installed instruction packs and installed versions
    derived from each installed pack file metadata header: `<!-- version: X.Y.Z -->`.
-5. Prints harness shim versions from installed detection files.
-6. With `--components`, prints bundled vs installed component versions and drift state.
+5. Prints harness support tiers and shim versions from installed detection files.
+6. With `--components`, prints support tiers plus bundled vs installed component
+   versions and drift state.
 
 **Output (runtime not installed)**
 
@@ -1115,11 +1120,12 @@ Bundled Runtime:
 Repository Runtime:
   Not installed in the current repository.
 Harness Shims:
-  copilot      .github/copilot-instructions.md    2.1.0
-  claude       CLAUDE.md                          unknown
-  codex        AGENTS.md                          not installed
-  cursor       .cursor/rules/carl.mdc             not installed
-  antigravity  .agents/rules/carl.md              not installed
+  Harness       Support      File                                Version
+  copilot       production   .github/copilot-instructions.md     2.1.0
+  claude        production   CLAUDE.md                           unknown
+  codex         production   AGENTS.md                           not installed
+  cursor        theoretical  .cursor/rules/carl.mdc              not installed
+  antigravity   theoretical  .agents/rules/carl.md               not installed
 ```
 
 **Output (runtime installed)**
@@ -1145,11 +1151,12 @@ Installed Packs:
   core/carl                         2.0.0
 
 Harness Shims:
-  copilot      .github/copilot-instructions.md    2.1.0
-  claude       CLAUDE.md                          1.0.0
-  codex        AGENTS.md                          unknown
-  cursor       .cursor/rules/carl.mdc             not installed
-  antigravity  .agents/rules/carl.md              not installed
+  Harness       Support      File                                Version
+  copilot       production   .github/copilot-instructions.md     2.1.0
+  claude        production   CLAUDE.md                           1.0.0
+  codex         production   AGENTS.md                           unknown
+  cursor        theoretical  .cursor/rules/carl.mdc              not installed
+  antigravity   theoretical  .agents/rules/carl.md               not installed
 ```
 
 **`--components` output**
@@ -1162,10 +1169,10 @@ Instruction Packs:
   cloud/azure                       1.0.1     missing    missing
 
 Harness Shims:
-  Harness       File                              Bundled   Installed  State
-  copilot       .github/copilot-instructions.md   2.1.0     1.0.0      older
-  claude        CLAUDE.md                         unknown   unknown    unknown
-  codex         AGENTS.md                         unknown   missing    missing
+  Harness       Support      File                              Bundled   Installed  State
+  copilot       production   .github/copilot-instructions.md   2.1.0     1.0.0      older
+  claude        production   CLAUDE.md                         unknown   unknown    unknown
+  codex         production   AGENTS.md                         unknown   missing    missing
 ```
 
 **Repository Runtime status values**

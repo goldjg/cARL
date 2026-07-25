@@ -1,4 +1,4 @@
-<!-- version: 1.5.0 -->
+<!-- version: 1.6.0 -->
 # Current PR Contract
 
 ## Goal
@@ -11,6 +11,9 @@ Implement Pack Phase 3: Profiles and Agent Roles:
 3. Add `carl pack profile list`, `show`, `activate`, and `clear`.
 4. Make `state.active` and `carl pack effective` profile-driven when the
    profile artefact exists.
+5. Promote Claude Code and Codex to production harness support, expose those
+   tiers consistently in CLI output, and add README status badges for every
+   harness.
 
 ## Contract status
 
@@ -23,12 +26,17 @@ active
 - No pack dependency downloading.
 - No policy-IR compiler or policy explanation command.
 - No harness authority model changes.
+- No harness adapter file-format or detection-path changes.
 - No repo-map redesign.
 
 ## Approved scope
 
 - `cmd/carl/main.go` (subcommand description only, if required)
 - `internal/pack/*`
+- `internal/harness/*`
+- `internal/doctor/*`
+- `internal/status/*`
+- `internal/version/*`
 - Relevant tests under `internal/pack/`
 - `.github/carl/profiles.json` as a user-owned artefact (schema only; not
   committed in this repository)
@@ -42,7 +50,7 @@ active
 - No edits to CI or release workflows.
 - No writes to `.github/carl/runtime.json`.
 - No changes to install or repair ownership semantics.
-- No unrelated refactors outside the pack package.
+- No unrelated refactors outside the approved packages.
 - No destructive repository operations.
 - No new third-party dependencies.
 
@@ -78,6 +86,10 @@ active
 - `internal/pack/pack.go`
 - `internal/pack/compose.go`
 - Relevant existing tests under `internal/pack/`
+- `internal/harness/harness.go` and relevant tests
+- `internal/doctor/doctor.go` and relevant tests
+- `internal/status/status.go` and relevant tests
+- `internal/version/version.go` and relevant tests
 - `README.md`, `CLI.md`, `ARCHITECTURE.md`, `GLOSSARY.md`, `ROADMAP.md`
 - `.github/carl/memory.md`
 - `embedded/assets/.github/carl/memory.md`
@@ -97,10 +109,14 @@ active
 5. `carl pack effective` expands active profile seeds through Phase 2
    dependency and precedence rules, while repositories without
    `profiles.json` retain selected-as-active behaviour.
+6. Claude Code and Codex report `production` everywhere support tier is
+   exposed; Copilot remains `production`, Cursor and Antigravity remain
+   `theoretical`, and README badges match those canonical tiers.
 
 ## Tests / validation
 
 - `go test ./internal/pack`
+- `go test ./internal/harness ./internal/doctor ./internal/status ./internal/version`
 - `go test ./...`
 - `go build ./cmd/carl`
 

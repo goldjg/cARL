@@ -156,6 +156,10 @@ func (c *Command) diagnose(rootDir string) ([]Finding, error) {
 			Message: "runtime is healthy — all managed artefacts are present and canonical",
 		})
 	}
+	findings = append(findings, Finding{
+		Level:   LevelInfo,
+		Message: fmt.Sprintf("production harnesses: %s", strings.Join(harness.ProductionAdapterIDs(), ", ")),
+	})
 
 	return findings, nil
 }

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -35,8 +36,8 @@ func newTestArts() *testArts {
 			".github/copilot-instructions.md": []byte("# cARL Governance Instructions\n\nTest canonical content.\n"),
 			"CLAUDE.md":                       []byte("# Claude Code cARL Adapter\n\nTest shim content.\n"),
 			"AGENTS.md":                       []byte("# Codex cARL Adapter\n\nTest shim content.\n"),
-			".cursor/rules/carl.mdc":           []byte("# Cursor cARL Adapter\n\nTest shim content.\n"),
-			".agents/rules/carl.md":            []byte("# Antigravity cARL Adapter\n\nTest shim content.\n"),
+			".cursor/rules/carl.mdc":          []byte("# Cursor cARL Adapter\n\nTest shim content.\n"),
+			".agents/rules/carl.md":           []byte("# Antigravity cARL Adapter\n\nTest shim content.\n"),
 		},
 	}
 }
@@ -110,8 +111,8 @@ func TestHarness_List_ShowsAllAdapters(t *testing.T) {
 	}
 }
 
-// Contract assertion 2: copilot is "production"; adapters have varied support tiers.
-// Also verifies count summary line.
+// Contract assertion 2: Copilot, Claude, and Codex are production; adapters
+// have varied support tiers. Also verifies the count summary line.
 func TestHarness_List_SupportStatus(t *testing.T) {
 	dir := t.TempDir()
 	cmd := harness.New(newTestArts())
@@ -122,8 +123,15 @@ func TestHarness_List_SupportStatus(t *testing.T) {
 		}
 	})
 
-	if !strings.Contains(output, "production") {
-		t.Errorf("expected 'production' in list output; got:\n%s", output)
+	for _, want := range []string{
+		"copilot       GitHub Copilot       production",
+		"claude        Claude Code          production",
+		"codex         Codex                production",
+		"3 production, 0 experimental, 2 theoretical (5 total).",
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("expected %q in list output; got:\n%s", want, output)
+		}
 	}
 
 	// Derive expected counts from the registry itself for robustness.
@@ -296,45 +304,36 @@ func TestHarness_Run_Status(t *testing.T) {
 	})
 }
 
-// TestHarness_Adapters_CopilotIsProduction verifies the exported registry.
-func TestHarness_Adapters_CopilotIsProduction(t *testing.T) {
+// TestHarness_Adapters_Production verifies the exported production registry.
+func TestHarness_Adapters_Production(t *testing.T) {
 	adapters := harness.Adapters()
-
-	var copilot *harness.Adapter
-	for i := range adapters {
-		if adapters[i].ID == "copilot" {
-			copilot = &adapters[i]
-			break
+	index := make(map[string]harness.Adapter, len(adapters))
+	for _, adapter := range adapters {
+		index[adapter.ID] = adapter
+	}
+	for _, id := range []string{"copilot", "claude", "codex"} {
+		adapter, ok := index[id]
+		if !ok {
+			t.Errorf("adapter %q not found in registry", id)
+			continue
+		}
+		if adapter.Support != "production" {
+			t.Errorf("%s.Support = %q; want 'production'", id, adapter.Support)
+		}
+		if adapter.DetectionFile == "" {
+			t.Errorf("%s.DetectionFile must not be empty", id)
 		}
 	}
-	if copilot == nil {
-		t.Fatal("copilot adapter not found in registry")
-	}
-	if copilot.Support != "production" {
-		t.Errorf("copilot.Support = %q; want 'production'", copilot.Support)
-	}
-	if copilot.DetectionFile == "" {
-		t.Error("copilot.DetectionFile must not be empty")
+	wantProduction := []string{"copilot", "claude", "codex"}
+	gotProduction := harness.ProductionAdapterIDs()
+	if !reflect.DeepEqual(gotProduction, wantProduction) {
+		t.Errorf("ProductionAdapterIDs() = %v; want %v", gotProduction, wantProduction)
 	}
 }
 
-// TestHarness_Adapters_ClaudeIsExperimental verifies Claude Code support tier.
-func TestHarness_Adapters_ClaudeIsExperimental(t *testing.T) {
-	adapters := harness.Adapters()
-	for _, a := range adapters {
-		if a.ID == "claude" {
-			if a.Support != "experimental" {
-				t.Errorf("claude.Support = %q; want 'experimental'", a.Support)
-			}
-			return
-		}
-	}
-	t.Fatal("claude adapter not found in registry")
-}
-
-// TestHarness_Adapters_TheoreticalAdapters verifies Codex, Cursor, Antigravity support tier.
+// TestHarness_Adapters_TheoreticalAdapters verifies Cursor and Antigravity.
 func TestHarness_Adapters_TheoreticalAdapters(t *testing.T) {
-	theoretical := []string{"codex", "cursor", "antigravity"}
+	theoretical := []string{"cursor", "antigravity"}
 	adapters := harness.Adapters()
 	index := make(map[string]harness.Adapter, len(adapters))
 	for _, a := range adapters {
@@ -348,6 +347,11 @@ func TestHarness_Adapters_TheoreticalAdapters(t *testing.T) {
 		}
 		if a.Support != "theoretical" {
 			t.Errorf("%s.Support = %q; want 'theoretical'", id, a.Support)
+		}
+	}
+	for _, id := range []string{"claude", "codex"} {
+		if index[id].Support == "theoretical" {
+			t.Errorf("%s must not remain theoretical", id)
 		}
 	}
 }

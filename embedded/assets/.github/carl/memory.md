@@ -1,4 +1,4 @@
-<!-- version: 1.6.0 -->
+<!-- version: 1.7.0 -->
 # Durable Architectural Truth Cache
 
 This cache stores durable project truths that should persist beyond a
@@ -151,17 +151,16 @@ Harness adapters bridge cARL canonical artefacts to agent context injection mech
 
 `carl harness list` shows all known adapters with support tier:
 
-- `copilot` — `production`: tested, production-validated, primary development target;
-- `claude` — `experimental`: partial validation, governance loading under investigation;
-- `codex`, `cursor`, and `antigravity` — `theoretical`: adapter exists, not yet validated end-to-end.
+- `copilot`, `claude`, and `codex` — `production`;
+- `cursor` and `antigravity` — `theoretical`: adapter exists, not yet validated end-to-end.
 
 `carl harness status` reports both detection-file presence and sync health by comparing adapter file bytes against the canonical embedded source.
 
 `carl harness sync [<harness-id>...]` generates adapter files for all adapters with defined adapter files, or only named harnesses when harness IDs are supplied. Syncing a shim harness writes both the shared loader (`.github/copilot-instructions.md`) and the harness-specific shim. The shared loader is written once even when syncing all harnesses. Adapter files are disposable and always overwritten. Sync works for all tiers regardless of support level. Sync is idempotent and does not require `carl init`.
 
-`carl doctor` surfaces missing or drifted harness adapters as warning findings with `carl harness sync` remediation.
+`carl doctor` surfaces missing or drifted harness adapters as warning findings with `carl harness sync` remediation and reports the production harness IDs.
 
-`carl status` includes a separate harness summary covering active, missing, drifted, and healthy harnesses without changing overall runtime status semantics.
+`carl status` includes a separate harness summary covering active, missing, drifted, healthy, and production harnesses without changing overall runtime status semantics.
 
 `carl version` reports three distinct version layers:
 
@@ -169,9 +168,10 @@ Harness adapters bridge cARL canonical artefacts to agent context injection mech
 - bundled runtime version and provenance (canonical payload embedded in the executable);
 - repository runtime version from `.github/carl/runtime.json` when installed.
 
-`carl version --components` compares bundled vs installed instruction packs and
-harness shims, reporting bundled version, installed version, and sync/drift
-state (`current`, `older`, `newer`, `missing`, `unknown`).
+`carl version` and `carl version --components` show each harness support tier.
+The component view compares bundled vs installed instruction packs and harness
+shims, reporting bundled version, installed version, and sync/drift state
+(`current`, `older`, `newer`, `missing`, `unknown`).
 
 Detection files:
 
@@ -253,4 +253,4 @@ The active authority order is:
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-07-25 by Pack Phase 3 (profiles and agent roles) implementation
+2026-07-25 by Pack Phase 3 and harness tier promotion implementation

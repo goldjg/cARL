@@ -1,4 +1,4 @@
-<!-- version: 1.4.0 -->
+<!-- version: 1.5.0 -->
 # cARL — Roadmap
 
 This roadmap describes the strategic direction and future evolution of cARL. None of the items marked as not started are implemented in the current codebase. Items are recorded here to preserve intent and prevent rediscovery.
@@ -131,14 +131,18 @@ The skill content should be generated from a canonical template embedded in the 
 Surface this as a `carl harness status --verbose claude` report and as `carl doctor` findings.
 
 ### Claude Support Tier
-**Current tier:** Experimental  
-**Target tier:** Production  
-**Description:** Define the criteria for promoting Claude Code from experimental to production support. Production tier requires:
+**Status:** Delivered (PR #37)
+**Current tier:** Production
+**Target tier:** Production
+**Description:** Claude Code is registered as a production-supported harness.
+The production baseline includes the shared governance loader, canonical
+adapter generation, drift/health checks, and consistent support-tier
+visibility across CLI commands and documentation. Additional bootstrap and
+end-to-end conformance tooling remains a roadmap enhancement rather than a
+support-tier gate.
 
-- Reliable governance activation (bootstrap lifecycle fully operational)
-- Adapter health checks passing
-- End-to-end validation documented
-- Skill generation and update workflows delivered
+Codex is also production-supported on the same adapter baseline. GitHub
+Copilot, Claude Code, and Codex are the current production harnesses.
 
 **Support tiers:**
 | Tier | Meaning |
@@ -275,10 +279,9 @@ and empty `Status:` field. Always exits 0 — read-only, never modifies files.
 **Description:** Introduces the harness adapter concept: a bridge between cARL
 canonical artefacts and AI coding agent context injection mechanisms. cARL artefacts
 are the canonical source of truth; harness files are adapters, not authorities.
-Supports GitHub Copilot as the production-validated primary adapter (detection via
-`.github/copilot-instructions.md`). Registers Claude Code as experimental (partial
-validation, governance loading under investigation) and Codex, Cursor, and Antigravity
-as theoretical (adapters exist but not yet validated end-to-end). `carl harness list`
+Supports GitHub Copilot, Claude Code, and Codex as production adapters.
+Cursor and Antigravity remain theoretical (adapters exist but have not been
+validated end-to-end). `carl harness list`
 shows all known adapters with support tier. `carl harness status` detects which
 harnesses are active in the current repository. Both subcommands are read-only and
 always exit 0. Designed for extensibility as new agents are validated.
@@ -536,7 +539,7 @@ rule set and material policy meaning must remain equivalent across refactors.
 - All five harness adapters are implemented with detection files and adapter file definitions (copilot, claude, codex, cursor, antigravity)
 - `carl harness sync` generates adapter files from canonical embedded artefacts
 - `carl harness status` and `carl doctor` surface adapter health
-- Copilot is production-validated; Claude Code is experimental (governance loading requires dedicated `/carl` skill); Codex, Cursor, and Antigravity are theoretical
+- Copilot, Claude Code, and Codex are production-supported; Cursor and Antigravity are theoretical
 
 Next milestones (see Claude Code Support and Cross-Harness sections above):
 
@@ -544,7 +547,6 @@ Next milestones (see Claude Code Support and Cross-Harness sections above):
 - Claude governance loader (formalised `/carl` skill implementing the full activation lifecycle)
 - Claude harness validation (skill health checks, governance activation verification)
 - Cross-harness lifecycle conformance tooling
-- Claude promotion from Experimental to Production tier
 
 ### 16. cARL Runtime Metrics
 **Status:** Speculative  

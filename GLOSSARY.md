@@ -1,4 +1,4 @@
-<!-- version: 1.2.0 -->
+<!-- version: 1.3.0 -->
 # cARL — Glossary
 
 This glossary defines the terms used in cARL documentation, instruction packs, and governance artefacts.
@@ -8,7 +8,9 @@ This glossary defines the terms used in cARL documentation, instruction packs, a
 ## A
 
 ### Agent
-An AI model operating with tool access and autonomous execution capability within a software development context. In cARL, the primary agent is GitHub Copilot's coding agent.
+An AI model operating with tool access and autonomous execution capability
+within a software development context. cARL production support currently
+covers GitHub Copilot, Claude Code, and Codex.
 
 ### Agent session
 A single continuous interaction between a user and an agent, from invocation to task completion. Agent sessions are stateless by default — cARL provides the persistent context.

@@ -10,6 +10,12 @@
 [![GoReleaser Check](https://img.shields.io/github/actions/workflow/status/goldjg/cARL/goreleaser-check.yml?label=goreleaser%20check)](https://github.com/goldjg/cARL/actions/workflows/goreleaser-check.yml)
 [![License: MIT](https://img.shields.io/github/license/goldjg/cARL)](LICENSE)
 
+[![GitHub Copilot: production](https://img.shields.io/badge/GitHub%20Copilot-production-brightgreen)](CLI.md#carl-harness-list)
+[![Claude Code: production](https://img.shields.io/badge/Claude%20Code-production-brightgreen)](CLI.md#carl-harness-list)
+[![Codex: production](https://img.shields.io/badge/Codex-production-brightgreen)](CLI.md#carl-harness-list)
+[![Cursor: theoretical](https://img.shields.io/badge/Cursor-theoretical-lightgrey)](CLI.md#carl-harness-list)
+[![Antigravity: theoretical](https://img.shields.io/badge/Antigravity-theoretical-lightgrey)](CLI.md#carl-harness-list)
+
 > **"cARL remembers why you made that decision three months ago, because neither you nor your coding agent will."**
 
 ---
@@ -79,13 +85,16 @@ cARL is persistent. Instructions live in committed files. They are version-contr
 
 Agent frameworks (LangChain, AutoGen, CrewAI, etc.) are code. They orchestrate agents programmatically, define tool schemas, and wire up models in code.
 
-cARL is behavioural governance. It does not execute code. It shapes how an agent reasons, plans, and acts inside an existing tool (GitHub Copilot). No new runtime dependencies. No code to run.
+cARL is behavioural governance. It does not execute code. It shapes how an
+agent reasons, plans, and acts inside an existing coding-agent harness.
+GitHub Copilot, Claude Code, and Codex are production-supported. No new
+runtime dependencies. No code to run.
 
 | | Agent Frameworks | cARL |
 |---|---|---|
 | **Nature** | Code libraries | Committed governance files |
 | **Deployment** | Runtime dependency | Repository files |
-| **Target** | New agent applications | Existing coding agents (Copilot) |
+| **Target** | New agent applications | Existing coding agents (Copilot, Claude Code, Codex) |
 | **Concern** | Orchestration and tooling | Behavioural governance and discipline |
 | **Language coupling** | Yes | Language-agnostic |
 
@@ -168,10 +177,14 @@ CLI.md
 
 ## How It Works
 
-1. GitHub Copilot automatically reads `.github/copilot-instructions.md` at the start of every agent session.
-2. That file is the root operating model — plan-first discipline, security constraints, cognition governance.
-3. Individual packs under `.github/instructions/` provide focused guidance per language, platform, or cloud provider.
-4. `.github/carl/` contains durable governance artefacts: memory cache, PR contract, invariants, trust boundaries, and plans.
+1. A harness adapter loads `.github/copilot-instructions.md`, the shared cARL
+   adapter loader, at the start of an agent session.
+2. The loader hydrates the root operating model: plan-first discipline,
+   security constraints, and cognition governance.
+3. Individual packs under `.github/instructions/` provide focused guidance
+   per language, platform, or cloud provider.
+4. `.github/carl/` contains durable governance artefacts: memory cache, PR
+   contract, invariants, trust boundaries, and plans.
 
 ---
 
@@ -373,7 +386,9 @@ carl harness sync
 
 ### Using this repository directly
 
-Fork or copy into your GitHub account or organisation. Copilot picks up the instructions automatically.
+Fork or copy into your GitHub account or organisation. Run
+`carl harness sync` to generate the production-supported Copilot, Claude Code,
+and Codex adapters from the canonical embedded artefacts.
 
 ### Copying packs into another repository
 

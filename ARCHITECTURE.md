@@ -1,4 +1,4 @@
-<!-- version: 1.2.0 -->
+<!-- version: 1.3.0 -->
 # cARL — Architecture Overview
 
 ---
@@ -10,7 +10,7 @@ cARL is a three-layer system:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Agent Session                           │
-│  (GitHub Copilot coding agent)                              │
+│  (Copilot, Claude Code, or Codex)                           │
 └──────────────────────┬──────────────────────────────────────┘
                        │ reads at session start
 ┌──────────────────────▼──────────────────────────────────────┐
@@ -44,7 +44,9 @@ cARL is a three-layer system:
 
 **File:** `.github/copilot-instructions.md`
 
-This is the root governance file. GitHub Copilot reads it automatically at the start of every agent session. It defines:
+This is the root governance file and shared adapter loader. GitHub Copilot
+reads it directly; the production Claude Code and Codex adapters route their
+agent sessions through it. It defines:
 
 - The agent's default operating mode (plan-first)
 - Mode selection logic (plan-only / assisted / automatic)

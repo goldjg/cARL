@@ -34,8 +34,8 @@ var harnessContent = map[string][]byte{
 	".github/copilot-instructions.md": []byte("# canonical harness content\n"),
 	"CLAUDE.md":                       []byte("# Claude Code cARL Adapter\nTest shim.\n"),
 	"AGENTS.md":                       []byte("# Codex cARL Adapter\nTest shim.\n"),
-	".cursor/rules/carl.mdc":           []byte("# Cursor cARL Adapter\nTest shim.\n"),
-	".agents/rules/carl.md":            []byte("# Antigravity cARL Adapter\nTest shim.\n"),
+	".cursor/rules/carl.mdc":          []byte("# Cursor cARL Adapter\nTest shim.\n"),
+	".agents/rules/carl.md":           []byte("# Antigravity cARL Adapter\nTest shim.\n"),
 }
 
 // newFakeArts returns a fakeArts pre-loaded with standard harness content
@@ -176,6 +176,9 @@ func TestDoctor_Healthy(t *testing.T) {
 	}
 	if !strings.Contains(output, "INFO") {
 		t.Errorf("expected INFO finding for healthy runtime; got: %q", output)
+	}
+	if !strings.Contains(output, "production harnesses: copilot, claude, codex") {
+		t.Errorf("expected production harness summary; got: %q", output)
 	}
 	if strings.Contains(output, "ERROR") {
 		t.Errorf("unexpected ERROR in healthy output; got: %q", output)

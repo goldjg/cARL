@@ -208,6 +208,7 @@ func printInstalledPacks(rootDir string, managedArtifacts []string) {
 
 type harnessShimRow struct {
 	id      string
+	support string
 	path    string
 	version string
 }
@@ -225,12 +226,14 @@ func printHarnessShims(rootDir string, adapters []harness.Adapter) {
 		}
 		rows = append(rows, harnessShimRow{
 			id:      a.ID,
+			support: a.Support,
 			path:    a.DetectionFile,
 			version: installedVersion,
 		})
 	}
+	fmt.Println("  Harness       Support      File                                Version")
 	for _, r := range rows {
-		fmt.Printf("  %-12s %-35s %s\n", r.id, r.path, r.version)
+		fmt.Printf("  %-13s %-12s %-35s %s\n", r.id, r.support, r.path, r.version)
 	}
 }
 
@@ -251,11 +254,11 @@ func (c *Command) printComponents(rootDir string) error {
 		return err
 	}
 	fmt.Println("Harness Shims:")
-	fmt.Println("  Harness       File                              Bundled   Installed  State")
+	fmt.Println("  Harness       Support      File                              Bundled   Installed  State")
 	for _, row := range shimRows {
 		fmt.Printf(
-			"  %-13s %-33s %-9s %-10s %s\n",
-			row.name, row.path, row.bundled, row.installed, row.state,
+			"  %-13s %-12s %-33s %-9s %-10s %s\n",
+			row.name, row.support, row.path, row.bundled, row.installed, row.state,
 		)
 	}
 	return nil
@@ -263,6 +266,7 @@ func (c *Command) printComponents(rootDir string) error {
 
 type componentRow struct {
 	name      string
+	support   string
 	path      string
 	bundled   string
 	installed string
@@ -318,6 +322,7 @@ func (c *Command) collectShimComponentRows(rootDir string) ([]componentRow, erro
 
 		rows = append(rows, componentRow{
 			name:      a.ID,
+			support:   a.Support,
 			path:      a.DetectionFile,
 			bundled:   bundledVersion,
 			installed: installedVersion,
