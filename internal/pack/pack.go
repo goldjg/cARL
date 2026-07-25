@@ -22,7 +22,13 @@ var (
 	packIDRE        = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*$`)
 	semverRE        = regexp.MustCompile(`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$`)
 	versionHeaderRE = regexp.MustCompile(`(?i)^\s*(?:<!--\s*version:\s*([^\s]+)\s*-->|#\s*version:\s*([^\s]+))\s*$`)
+	composeHeaderRE = regexp.MustCompile(`(?i)^\s*<!--\s*(requires|precedence-mode|priority|overrides):\s*(.+?)\s*-->\s*$`)
+	intRE           = regexp.MustCompile(`^-?\d+$`)
 )
+
+// headerScanLimit bounds how many leading lines of a pack file are scanned
+// for metadata headers.
+const headerScanLimit = 10
 
 // Artifacts provides read access to embedded runtime files.
 type Artifacts interface {
@@ -43,7 +49,7 @@ func (c *Command) Name() string { return "pack" }
 
 // Synopsis returns a short description.
 func (c *Command) Synopsis() string {
-	return "Discover and inspect available instruction packs"
+	return "Discover, inspect, select, and compose instruction packs"
 }
 
 // PackMetadata is the versioned runtime metadata model for a pack.
@@ -111,6 +117,11 @@ type packFileMetadata struct {
 	Version     string
 	Title       string
 	Description string
+	Requires    []string
+	Mode        string
+	Priority    *int
+	Overrides   []string
+	HasCompose  bool
 }
 
 // Run dispatches to pack subcommands.
@@ -138,6 +149,20 @@ func (c *Command) Run(_ context.Context, args []string) error {
 		return c.RunListInDir(cwd, jsonOut)
 	case "show":
 		return c.runShow(cwd, args[1:])
+	case "select":
+		return c.runSelect(cwd, args[1:], true)
+	case "unselect":
+		return c.runSelect(cwd, args[1:], false)
+	case "effective":
+		jsonOut, help, err := parseJSONFlag(args[1:])
+		if err != nil {
+			return err
+		}
+		if help {
+			fmt.Println("Usage: carl pack effective [--json]")
+			return nil
+		}
+		return c.RunEffectiveInDir(cwd, jsonOut)
 	default:
 		return fmt.Errorf("unknown subcommand %q\n\nRun 'carl pack --help' for usage", args[0])
 	}
@@ -223,6 +248,209 @@ func (c *Command) runShow(rootDir string, args []string) error {
 	return c.RunShowInDir(rootDir, packID, jsonOut)
 }
 
+func (c *Command) runSelect(rootDir string, args []string, selecting bool) error {
+	verb := "select"
+	if !selecting {
+		verb = "unselect"
+	}
+	var ids []string
+	jsonOut := false
+	for _, arg := range args {
+		switch arg {
+		case "--json":
+			jsonOut = true
+		case "--help", "-h":
+			fmt.Printf("Usage: carl pack %s <pack-id>... [--json]\n", verb)
+			return nil
+		default:
+			if strings.HasPrefix(arg, "-") {
+				return fmt.Errorf("unknown argument %q", arg)
+			}
+			ids = append(ids, arg)
+		}
+	}
+	if len(ids) == 0 {
+		return fmt.Errorf("missing pack ID\n\nUsage: carl pack %s <pack-id>... [--json]", verb)
+	}
+	if selecting {
+		return c.RunSelectInDir(rootDir, ids, jsonOut)
+	}
+	return c.RunUnselectInDir(rootDir, ids, jsonOut)
+}
+
+type selectionPayload struct {
+	SchemaVersion int      `json:"schemaVersion"`
+	Selected      []string `json:"selected"`
+}
+
+// RunSelectInDir executes `carl pack select <pack-id>...`.
+func (c *Command) RunSelectInDir(rootDir string, ids []string, jsonOut bool) error {
+	packs, err := c.discover(rootDir)
+	if err != nil {
+		return err
+	}
+	if issues := validatePackSet(packs); len(issues) > 0 {
+		return fmt.Errorf("pack metadata validation failed:\n- %s", strings.Join(issues, "\n- "))
+	}
+	known := map[string]bool{}
+	current := make([]string, 0, len(packs))
+	for _, p := range packs {
+		known[p.ID] = true
+		if p.State.Selected {
+			current = append(current, p.ID)
+		}
+	}
+	for _, id := range ids {
+		if !known[id] {
+			msg := fmt.Sprintf("unknown pack %q", id)
+			if jsonOut {
+				return newJSONExitError("pack_not_found", msg)
+			}
+			return fmt.Errorf("%s", msg)
+		}
+	}
+	if err := WriteSelection(rootDir, append(current, ids...)); err != nil {
+		return err
+	}
+	return c.reportSelection(rootDir, jsonOut)
+}
+
+// RunUnselectInDir executes `carl pack unselect <pack-id>...`.
+func (c *Command) RunUnselectInDir(rootDir string, ids []string, jsonOut bool) error {
+	packs, err := c.discover(rootDir)
+	if err != nil {
+		return err
+	}
+	if issues := validatePackSet(packs); len(issues) > 0 {
+		return fmt.Errorf("pack metadata validation failed:\n- %s", strings.Join(issues, "\n- "))
+	}
+	known := map[string]bool{}
+	current := make([]string, 0, len(packs))
+	for _, p := range packs {
+		known[p.ID] = true
+		if p.State.Selected {
+			current = append(current, p.ID)
+		}
+	}
+	for _, id := range ids {
+		if !known[id] {
+			msg := fmt.Sprintf("unknown pack %q", id)
+			if jsonOut {
+				return newJSONExitError("pack_not_found", msg)
+			}
+			return fmt.Errorf("%s", msg)
+		}
+	}
+	remove := map[string]bool{}
+	for _, id := range ids {
+		remove[id] = true
+	}
+	remaining := make([]string, 0, len(current))
+	for _, id := range current {
+		if !remove[id] {
+			remaining = append(remaining, id)
+		}
+	}
+	if err := WriteSelection(rootDir, remaining); err != nil {
+		return err
+	}
+	return c.reportSelection(rootDir, jsonOut)
+}
+
+func (c *Command) reportSelection(rootDir string, jsonOut bool) error {
+	sel, err := ReadSelection(rootDir)
+	if err != nil {
+		return err
+	}
+	selected := []string{}
+	if sel != nil {
+		selected = sel.Selected
+	}
+	if jsonOut {
+		data, err := json.MarshalIndent(selectionPayload{
+			SchemaVersion: metadataSchemaVersion,
+			Selected:      selected,
+		}, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal selection JSON: %w", err)
+		}
+		fmt.Println(string(data))
+		return nil
+	}
+	fmt.Printf("Selection written to %s\n\n", SelectionFileName)
+	fmt.Println("Selected Packs:")
+	if len(selected) == 0 {
+		fmt.Println("  none")
+		return nil
+	}
+	for _, id := range selected {
+		fmt.Printf("  %s\n", id)
+	}
+	return nil
+}
+
+type effectivePayload struct {
+	SchemaVersion int             `json:"schemaVersion"`
+	Packs         []EffectivePack `json:"packs"`
+	Conflicts     []Conflict      `json:"conflicts,omitempty"`
+}
+
+// RunEffectiveInDir executes `carl pack effective`.
+func (c *Command) RunEffectiveInDir(rootDir string, jsonOut bool) error {
+	packs, err := c.discover(rootDir)
+	if err != nil {
+		return err
+	}
+	if issues := validatePackSet(packs); len(issues) > 0 {
+		return fmt.Errorf("pack metadata validation failed:\n- %s", strings.Join(issues, "\n- "))
+	}
+	set, err := ComputeEffectiveSet(packs)
+	if err != nil {
+		return err
+	}
+
+	if jsonOut {
+		data, err := json.MarshalIndent(effectivePayload{
+			SchemaVersion: metadataSchemaVersion,
+			Packs:         set.Packs,
+			Conflicts:     set.Conflicts,
+		}, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal effective set JSON: %w", err)
+		}
+		fmt.Println(string(data))
+		if len(set.Conflicts) > 0 {
+			return &cmdutil.ExitError{Code: 1}
+		}
+		return nil
+	}
+
+	fmt.Println("Effective Pack Set (precedence order):")
+	fmt.Println()
+	if len(set.Packs) == 0 {
+		fmt.Println("  none (no packs selected)")
+	} else {
+		fmt.Println("  ID                                Version   Priority  Mode               Reasons")
+		for _, p := range set.Packs {
+			line := fmt.Sprintf(
+				"  %-33s %-9s %-9d %-18s %s",
+				p.ID, p.Version, p.Priority, p.Mode, strings.Join(p.Reasons, "; "),
+			)
+			if len(p.OverriddenBy) > 0 {
+				line += fmt.Sprintf(" [overridden by: %s]", strings.Join(p.OverriddenBy, ", "))
+			}
+			fmt.Println(line)
+		}
+	}
+	if len(set.Conflicts) > 0 {
+		fmt.Println()
+		fmt.Println("Conflicts:")
+		fmt.Printf("- %s\n", ConflictSummary(set.Conflicts))
+		return &cmdutil.ExitError{Code: 1, Message: "pack composition conflicts detected"}
+	}
+	return nil
+}
+
 func parseJSONFlag(args []string) (bool, bool, error) {
 	jsonOut := false
 	for _, arg := range args {
@@ -242,8 +470,11 @@ func printUsage() {
 	fmt.Println("Usage: carl pack <subcommand> [arguments]")
 	fmt.Println()
 	fmt.Println("Subcommands:")
-	fmt.Println("  list           List available packs")
-	fmt.Println("  show <pack-id> Show metadata for a pack")
+	fmt.Println("  list                   List available packs")
+	fmt.Println("  show <pack-id>         Show metadata for a pack")
+	fmt.Println("  select <pack-id>...    Select packs for this repository")
+	fmt.Println("  unselect <pack-id>...  Remove packs from the repository selection")
+	fmt.Println("  effective              Show the computed effective pack set")
 	fmt.Println()
 	fmt.Println("Options:")
 	fmt.Println("  --json         Print machine-readable JSON output")
@@ -373,7 +604,10 @@ func (c *Command) discover(rootDir string) ([]PackMetadata, error) {
 	if err != nil {
 		return nil, err
 	}
-	selected := discoverSelected(rootDir)
+	selected, err := discoverSelected(rootDir)
+	if err != nil {
+		return nil, err
+	}
 
 	idsMap := map[string]bool{}
 	for id := range bundled {
@@ -421,6 +655,25 @@ func (c *Command) discover(rootDir string) ([]PackMetadata, error) {
 		}
 		state.Active = state.Selected
 
+		// The repository-local copy is authoritative for composition
+		// metadata when it declares any; otherwise the bundled copy applies.
+		compose := b
+		if hasLocal && l.HasCompose {
+			compose = l
+		}
+		var deps []PackDependency
+		for _, req := range compose.Requires {
+			deps = append(deps, PackDependency{ID: req, Required: true})
+		}
+		var precedence *Precedence
+		if compose.Mode != "" || compose.Priority != nil || len(compose.Overrides) > 0 {
+			precedence = &Precedence{
+				Mode:      compose.Mode,
+				Priority:  compose.Priority,
+				Overrides: compose.Overrides,
+			}
+		}
+
 		out = append(out, PackMetadata{
 			SchemaVersion:  metadataSchemaVersion,
 			ID:             id,
@@ -431,6 +684,8 @@ func (c *Command) discover(rootDir string) ([]PackMetadata, error) {
 			Source:         deriveSource(state),
 			State:          state,
 			OwnedArtifacts: owned,
+			Dependencies:   deps,
+			Precedence:     precedence,
 		})
 	}
 
@@ -456,7 +711,11 @@ func (c *Command) discoverBundled() (map[string]packFileMetadata, error) {
 		if err != nil {
 			return nil, fmt.Errorf("read embedded pack %s: %w", p, err)
 		}
-		result[id] = parsePackFileMetadata(p, data)
+		m, err := parsePackFileMetadata(p, data)
+		if err != nil {
+			return nil, fmt.Errorf("embedded pack metadata: %w", err)
+		}
+		result[id] = m
 	}
 	return result, nil
 }
@@ -493,7 +752,11 @@ func discoverLocal(rootDir string) (map[string]packFileMetadata, error) {
 		if err != nil {
 			return err
 		}
-		result[id] = parsePackFileMetadata(rel, data)
+		m, err := parsePackFileMetadata(rel, data)
+		if err != nil {
+			return fmt.Errorf("local pack metadata: %w", err)
+		}
+		result[id] = m
 		return nil
 	})
 	if err != nil {
@@ -502,14 +765,30 @@ func discoverLocal(rootDir string) (map[string]packFileMetadata, error) {
 	return result, nil
 }
 
-func discoverSelected(rootDir string) map[string]bool {
+// discoverSelected returns the set of explicitly selected pack IDs.
+// The committed selection artefact (.github/carl/packs.json) is
+// authoritative when present; otherwise selection falls back to the legacy
+// derivation from runtime.json managed artefacts.
+func discoverSelected(rootDir string) (map[string]bool, error) {
 	selected := map[string]bool{}
+
+	sel, err := ReadSelection(rootDir)
+	if err != nil {
+		return nil, err
+	}
+	if sel != nil {
+		for _, id := range sel.Selected {
+			selected[id] = true
+		}
+		return selected, nil
+	}
+
 	if !manifest.Exists(rootDir) {
-		return selected
+		return selected, nil
 	}
 	rt, err := manifest.Read(rootDir)
 	if err != nil {
-		return selected
+		return selected, nil
 	}
 	for _, m := range rt.ManagedArtifacts {
 		id, _, ok := parsePackPath(m)
@@ -517,16 +796,95 @@ func discoverSelected(rootDir string) map[string]bool {
 			selected[id] = true
 		}
 	}
-	return selected
+	return selected, nil
 }
 
-func parsePackFileMetadata(packPath string, data []byte) packFileMetadata {
-	return packFileMetadata{
+func parsePackFileMetadata(packPath string, data []byte) (packFileMetadata, error) {
+	m := packFileMetadata{
 		Path:        path.Clean(strings.ReplaceAll(packPath, "\\", "/")),
 		Version:     extractVersion(data),
 		Title:       extractTitle(data),
 		Description: extractDescription(data),
 	}
+	if err := extractComposeHeaders(data, &m); err != nil {
+		return m, fmt.Errorf("%s: %w", m.Path, err)
+	}
+	return m, nil
+}
+
+// extractComposeHeaders parses explicit composition metadata headers from the
+// leading lines of a pack file. Absent headers are valid: composition
+// metadata defaults to no dependencies, additive mode, no priority, and no
+// overrides. Malformed values are explicit errors — never silently ignored.
+func extractComposeHeaders(data []byte, m *packFileMetadata) error {
+	lines := strings.Split(string(data), "\n")
+	limit := len(lines)
+	if limit > headerScanLimit {
+		limit = headerScanLimit
+	}
+	for i := 0; i < limit; i++ {
+		match := composeHeaderRE.FindStringSubmatch(lines[i])
+		if len(match) == 0 {
+			continue
+		}
+		key := strings.ToLower(match[1])
+		value := strings.TrimSpace(match[2])
+		switch key {
+		case "requires":
+			ids, err := parsePackIDList(value)
+			if err != nil {
+				return fmt.Errorf("invalid requires header: %w", err)
+			}
+			m.Requires = ids
+			m.HasCompose = true
+		case "overrides":
+			ids, err := parsePackIDList(value)
+			if err != nil {
+				return fmt.Errorf("invalid overrides header: %w", err)
+			}
+			m.Overrides = ids
+			m.HasCompose = true
+		case "precedence-mode":
+			mode := strings.ToLower(value)
+			switch mode {
+			case "additive", "overridable", "restrictable-only", "immutable":
+				m.Mode = mode
+				m.HasCompose = true
+			default:
+				return fmt.Errorf("invalid precedence-mode %q", value)
+			}
+		case "priority":
+			if !intRE.MatchString(value) {
+				return fmt.Errorf("invalid priority %q", value)
+			}
+			var n int
+			if _, err := fmt.Sscanf(value, "%d", &n); err != nil {
+				return fmt.Errorf("invalid priority %q", value)
+			}
+			if n < 0 {
+				return fmt.Errorf("invalid priority %d: must be non-negative", n)
+			}
+			m.Priority = &n
+			m.HasCompose = true
+		}
+	}
+	return nil
+}
+
+func parsePackIDList(value string) ([]string, error) {
+	var out []string
+	for _, part := range strings.Split(value, ",") {
+		id := strings.TrimSpace(part)
+		if id == "" {
+			continue
+		}
+		if !packIDRE.MatchString(id) {
+			return nil, fmt.Errorf("malformed pack id %q", id)
+		}
+		out = append(out, id)
+	}
+	sort.Strings(out)
+	return out, nil
 }
 
 func extractVersion(data []byte) string {

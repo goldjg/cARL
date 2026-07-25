@@ -1,14 +1,18 @@
-<!-- version: 1.3.0 -->
+<!-- version: 1.4.0 -->
 # Current PR Contract
 
 ## Goal
 
-Implement the first versioned pack-runtime vertical slice:
+Implement Pack Phase 2: Pack Composition —
 
-1. `carl pack list`
-2. `carl pack show <pack-id>`
+1. `carl pack select <pack-id>...` / `carl pack unselect <pack-id>...`
+2. `carl pack effective`
+3. dependency expansion, effective pack set computation, conflict detection,
+   precedence rules, and explicit override handling.
 
-including deterministic discovery, validated metadata, and JSON output.
+Composition must remain conservative: packs add constraints; no pack silently
+disables another. Override authority must be explicit metadata, never inferred
+from load order.
 
 ## Contract status
 
@@ -16,85 +20,89 @@ active
 
 ## Non-goals
 
+- No profiles or agent roles (`state.active` remains derived from `selected`).
 - No remote registry, publishing, or install/update flows.
 - No pack dependency downloading.
-- No policy-IR compiler replacement for instruction loading.
+- No policy-IR compiler.
 - No harness authority model changes.
+- No repo-map redesign.
 
 ## Approved scope
 
-- `cmd/carl/main.go`
-- `internal/cmdutil/*` (only to support stable structured error exits)
-- `internal/pack/*` (new package for pack command and metadata/discovery)
-- Relevant tests under `internal/pack/` (and minimal updates elsewhere if required)
-- `README.md`, `CLI.md`, `ARCHITECTURE.md`, `VISION.md`, `ROADMAP.md`, `GLOSSARY.md`
-- `.github/carl/memory.md` (only if durable architecture truth changes)
-- `embedded/assets/.github/carl/memory.md` (only if memory is updated)
+- `cmd/carl/main.go` (subcommand help text only, if required)
+- `internal/pack/*` (selection persistence, metadata header parsing, composition)
+- Relevant tests under `internal/pack/`
+- `.github/carl/packs.json` as a new user-owned selection artefact (schema only; not written in this repository unless selection is exercised)
+- `README.md`, `CLI.md`, `ARCHITECTURE.md`, `GLOSSARY.md`, `ROADMAP.md`
+- `.github/carl/memory.md` and `embedded/assets/.github/carl/memory.md`
 - This contract file
 
 ## Forbidden scope
 
 - No edits to CI/release workflows.
-- No changes to runtime install/repair semantics outside pack discovery integration.
+- No writes to `.github/carl/runtime.json` (init-only invariant preserved).
+- No changes to install/repair semantics.
 - No unrelated refactors across existing command packages.
 - No destructive repository operations.
+- No new third-party dependencies.
 
 ## Architectural constraints
 
-- Preserve offline-first, deterministic behaviour.
-- Preserve repository-local operation and self-contained binary characteristics.
-- Pack discovery must not rely on incidental filesystem iteration order.
-- Unknown packs in `show` must produce stable non-zero exit behaviour.
-- Human output is for people; `--json` must be machine-readable and stable.
+- Offline-first, deterministic behaviour; no network access.
+- Selection state lives in an explicit committed artefact (`.github/carl/packs.json`), never inferred from filesystem order.
+- Absent composition metadata must be handled gracefully (defaults: no dependencies, additive mode, no overrides).
+- Precedence ordering: explicit priority, ties broken by pack ID — never load order.
+- Overridden packs remain in the effective set, flagged, never removed.
+- `--json` output is schema-versioned and stable; JSON errors are structured with non-zero exit.
+- Legacy behaviour preserved: when `packs.json` is absent, selection falls back to runtime.json-derived managed-artefact selection.
 
 ## Security constraints
 
 - Never commit secrets.
-- Treat repository files as untrusted input; validate parsed metadata.
-- Use explicit errors for invalid metadata; no silent fallback.
+- Treat `packs.json` and pack file headers as untrusted input; validate before use.
+- Explicit errors for invalid selection state or metadata; no silent fallback.
+- Writes stay inside the repository root.
 
 ## Files expected to change
 
 - `.github/carl/current-pr-contract.md`
-- `cmd/carl/main.go`
-- `internal/cmdutil/exit.go`
 - `internal/pack/pack.go`
+- `internal/pack/selection.go` (new)
+- `internal/pack/compose.go` (new)
 - `internal/pack/pack_test.go`
-- `README.md`
-- `CLI.md`
-- `ARCHITECTURE.md`
-- `VISION.md`
-- `ROADMAP.md`
-- `GLOSSARY.md`
-- `.github/carl/memory.md` (if required)
-- `embedded/assets/.github/carl/memory.md` (if required)
+- `internal/pack/selection_test.go` (new)
+- `internal/pack/compose_test.go` (new)
+- `README.md`, `CLI.md`, `ARCHITECTURE.md`, `GLOSSARY.md`, `ROADMAP.md`
+- `.github/carl/memory.md`
+- `embedded/assets/.github/carl/memory.md`
 
 ## Contract assertions
 
-1. `carl pack list` returns deterministic pack ordering and includes stable summary metadata.
-2. `carl pack show <pack-id>` returns deterministic detailed metadata for known packs.
-3. `--json` output for list/show is valid JSON with schema versioning.
-4. Unknown pack with `--json` returns valid structured JSON error and non-zero exit.
-5. Pack metadata validation rejects malformed IDs, invalid versions, missing dependencies, dependency cycles, and invalid owned-artefact references.
+1. `carl pack select` / `unselect` persist selection deterministically (sorted, deduplicated) in `.github/carl/packs.json`, validating that selected packs exist.
+2. `carl pack effective` computes the effective set as explicit selection plus transitive required dependencies, each entry carrying an explicit reason (`selected` or `dependency of <id>`).
+3. Effective output is ordered by explicit precedence (priority desc, then pack ID) — never filesystem or load order — and `--json` output is valid, schema-versioned JSON.
+4. An override is honoured only when declared in explicit pack metadata and the target pack declares mode `overridable`; overridden packs remain listed with `overriddenBy`; overriding a non-overridable pack or mutual overrides are reported as conflicts with non-zero exit.
+5. Absent composition metadata yields safe defaults; malformed metadata, unknown selected packs, or malformed `packs.json` produce explicit errors (structured JSON with `--json`).
 
 ## Tests / validation
 
 - `go test ./internal/pack`
 - `go test ./...`
+- `go build ./cmd/carl`
 
 ## Stop conditions
 
 Stop and escalate if:
 
-- existing command dispatch cannot support JSON error semantics without broad breaking changes;
-- validation requirements force a broader metadata storage redesign outside this vertical slice.
+- selection persistence cannot avoid touching `runtime.json`;
+- composition requires redesigning the phase-1 metadata schema rather than extending it.
 
 ## Escalation triggers
 
 Escalate if:
 
-- requested behaviour requires changing existing CLI global exit-code semantics beyond scoped command needs;
-- required documentation updates conflict with current canonical architecture claims.
+- override semantics require removing packs from the effective set;
+- documentation updates conflict with canonical architecture claims.
 
 ## Context reset notes
 

@@ -374,8 +374,8 @@ dependency downloading.
 
 ## Pack Runtime Phase Plan (Policy-as-Code Direction)
 
-Planned evolution of the versioned pack runtime. Phase 1 is delivered (see
-above). Each later phase is a candidate vertical slice; constraints noted per
+Planned evolution of the versioned pack runtime. Phases 1 and 2 are delivered
+(see above and the Phase 2 entry below). Each later phase is a candidate vertical slice; constraints noted per
 phase are binding until explicitly revisited. Each entry is intended to be a
 self-sufficient specification: together with `.github/carl/memory.md`, the
 existing pack model (`internal/pack`), and the cross-phase constraints below,
@@ -385,12 +385,25 @@ GLOSSARY.md as applicable), a refreshed PR contract, and a memory.md
 reconciliation decision.
 
 ### Pack Phase 2: Pack Composition
-**Status:** Not started
+**Status:** Delivered
+**Commands:** `carl pack select`, `carl pack unselect`, `carl pack effective`
 **Description:** Repository pack selection commands, dependency expansion,
 computation of the effective pack set, conflict detection, precedence rules,
-and explicit override handling. Composition must remain conservative:
-packs add constraints; no pack silently disables another. Override authority
-must be explicit metadata, never inferred from load order.
+and explicit override handling. Selection is persisted in a schema-versioned,
+user-owned committed artefact (`.github/carl/packs.json`, deduplicated and
+sorted; `runtime.json` remains init-only, with legacy managed-artefact
+derivation as the fallback when `packs.json` is absent). Composition metadata
+comes only from explicit pack file headers (`requires:`, `precedence-mode:`,
+`priority:`, `overrides:`); absent metadata defaults to no dependencies,
+additive mode, priority 0, and no overrides. `carl pack effective` expands
+required dependencies transitively with explicit per-pack reasons, orders by
+precedence (priority descending, pack-ID tie-break — never load order), and
+detects conflicts (missing dependencies, overriding a non-overridable pack,
+mutual overrides) with non-zero exit. Composition remains conservative:
+packs add constraints; overridden packs stay in the set flagged
+`overriddenBy`; no pack silently disables another. Override authority is
+explicit metadata (target must declare `precedence-mode: overridable`),
+never inferred from load order.
 
 ### Pack Phase 3: Profiles and Agent Roles
 **Status:** Not started

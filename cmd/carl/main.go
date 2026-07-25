@@ -11,7 +11,7 @@
 //	harness    Manage and inspect harness adapters for AI coding agents
 //	init       Install the cARL runtime into the current repository
 //	map        Generate and update .github/carl/repo-map.json from repository structure
-//	pack       Discover and inspect available instruction packs
+//	pack       Discover, inspect, select, and compose instruction packs
 //	plan       Discover, validate, and summarise plans in .github/carl/plans/
 //	reconcile  Update repository-specific memory sections from current repo-map data
 //	repair     Restore modified managed cARL artefacts to their canonical state
