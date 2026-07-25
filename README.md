@@ -4,6 +4,12 @@
 
 # cARL — Cognitive Agent Runtime Layer
 
+[![Release](https://img.shields.io/github/v/release/goldjg/cARL)](https://github.com/goldjg/cARL/releases/latest)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/goldjg/cARL)](go.mod)
+[![Release Workflow](https://img.shields.io/github/actions/workflow/status/goldjg/cARL/release.yml?label=release)](https://github.com/goldjg/cARL/actions/workflows/release.yml)
+[![GoReleaser Check](https://img.shields.io/github/actions/workflow/status/goldjg/cARL/goreleaser-check.yml?label=goreleaser%20check)](https://github.com/goldjg/cARL/actions/workflows/goreleaser-check.yml)
+[![License: MIT](https://img.shields.io/github/license/goldjg/cARL)](LICENSE)
+
 > **"cARL remembers why you made that decision three months ago, because neither you nor your coding agent will."**
 
 ---
