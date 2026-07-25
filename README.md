@@ -278,6 +278,18 @@ carl init
 This writes all governance artefacts into `.github/` and creates
 `.github/carl/runtime.json` as the authoritative runtime manifest.
 
+If the repository already contains cARL artefacts but has no runtime manifest,
+adopt them without overwriting existing content:
+
+```sh
+carl init --adopt
+```
+
+Adoption installs only missing bundled artefacts and creates `runtime.json`
+last. Follow it with `carl doctor`, and run `carl repair` only when you
+explicitly want drifted repairable files restored to bundled canonical
+content. Repository `memory.md` remains protected.
+
 ### 3. Verify the installation
 
 ```sh

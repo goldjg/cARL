@@ -9,6 +9,7 @@ import (
 
 	"github.com/goldjg/carl/internal/install"
 	"github.com/goldjg/carl/internal/manifest"
+	"github.com/goldjg/carl/internal/repair"
 )
 
 // fakeArtifacts is a simple in-memory Artifacts implementation for testing.
@@ -126,6 +127,106 @@ func TestInit_ConflictingFiles(t *testing.T) {
 	}
 }
 
+func TestInit_AdoptPreservesExistingAndInstallsMissing(t *testing.T) {
+	dir := t.TempDir()
+	arts := newFakeArtifacts()
+	existingPath := filepath.Join(dir, ".github", "carl", "memory.md")
+	existingContent := []byte("# Repository memory\n")
+	if err := os.MkdirAll(filepath.Dir(existingPath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(existingPath, existingContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := install.New(arts, "1.0.0", "goldjg/cARL", "v1.0.0", "dev")
+	if err := cmd.RunInDirWithOptions(dir, true); err != nil {
+		t.Fatalf("RunInDirWithOptions: %v", err)
+	}
+	got, err := os.ReadFile(existingPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(existingContent) {
+		t.Errorf("existing artefact overwritten: got %q; want %q", got, existingContent)
+	}
+	for path := range arts.files {
+		if _, err := os.Stat(filepath.Join(dir, filepath.FromSlash(path))); err != nil {
+			t.Errorf("managed artefact %s not present after adoption: %v", path, err)
+		}
+	}
+	rt, err := manifest.Read(dir)
+	if err != nil {
+		t.Fatalf("manifest.Read: %v", err)
+	}
+	if len(rt.ManagedArtifacts) != len(arts.files) {
+		t.Errorf("managed artifact count = %d; want %d", len(rt.ManagedArtifacts), len(arts.files))
+	}
+}
+
+func TestInit_AdoptDoesNotCreateManifestAfterInstallFailure(t *testing.T) {
+	dir := t.TempDir()
+	arts := &fakeArtifacts{files: map[string][]byte{
+		".github/carl/memory.md":            []byte("# Memory"),
+		".github/instructions/core/test.md": []byte("# Test"),
+	}}
+	blockingPath := filepath.Join(dir, ".github", "instructions")
+	if err := os.MkdirAll(filepath.Dir(blockingPath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(blockingPath, []byte("not a directory"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := install.New(arts, "1.0.0", "goldjg/cARL", "v1.0.0", "dev")
+	if err := cmd.RunInDirWithOptions(dir, true); err == nil {
+		t.Fatal("expected adoption failure")
+	}
+	if manifest.Exists(dir) {
+		t.Error("runtime.json created after an earlier installation failure")
+	}
+}
+
+func TestInit_AdoptThenRepairPreservesProtectedMemory(t *testing.T) {
+	dir := t.TempDir()
+	arts := newFakeArtifacts()
+	memoryPath := filepath.Join(dir, ".github", "carl", "memory.md")
+	customMemory := []byte("# Custom memory")
+	if err := os.MkdirAll(filepath.Dir(memoryPath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(memoryPath, customMemory, 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := install.New(arts, "1.0.0", "goldjg/cARL", "v1.0.0", "dev")
+	if err := cmd.RunInDirWithOptions(dir, true); err != nil {
+		t.Fatal(err)
+	}
+
+	repairable := filepath.Join(dir, ".github", "carl", "invariants.yml")
+	if err := os.WriteFile(repairable, []byte("drifted"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	rc := repair.New(arts)
+	if err := rc.RunInDir(dir); err != nil {
+		t.Fatal(err)
+	}
+	gotMemory, err := os.ReadFile(memoryPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotMemory) != string(customMemory) {
+		t.Errorf("memory overwritten: got %q; want %q", gotMemory, customMemory)
+	}
+	gotRepairable, err := os.ReadFile(repairable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotRepairable) != string(arts.files[".github/carl/invariants.yml"]) {
+		t.Errorf("repairable artefact not restored: %q", gotRepairable)
+	}
+}
+
 // TestInit_Run exercises the Run method via the command interface (uses cwd).
 func TestInit_Run(t *testing.T) {
 	dir := t.TempDir()
@@ -145,5 +246,34 @@ func TestInit_Run(t *testing.T) {
 	}
 	if !manifest.Exists(dir) {
 		t.Error("runtime.json not created")
+	}
+}
+
+func TestInit_RunAcceptsAdoptFlag(t *testing.T) {
+	dir := t.TempDir()
+	orig, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(orig) })
+
+	arts := newFakeArtifacts()
+	existing := filepath.Join(dir, ".github", "carl", "memory.md")
+	if err := os.MkdirAll(filepath.Dir(existing), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(existing, []byte("preserve me"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := install.New(arts, "1.0.0", "goldjg/cARL", "v1.0.0", "dev")
+	if err := cmd.Run(context.Background(), []string{"--adopt"}); err != nil {
+		t.Fatalf("Run --adopt: %v", err)
+	}
+	if !manifest.Exists(dir) {
+		t.Error("runtime.json not created by Run --adopt")
 	}
 }

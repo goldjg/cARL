@@ -59,7 +59,7 @@ Installs the cARL runtime into the current repository.
 **Usage**
 
 ```
-carl init
+carl init [--adopt]
 ```
 
 **What it does**
@@ -72,6 +72,15 @@ carl init
 4. Creates `.github/carl/runtime.json` — the authoritative runtime manifest
    recording the installed version, source tag, commit, timestamp, and list of
    managed artefacts.
+
+**Adopting existing artefacts**
+
+Use `carl init --adopt` when cARL artefacts already exist but
+`.github/carl/runtime.json` does not. Adoption preserves every existing
+artefact byte-for-byte, installs only missing bundled artefacts, and creates
+the runtime manifest last. Run `carl doctor` afterward to inspect drift and
+invoke `carl repair` separately if canonical repairable content is wanted.
+`memory.md` remains protected from repair.
 
 **Output (success)**
 
@@ -87,7 +96,7 @@ cARL runtime installed successfully.
 | Error | Cause | Resolution |
 |---|---|---|
 | `cARL runtime already installed` | `runtime.json` already exists | Run `carl repair` to restore drift, or remove the runtime manually |
-| `cARL artefacts already exist` | Individual managed files exist without a `runtime.json` | Remove the listed files or adopt them before running `init` |
+| `cARL artefacts already exist` | Individual managed files exist without a `runtime.json` | Run `carl init --adopt` to preserve and adopt them, or remove the listed files for a clean installation |
 
 ---
 
@@ -135,7 +144,7 @@ Done.
 
 | Error | Cause | Resolution |
 |---|---|---|
-| `no cARL runtime installed` | `runtime.json` not found | Run `carl init` first |
+| `no cARL runtime installed` | `runtime.json` not found | Run `carl init`, or `carl init --adopt` when cARL artefacts already exist |
 
 ---
 

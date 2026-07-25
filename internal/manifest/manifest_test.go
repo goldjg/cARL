@@ -87,3 +87,21 @@ func TestRead_Missing(t *testing.T) {
 		t.Error("expected error reading missing manifest")
 	}
 }
+
+func TestWriteNewDoesNotReplaceExistingManifest(t *testing.T) {
+	dir := t.TempDir()
+	original := &manifest.Runtime{RuntimeVersion: "1.0.0"}
+	if err := manifest.WriteNew(dir, original); err != nil {
+		t.Fatalf("first WriteNew: %v", err)
+	}
+	if err := manifest.WriteNew(dir, &manifest.Runtime{RuntimeVersion: "2.0.0"}); err == nil {
+		t.Fatal("second WriteNew succeeded; want exclusive-create error")
+	}
+	got, err := manifest.Read(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.RuntimeVersion != original.RuntimeVersion {
+		t.Errorf("manifest replaced: version = %q; want %q", got.RuntimeVersion, original.RuntimeVersion)
+	}
+}
