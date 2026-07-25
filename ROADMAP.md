@@ -1,4 +1,4 @@
-<!-- version: 1.5.0 -->
+<!-- version: 1.6.0 -->
 # cARL — Roadmap
 
 This roadmap describes the strategic direction and future evolution of cARL. None of the items marked as not started are implemented in the current codebase. Items are recorded here to preserve intent and prevent rediscovery.
@@ -377,7 +377,7 @@ dependency downloading.
 
 ## Pack Runtime Phase Plan (Policy-as-Code Direction)
 
-Planned evolution of the versioned pack runtime. Phases 1 through 3 are
+Planned evolution of the versioned pack runtime. Phases 1 through 4 are
 delivered (see above and the Phase 2/3 entries below). Each later phase is a
 candidate vertical slice; constraints noted per
 phase are binding until explicitly revisited. Each entry is intended to be a
@@ -427,12 +427,21 @@ validate all identifiers and references, and write only `profiles.json`;
 `runtime.json` remains init-only.
 
 ### Pack Phase 4: Registry and Installation
-**Status:** Not started — do not implement prematurely
-**Description:** Optional remote discovery, signed or verifiable pack sources,
-version resolution, provenance, and install/update workflows.
-**Constraint:** Do not create registry abstractions that imply security
-guarantees (signing, verification) which do not yet exist. Offline-first
-behaviour must be preserved; remote access stays optional.
+**Status:** Delivered
+**Commands:** `carl pack registry list`, `registry search`, `install`, `update`
+**Description:** Explicit schema-versioned registry configuration supports
+optional HTTPS and repository-local indexes without adding an implicit remote
+authority. Releases declare semantic versions, relative artifacts, and
+SHA-256 digests. Resolution selects the highest version deterministically or
+an exact requested version and rejects equal-version cross-registry
+ambiguity. Installation verifies all artifacts and required dependencies
+before mutation, confines writes to canonical instruction-pack paths, records
+deterministic provenance in `.github/carl/installed-packs.json`, and never
+selects/activates packs or writes `runtime.json`. Updates use recorded
+provenance, reject local drift and same-version registry mutation, and never
+downgrade. Existing pack commands remain network-free and local registries
+support fully offline workflows. SHA-256 is accurately scoped as integrity
+against the configured index, not publisher authentication or signing.
 
 ### Pack Phase 5: Policy Provenance and Explanation
 **Status:** Not started

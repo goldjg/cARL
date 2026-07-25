@@ -109,12 +109,13 @@ file plus runtime state:
 | `version` | Semantic version from the pack's `<!-- version: X.Y.Z -->` header |
 | `title` / `description` | First `#` heading and first paragraph of the pack file |
 | `category` | `core`, `languages`, `platform`, or `cloud` — must match the ID prefix |
-| `source` | Where the pack was discovered: `bundled`, `repository-local`, or both |
+| `source` | Where the pack was discovered: `bundled`, `repository-local`, both, or `registry:<id>` |
 | `state` | `bundled` / `installed` / `selected` / `active` flags |
 | `ownedArtifacts` | Repository paths the pack owns (currently its own instruction file) |
 | `dependencies` | Pack IDs this pack requires, parsed from the `<!-- requires: ... -->` header (validated for existence and cycles) |
 | `compatibility` | Optional minimum CLI / runtime version constraints |
 | `precedence` | Optional priority + mode (`additive`, `overridable`, `restrictable-only`, `immutable`) + explicit overrides, parsed from `<!-- priority: N -->`, `<!-- precedence-mode: ... -->`, and `<!-- overrides: ... -->` headers |
+| `provenance` | For registry-managed packs: explicit registry ID/location, relative artifact, and verified SHA-256 |
 
 Pack state is a chain of distinct facts:
 
@@ -172,6 +173,36 @@ precedence, override, and conflict rules then produce the effective set.
 `runtime.json` remains init-only. Invalid profile IDs, duplicate profiles,
 unknown contexts, and unselected pack references are explicit errors.
 
+### Registry and Installation (schema version 1)
+
+Registry support is an optional boundary around the existing repository-local
+pack model. There is no default registry and ordinary pack discovery,
+selection, profile, and composition commands remain network-free.
+
+`.github/carl/registries.json` records explicit HTTPS or repository-local
+index locations. Each strict schema-versioned index advertises immutable pack
+releases by ID, semantic version, relative artifact location, and SHA-256.
+Resolution selects the highest semantic version or an exact requested version.
+Equal winning versions from multiple registries are rejected as ambiguous
+unless the caller names a registry.
+
+`carl pack install` downloads only relative, same-origin artifacts, checks
+bounded response sizes, verifies SHA-256 and pack-declared metadata, resolves
+unavailable required dependencies from the same registry, and validates the
+whole planned pack set before mutation. Writes are confined to canonical
+instruction-pack paths plus `.github/carl/installed-packs.json` and roll back
+if a transaction fails. Installation does not alter selection or activation.
+
+The installed-pack manifest is committed provenance rather than runtime
+authority. It records the configured registry, artifact, digest, version, and
+installed path. Discovery exposes that provenance and rejects digest drift.
+`carl pack update` uses the recorded source, rejects local drift and
+same-version registry mutation, and never downgrades.
+
+SHA-256 establishes artifact integrity relative to the configured index. It
+does not authenticate a publisher, establish a signing-key trust root, or
+provide the policy evaluation trace deferred to Pack Phase 5.
+
 ---
 
 ## Layer 3: Governance Artefacts
@@ -189,6 +220,8 @@ Templates and data artefacts used by cARLv2 packs. These are not instruction-pac
 | `trust-boundaries.md` | Trust boundary classification table and crossing rules |
 | `tool-policy.yml` | Tier 0/1/2 tool permission policy |
 | `profiles.json` | User-owned named profiles, defaults, role/task overlays, and active context (created only when configured) |
+| `registries.json` | User-owned explicit HTTPS or repository-local pack registry configuration (created only when configured) |
+| `installed-packs.json` | User-owned deterministic provenance for SHA-256-verified registry-managed packs (created on first install) |
 | `repo-map.example.json` | Cognitive repository map for fast agent orientation |
 | `plans/README.md` | Prompt-as-code guidance and when to use it |
 | `plans/plan-template.md` | Reusable planning contract template |

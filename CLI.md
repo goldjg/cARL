@@ -374,9 +374,10 @@ Repo map updated: .github/carl/repo-map.json
 
 ### `carl pack`
 
-Discovers, inspects, selects, and composes instruction packs. Works inside an
-initialised repository (merging bundled, repository-local, and selected packs)
-and outside one (bundled packs only).
+Discovers, inspects, verifies, installs, selects, and composes instruction
+packs. Works inside an initialised repository (merging bundled,
+repository-local, registry-managed, and selected packs) and outside one
+(bundled packs only).
 
 **Usage**
 
@@ -389,6 +390,10 @@ carl pack profile list [--json]
 carl pack profile show <profile-id> [--json]
 carl pack profile activate <profile-id> [--role <role-id>] [--task <task-id>] [--json]
 carl pack profile clear [--json]
+carl pack registry list [--json]
+carl pack registry search [<query>] [--registry <registry-id>] [--json]
+carl pack install <pack-id> [--version <version>] [--registry <registry-id>] [--json]
+carl pack update [<pack-id>...] [--json]
 carl pack effective [--json]
 ```
 
@@ -404,6 +409,10 @@ carl pack effective [--json]
 | `profile show <profile-id>` | Show one profile's base packs and role/task overlays |
 | `profile activate <profile-id>` | Activate a profile with optional `--role` and `--task` overlays |
 | `profile clear` | Clear the active profile and overlays; organisation/repository defaults remain active |
+| `registry list` | List explicitly configured registries without fetching them |
+| `registry search [<query>]` | Fetch configured registry indexes and list matching releases |
+| `install <pack-id>` | Resolve, verify, and install the highest release (or exact `--version`) plus unavailable required dependencies |
+| `update [<pack-id>...]` | Update named or all registry-managed packs from their recorded source registries |
 | `effective` | Compute and print the effective pack set (active profile seeds + required dependencies, precedence order, overrides, conflicts) |
 
 **Behaviour**
@@ -433,6 +442,8 @@ carl pack effective [--json]
   Malformed headers are explicit errors; a repository-local pack's composition
   headers take precedence over the bundled copy's when it declares any.
 - The metadata model is versioned: every payload carries `"schemaVersion": 1`.
+- Registry-managed packs expose `"source": "registry:<registry-id>"` plus
+  registry location, relative artifact, and verified SHA-256 provenance.
 - When `.github/carl/profiles.json` exists, `state.active` is driven by the
   additive union of organisation defaults, repository defaults, the active
   profile, and its active role/task overlays. Every profile pack reference
@@ -474,6 +485,103 @@ carl pack effective [--json]
 
 `carl pack show <pack-id>` prints the same pack object under a `"pack"` key
 with `--json`, or a human-readable detail view without it.
+
+**Registry configuration and installation**
+
+Registries are opt-in. There is no built-in or automatically discovered
+registry. `.github/carl/registries.json` is a user-owned committed artefact:
+
+```json
+{
+  "schemaVersion": 1,
+  "registries": [
+    {
+      "id": "team",
+      "location": "https://packs.example.com/carl/index.json"
+    },
+    {
+      "id": "offline",
+      "location": ".carl-registry/index.json"
+    }
+  ]
+}
+```
+
+Remote locations must use HTTPS and cannot contain credentials, query strings,
+or fragments. Local locations are repository-relative JSON paths and cannot
+escape the repository. Existing commands (`list`, `show`, `select`, profiles,
+and `effective`) never fetch registries. Only `registry search`, `install`,
+and `update` access configured sources.
+
+A registry index uses schema version 1:
+
+```json
+{
+  "schemaVersion": 1,
+  "packs": [
+    {
+      "id": "languages/rust",
+      "version": "1.1.0",
+      "artifact": "packs/languages-rust-1.1.0.instructions.md",
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "title": "Rust Pack",
+      "description": "Rust governance guidance."
+    }
+  ]
+}
+```
+
+Artifacts are always relative to the index. A remote artifact therefore stays
+on the same HTTPS origin, while a local artifact stays within the repository.
+Cross-origin redirects, absolute artifacts, traversal, credential-bearing
+URLs, oversized responses, malformed schemas, duplicate releases, and
+invalid IDs, versions, or digests are rejected.
+
+Resolution chooses the highest semantic version deterministically.
+`--version` requests an exact version and `--registry` restricts authority to
+one configured registry. If the winning version exists in multiple registries,
+the command fails as ambiguous until `--registry` is supplied.
+
+Install validates every artifact before any write:
+
+1. fetch the selected relative artifact;
+2. verify its SHA-256 against the configured index;
+3. verify its declared version and composition headers;
+4. resolve and verify unavailable required dependencies from the same
+   registry;
+5. validate the complete resulting pack set and every target path;
+6. write instruction packs and provenance as one rollback-capable operation.
+
+Registry installation never overwrites an unowned repository-local or bundled
+pack. It never writes `runtime.json`, `packs.json`, or `profiles.json`, so the
+pack remains unselected and inactive until explicitly selected.
+
+Installed provenance is deterministic and committed in
+`.github/carl/installed-packs.json`:
+
+```json
+{
+  "schemaVersion": 1,
+  "packs": [
+    {
+      "id": "languages/rust",
+      "version": "1.1.0",
+      "registry": "team",
+      "registryLocation": "https://packs.example.com/carl/index.json",
+      "artifact": "packs/languages-rust-1.1.0.instructions.md",
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "installedPath": ".github/instructions/languages/rust.instructions.md"
+    }
+  ]
+}
+```
+
+`carl pack update` uses each pack's recorded registry and refuses to overwrite
+an installed file whose digest has drifted. It reports `unchanged` when no
+newer version exists and rejects a registry that changes the digest of an
+already recorded version. SHA-256 proves that artifact bytes match the
+configured index; it does **not** prove publisher identity or provide a
+signature trust chain.
 
 `carl pack select` / `carl pack unselect` persist the repository pack
 selection deterministically (deduplicated, sorted by pack ID) in
@@ -583,6 +691,11 @@ overrides) are reported and cause a non-zero exit. With `--json`:
 | `parse .github/carl/packs.json: ...` | Selection artefact is malformed | Fix or delete `.github/carl/packs.json` |
 | `.github/carl/profiles.json validation failed: ...` | Profile schema, context, or references are invalid | Fix the reported profile/default/overlay entry |
 | `unknown profile "<id>"` | The requested profile is not configured | Run `carl pack profile list` |
+| `.github/carl/registries.json does not configure any registries` | Registry search/install was requested without an explicit source | Define a trusted HTTPS or repository-local registry |
+| `... is ambiguous across registries ...` | The same winning pack version is advertised by multiple authorities | Repeat with `--registry <id>` |
+| `SHA-256 mismatch` | Artifact bytes do not match the configured index | Do not install; investigate the registry or transport |
+| `... already exists as an unowned repository-local pack` | Install would overwrite a file not owned by registry provenance | Choose another pack ID or explicitly reconcile ownership |
+| `installed pack ... has drifted` | A registry-managed file changed after installation | Review the local changes before updating |
 | `pack composition conflicts detected` | `carl pack effective` found override or dependency conflicts | Fix the conflicting pack metadata or selection |
 
 With `--json`, errors are emitted as a structured payload on stderr with a
@@ -607,6 +720,8 @@ non-zero exit code:
   metadata headers — never from load order.
 - Composition is conservative: packs add constraints, overridden packs are
   flagged but never removed, and no pack silently disables another.
+- Registry integrity and policy activation are separate: installing a verified
+  artifact records provenance but does not select or activate it.
 
 ---
 

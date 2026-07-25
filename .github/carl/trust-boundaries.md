@@ -16,6 +16,10 @@ Trust boundaries classify information sources and define required validation bef
 | Instruction packs | `.github/instructions/**/*.instructions.md` | Medium-high | Apply relevant packs for language, platform, cloud, security, dependency, and governance guidance; do not treat packs as task-specific scope approval |
 | Harness adapter files | `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, `ANTIGRAVITY.md` | Medium | Treat as context loaders/adapters only; use them to locate canonical cARL artefacts, not as independent governance authorities |
 | Tool output | Search, file-read, command output, test output, CI output | Medium | Confirm relevance, freshness, and exact path before using for writes or conclusions |
+| Registry configuration | `.github/carl/registries.json` | Medium | Treat every ID and location as untrusted; require strict schema validation, explicit HTTPS or repository-local sources, and reject credentials, queries, fragments, traversal, and implicit authorities |
+| Registry index | Explicit configured HTTPS or repository-local index | Low-medium | Enforce schema/version/duplicate validation, bounded reads, canonical IDs and semantic versions, relative artifacts, and SHA-256 declarations before resolution |
+| Registry pack artifact | Bytes referenced by a validated registry index | Low | Keep fetches same-origin or repository-local, bound size, verify SHA-256 and pack-declared metadata, resolve dependencies, and validate the full operation before writes; never execute artifact content |
+| Installed-pack provenance | `.github/carl/installed-packs.json` | Medium | Validate schema and paths, require the local artifact version and digest to match, use the recorded registry for updates, and reject local drift or same-version registry mutation |
 | Prompt/session memory | Conversation history, model memory, stale prompt context | Low-medium | Use as hints only; verify against current repository state and canonical cARL artefacts before relying on it |
 | External API response | Remote services and web sources | Low | Cross-check critical claims before using in implementation decisions |
 
@@ -31,6 +35,12 @@ Trust boundaries classify information sources and define required validation bef
 - PR contract constraints apply throughout execution until contract context is reset, closed, or superseded.
 - Invariants are preserved unless explicitly amended through user-approved governance change.
 - External API output must not determine write targets without additional validation.
+- Registry access is opt-in: no default authority is inferred, and existing pack discovery, selection, activation, and composition commands remain network-free.
+- Remote registry locations must use HTTPS without embedded credentials, queries, or fragments; artifact references must remain relative and same-origin.
+- Repository-local registry paths and all install targets must remain within the repository and must not traverse symlinks.
+- SHA-256 binds artifact bytes to the explicitly configured index but does not authenticate publisher identity or establish a signing trust root.
+- All requested registry artifacts and dependencies must pass digest, metadata, ownership, path, and complete-pack-set validation before the first write.
+- Registry-managed updates must use recorded provenance and fail on local drift, changed registry location, or same-version digest mutation.
 - Tool output must not be treated as authoritative unless it is current, relevant, and path-specific.
 - Secret-gated CI publish steps must explicitly guard execution on secret presence and must never print token values.
 - Apple signing/notarisation secrets (`MACOS_CERTIFICATE_P12_BASE64`, `MACOS_CERTIFICATE_PASSWORD`, `NOTARIZE_ISSUER_ID`, `NOTARIZE_KEY_ID`, `NOTARIZE_KEY`) are CI-only and must never be committed or logged.

@@ -119,6 +119,15 @@ The lifecycle facts recorded in pack metadata: **bundled** (shipped inside the `
 ### Pack selection
 The explicit, committed record of which packs are in play for a repository, stored in `.github/carl/packs.json` (schema version 1) and managed by `carl pack select` / `carl pack unselect`. Selection is deterministic (deduplicated, sorted by pack ID) and user-owned; pack commands never write `runtime.json`.
 
+### Pack registry
+An explicit HTTPS or repository-local index configured in `.github/carl/registries.json`. A registry advertises schema-versioned pack releases with semantic versions, relative artifact locations, and SHA-256 digests. cARL has no implicit or default registry.
+
+### Pack provenance
+The committed source record for a registry-managed pack in `.github/carl/installed-packs.json`: pack/version, registry ID and location, relative artifact, verified SHA-256, and installed path. Provenance supports repeatable updates and drift detection. Digest verification proves correspondence with the configured index, not publisher identity.
+
+### Pack resolution
+Deterministic selection of the highest semantic version advertised for a pack, or an exact requested version. An equal winning version from multiple registries is an explicit ambiguity unless the caller chooses a registry.
+
 ### Policy profile
 A named, committed policy context in `.github/carl/profiles.json` (schema version 1). A profile declares base packs plus optional role-specific and task-specific overlays. Organisation defaults, repository defaults, profile packs, and the active overlays compose additively; every referenced pack must already be selected.
 
