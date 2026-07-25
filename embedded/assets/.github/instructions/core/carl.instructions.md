@@ -1,4 +1,4 @@
-<!-- version: 1.3.0 -->
+<!-- version: 1.3.1 -->
 # cARLv2 Cognition Governance Pack
 
 Defines the cARLv2 governance model that coordinates shaping, planning, execution, validation, reconciliation, and context reset.
@@ -7,7 +7,7 @@ Defines the cARLv2 governance model that coordinates shaping, planning, executio
 
 cARL artefacts are the canonical source of durable governance truth.
 
-Harness-specific files such as `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, and `ANTIGRAVITY.md` are adapters/loaders. They may load, summarise, or route agents toward cARL, but they are not independent authorities.
+Harness-specific files such as `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/carl.mdc`, and `.agents/rules/carl.md` are adapters/loaders. They may load, summarise, or route agents toward cARL, but they are not independent authorities.
 
 If prompt/session memory conflicts with cARL artefacts, trust cARL and report the conflict.
 

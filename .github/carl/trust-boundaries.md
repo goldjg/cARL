@@ -1,4 +1,4 @@
-<!-- version: 1.3.0 -->
+<!-- version: 1.3.1 -->
 # Trust Boundaries
 
 Trust boundaries classify information sources and define required validation before shaping, planning, execution, validation, or reconciliation decisions.
@@ -14,7 +14,7 @@ Trust boundaries classify information sources and define required validation bef
 | Prompt-as-code plans | `.github/carl/plans/*.md` | High when active | Treat as task contracts when referenced by the active PR contract or user; verify status and scope before implementation |
 | Cognitive cache | `.github/carl/memory.md` | Medium-high | Treat as durable guidance; validate against current repository state if stale, conflicting, or structurally outdated |
 | Instruction packs | `.github/instructions/**/*.instructions.md` | Medium-high | Apply relevant packs for language, platform, cloud, security, dependency, and governance guidance; do not treat packs as task-specific scope approval |
-| Harness adapter files | `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, `ANTIGRAVITY.md` | Medium | Treat as context loaders/adapters only; use them to locate canonical cARL artefacts, not as independent governance authorities |
+| Harness adapter files | `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/carl.mdc`, `.agents/rules/carl.md` | Medium | Treat as context loaders/adapters only; use them to locate canonical cARL artefacts, not as independent governance authorities |
 | Tool output | Search, file-read, command output, test output, CI output | Medium | Confirm relevance, freshness, and exact path before using for writes or conclusions |
 | Registry configuration | `.github/carl/registries.json` | Medium | Treat every ID and location as untrusted; require strict schema validation, explicit HTTPS or repository-local sources, and reject credentials, queries, fragments, traversal, and implicit authorities |
 | Registry index | Explicit configured HTTPS or repository-local index | Low-medium | Enforce schema/version/duplicate validation, bounded reads, canonical IDs and semantic versions, relative artifacts, and SHA-256 declarations before resolution |

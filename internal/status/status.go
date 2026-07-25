@@ -111,7 +111,7 @@ func (c *Command) RunInDir(rootDir string) error {
 	harnessSummary := harness.Summarize(harnessHealth)
 
 	fmt.Println("Harness Summary:")
-	fmt.Printf("  Active adapters:  %d\n", harnessSummary.Active)
+	fmt.Printf("  Detected adapters: %d\n", harnessSummary.Detected)
 	fmt.Printf("  Missing adapters: %d\n", harnessSummary.Missing)
 	fmt.Printf("  Drifted adapters: %d\n", harnessSummary.Drifted)
 	fmt.Printf("  Healthy adapters: %d\n", harnessSummary.Healthy)

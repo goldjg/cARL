@@ -1,4 +1,4 @@
-<!-- version: 1.6.0 -->
+<!-- version: 1.7.0 -->
 # cARL CLI Reference
 
 The `carl` CLI installs and manages the cARL governance runtime inside a repository.
@@ -221,7 +221,7 @@ carl status
 3. Compares each managed repairable artefact against its embedded canonical
    version (byte-for-byte), classifying files as missing (absent from disk) or
    drifted (present but content differs).
-4. Inspects harness adapters and reports a separate summary of active, missing,
+4. Inspects harness adapters and reports a separate summary of detected, missing,
    drifted, healthy, and production adapters.
 5. Reports overall runtime status: `Healthy`, `Drifted`, or `Incomplete`.
 
@@ -251,7 +251,7 @@ Drifted Artefacts:
   none
 
 Harness Summary:
-  Active adapters:  5
+  Detected adapters: 5
   Missing adapters: 0
   Drifted adapters: 0
   Healthy adapters: 5
@@ -271,7 +271,7 @@ Drifted Artefacts:
   .github/copilot-instructions.md
 
 Harness Summary:
-  Active adapters:  4
+  Detected adapters: 4
   Missing adapters: 1
   Drifted adapters: 1
   Healthy adapters: 3
@@ -1191,11 +1191,14 @@ Harness Adapters:
 
 | Status | Meaning |
 |---|---|
-| `production` | Tested and production-validated; primary development target |
+| `production` | Tested and validated end-to-end in the native harness |
 | `experimental` | Partial validation; governance loading under investigation |
-| `theoretical` | Adapter exists; not yet validated end-to-end |
+| `theoretical` | Adapter is implemented; not yet validated end-to-end in the native harness |
 
-> **Note:** Content generation and sync (populating adapter files from cARL artefacts) is available for all adapters via `carl harness sync`.
+> **Note:** Content generation and sync are available for all five adapters.
+> Copilot, Claude Code, and Codex are proven production harnesses. Cursor and
+> Antigravity have implemented shims but have not yet been tested in their
+> native harnesses.
 
 ---
 
@@ -1214,7 +1217,7 @@ carl harness status
 1. For each known adapter, checks whether its detection file is present in the repository.
 2. For adapters with defined adapter files, compares adapter file bytes against the canonical embedded source.
 3. Reports presence as `Present` or `Missing`, and sync health as `Synced`, `Drifted`, `Missing`, or `-`.
-4. Prints a summary line with active, missing, drifted, and healthy adapter counts.
+4. Prints a summary line with detected, missing, drifted, and healthy adapter counts.
 
 **Output (Copilot synced)**
 
@@ -1227,7 +1230,7 @@ Harness Adapter Status:
   cursor        Cursor               theoretical   Missing  Missing
   antigravity   Antigravity          theoretical   Missing  Missing
 
-1 active, 4 missing, 0 drifted, 1 healthy.
+1 detected, 4 missing, 0 drifted, 1 healthy.
 ```
 
 **Output (drifted adapter)**
@@ -1241,17 +1244,17 @@ Harness Adapter Status:
   cursor        Cursor               theoretical   Missing  Missing
   antigravity   Antigravity          theoretical   Missing  Missing
 
-2 active, 3 missing, 1 drifted, 1 healthy.
+2 detected, 3 missing, 1 drifted, 1 healthy.
 ```
 
 **Presence and sync values**
 
 | Status | Meaning |
 |---|---|
-| `Present` | Detection file is present; harness is active in the repository |
+| `Present` | Detection file is present; this does not prove governance activation |
 | `Missing` | Detection file or managed adapter file is absent |
 | `Drifted` | Adapter file exists but differs from the canonical embedded source |
-| `Synced` | Adapter file exists and matches the canonical embedded source |
+| `Synced` | Managed adapter files exist and match their canonical embedded sources; this does not prove activation |
 | `-` | No presence or sync check is available for this adapter |
 
 **Detection file by adapter**
@@ -1381,7 +1384,7 @@ Repository Runtime:
   Not installed in the current repository.
 Harness Shims:
   Harness       Support      File                                Version
-  copilot       production   .github/copilot-instructions.md     2.1.0
+  copilot       production   .github/copilot-instructions.md     2.1.1
   claude        production   CLAUDE.md                           unknown
   codex         production   AGENTS.md                           not installed
   cursor        theoretical  .cursor/rules/carl.mdc              not installed
@@ -1412,7 +1415,7 @@ Installed Packs:
 
 Harness Shims:
   Harness       Support      File                                Version
-  copilot       production   .github/copilot-instructions.md     2.1.0
+  copilot       production   .github/copilot-instructions.md     2.1.1
   claude        production   CLAUDE.md                           1.0.0
   codex         production   AGENTS.md                           unknown
   cursor        theoretical  .cursor/rules/carl.mdc              not installed
@@ -1430,7 +1433,7 @@ Instruction Packs:
 
 Harness Shims:
   Harness       Support      File                              Bundled   Installed  State
-  copilot       production   .github/copilot-instructions.md   2.1.0     1.0.0      older
+  copilot       production   .github/copilot-instructions.md   2.1.1     1.0.0      older
   claude        production   CLAUDE.md                         unknown   unknown    unknown
   codex         production   AGENTS.md                         unknown   missing    missing
 ```

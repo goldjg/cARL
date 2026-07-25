@@ -1,4 +1,4 @@
-<!-- version: 1.3.0 -->
+<!-- version: 1.3.1 -->
 # PR Contract Pack
 
 Defines the PR contract controls that constrain implementation scope and govern escalation.
@@ -82,7 +82,7 @@ Do not silently broaden scope.
 
 Harness loader or adapter changes are governance-sensitive.
 
-When changing files such as `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, or `ANTIGRAVITY.md`, the PR contract must explicitly cover:
+When changing files such as `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/carl.mdc`, or `.agents/rules/carl.md`, the PR contract must explicitly cover:
 
 - which harness files may change;
 - whether embedded asset copies must change;

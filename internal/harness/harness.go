@@ -39,13 +39,14 @@ type Adapter struct {
 	// Name is the human-readable display name (e.g. "GitHub Copilot").
 	Name string
 	// Support indicates implementation maturity:
-	//   "production"   -- tested, production-validated, primary development target
+	//   "production"   -- tested and validated end-to-end in the native harness
 	//   "experimental" -- partial validation, governance loading under investigation
-	//   "theoretical"  -- adapter exists, not yet validated end-to-end
+	//   "theoretical"  -- adapter is implemented, but not validated end-to-end
 	Support string
-	// DetectionFile is the repo-relative path whose presence indicates this
-	// harness is active in the repository. For shim adapters this is the
-	// harness-specific shim file, not the shared loader. Empty for planned adapters.
+	// DetectionFile is the repo-relative path whose presence detects this
+	// adapter in the repository. Presence does not prove governance activation.
+	// For shim adapters this is the harness-specific shim file, not the shared
+	// loader. Empty for planned adapters.
 	DetectionFile string
 	// Files lists all files managed by this adapter, each mapped to its own
 	// embedded source. For shim adapters (all except copilot) this includes
@@ -243,8 +244,8 @@ func (c *Command) RunStatusInDir(rootDir string) error {
 	fmt.Println()
 
 	summary := Summarize(health)
-	fmt.Printf("%d active, %d missing, %d drifted, %d healthy.\n",
-		summary.Active, summary.Missing, summary.Drifted, summary.Healthy)
+	fmt.Printf("%d detected, %d missing, %d drifted, %d healthy.\n",
+		summary.Detected, summary.Missing, summary.Drifted, summary.Healthy)
 	return nil
 }
 

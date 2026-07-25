@@ -1,4 +1,4 @@
-# version: 1.1.0
+# version: 1.1.1
 invariants:
   - id: no-hardcoded-secrets
     name: No hardcoded secrets
@@ -52,7 +52,7 @@ invariants:
 
   - id: harness-adapters-not-authorities
     name: Harness adapters are not authorities
-    rule: Harness-specific files such as .github/copilot-instructions.md, CLAUDE.md, AGENTS.md, .cursorrules, and ANTIGRAVITY.md are adapters/loaders that must route agents to canonical cARL artefacts.
+    rule: Harness-specific files such as .github/copilot-instructions.md, CLAUDE.md, AGENTS.md, .cursor/rules/carl.mdc, and .agents/rules/carl.md are adapters/loaders that must route agents to canonical cARL artefacts.
     severity: high
 
   - id: explicit-carl-lifecycle

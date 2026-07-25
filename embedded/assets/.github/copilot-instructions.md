@@ -1,4 +1,4 @@
-<!-- version: 2.1.0 -->
+<!-- version: 2.1.1 -->
 # Shared cARL Adapter Loader
 
 This repository uses **cARL** as its authoritative agent governance system.
@@ -23,7 +23,7 @@ Canonical governance lives in:
 6. `.github/carl/plans/`
 7. `.github/instructions/`
 
-Harness-specific files such as `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, and `ANTIGRAVITY.md` are adapters. They may load, summarise, or route to cARL, but they are not the canonical governance authority.
+Harness-specific files such as `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/carl.mdc`, and `.agents/rules/carl.md` are adapters. They may load, summarise, or route to cARL, but they are not the canonical governance authority.
 
 If prompt/session memory conflicts with cARL artefacts, trust cARL and report the conflict.
 

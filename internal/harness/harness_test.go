@@ -171,7 +171,7 @@ func TestHarness_Status_CopilotSynced(t *testing.T) {
 		t.Errorf("expected synced copilot adapter in status output; got:\n%s", output)
 	}
 
-	wantLine := "1 active, 4 missing, 0 drifted, 1 healthy."
+	wantLine := "1 detected, 4 missing, 0 drifted, 1 healthy."
 	if !strings.Contains(output, wantLine) {
 		t.Errorf("expected %q in status output; got:\n%s", wantLine, output)
 	}
@@ -196,7 +196,7 @@ func TestHarness_Status_CopilotMissing(t *testing.T) {
 		t.Errorf("expected missing copilot adapter in status output; got:\n%s", output)
 	}
 
-	wantLine := "0 active, 5 missing, 0 drifted, 0 healthy."
+	wantLine := "0 detected, 5 missing, 0 drifted, 0 healthy."
 	if !strings.Contains(output, wantLine) {
 		t.Errorf("expected %q in status output; got:\n%s", wantLine, output)
 	}
@@ -483,9 +483,29 @@ func TestHarness_Status_AllDetected(t *testing.T) {
 		}
 	})
 
-	wantLine := "5 active, 0 missing, 0 drifted, 5 healthy."
+	wantLine := "5 detected, 0 missing, 0 drifted, 5 healthy."
 	if !strings.Contains(output, wantLine) {
 		t.Errorf("expected %q in status output; got:\n%s", wantLine, output)
+	}
+	if strings.Contains(output, " active,") {
+		t.Errorf("status output must not present detection as activation; got:\n%s", output)
+	}
+}
+
+// Contract assertion 2: detection counts filesystem presence without claiming
+// that a harness loaded or activated governance.
+func TestHarness_SummarizeDetectedCompatibility(t *testing.T) {
+	health := []harness.AdapterHealth{
+		{Presence: harness.PresencePresent, Sync: harness.SyncSynced},
+		{Presence: harness.PresenceMissing, Sync: harness.SyncMissing},
+	}
+
+	summary := harness.Summarize(health)
+	if summary.Detected != 1 {
+		t.Fatalf("Detected = %d; want 1", summary.Detected)
+	}
+	if summary.Active != summary.Detected {
+		t.Fatalf("compatibility Active = %d; want Detected %d", summary.Active, summary.Detected)
 	}
 }
 

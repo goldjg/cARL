@@ -1,4 +1,4 @@
-<!-- version: 1.2.0 -->
+<!-- version: 1.2.1 -->
 # Security Pack
 
 Defines baseline security expectations for implementation, validation, and governance-sensitive changes.
@@ -23,8 +23,8 @@ Security-sensitive cARL surfaces include:
 - `.github/copilot-instructions.md`
 - `CLAUDE.md`
 - `AGENTS.md`
-- `.cursorrules`
-- `ANTIGRAVITY.md`
+- `.cursor/rules/carl.mdc`
+- `.agents/rules/carl.md`
 - `.github/carl/invariants.yml`
 - `.github/carl/trust-boundaries.md`
 - `.github/carl/tool-policy.yml`
