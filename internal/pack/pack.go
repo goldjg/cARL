@@ -38,18 +38,21 @@ type Artifacts interface {
 
 // Command implements `carl pack`.
 type Command struct {
-	arts Artifacts
+	arts    Artifacts
+	fetcher RegistryFetcher
 }
 
 // New returns a new pack Command.
-func New(arts Artifacts) *Command { return &Command{arts: arts} }
+func New(arts Artifacts) *Command {
+	return &Command{arts: arts, fetcher: newHTTPRegistryFetcher()}
+}
 
 // Name returns the command name.
 func (c *Command) Name() string { return "pack" }
 
 // Synopsis returns a short description.
 func (c *Command) Synopsis() string {
-	return "Discover, inspect, select, and compose instruction packs"
+	return "Discover, verify, install, select, and compose instruction packs"
 }
 
 // PackMetadata is the versioned runtime metadata model for a pack.
@@ -66,6 +69,16 @@ type PackMetadata struct {
 	Dependencies   []PackDependency `json:"dependencies,omitempty"`
 	Compatibility  *Compatibility   `json:"compatibility,omitempty"`
 	Precedence     *Precedence      `json:"precedence,omitempty"`
+	Provenance     *PackProvenance  `json:"provenance,omitempty"`
+}
+
+// PackProvenance identifies the registry index and digest that supplied a
+// registry-managed repository-local pack.
+type PackProvenance struct {
+	Registry         string `json:"registry"`
+	RegistryLocation string `json:"registryLocation"`
+	Artifact         string `json:"artifact"`
+	SHA256           string `json:"sha256"`
 }
 
 // PackState captures current observed pack state.
@@ -116,6 +129,7 @@ type errorPayload struct {
 type packFileMetadata struct {
 	Path        string
 	Version     string
+	SHA256      string
 	Title       string
 	Description string
 	Requires    []string
@@ -126,7 +140,7 @@ type packFileMetadata struct {
 }
 
 // Run dispatches to pack subcommands.
-func (c *Command) Run(_ context.Context, args []string) error {
+func (c *Command) Run(ctx context.Context, args []string) error {
 	if len(args) == 0 || args[0] == "--help" || args[0] == "-h" {
 		printUsage()
 		return nil
@@ -166,6 +180,12 @@ func (c *Command) Run(_ context.Context, args []string) error {
 		return c.RunEffectiveInDir(cwd, jsonOut)
 	case "profile":
 		return c.runProfile(cwd, args[1:])
+	case "registry":
+		return c.runRegistry(ctx, cwd, args[1:])
+	case "install":
+		return c.runInstall(ctx, cwd, args[1:])
+	case "update":
+		return c.runUpdate(ctx, cwd, args[1:])
 	default:
 		return fmt.Errorf("unknown subcommand %q\n\nRun 'carl pack --help' for usage", args[0])
 	}
@@ -492,6 +512,9 @@ func printUsage() {
 	fmt.Println("  unselect <pack-id>...  Remove packs from the repository selection")
 	fmt.Println("  effective              Show the computed effective pack set")
 	fmt.Println("  profile                Inspect and activate policy profiles")
+	fmt.Println("  registry               List and search explicit pack registries")
+	fmt.Println("  install <pack-id>       Verify and install a registry pack")
+	fmt.Println("  update [<pack-id>...]   Update registry-managed packs")
 	fmt.Println()
 	fmt.Println("Options:")
 	fmt.Println("  --json         Print machine-readable JSON output")
@@ -523,6 +546,17 @@ func printPackDetails(p PackMetadata) {
 	fmt.Printf("Category:          %s\n", p.Category)
 	fmt.Printf("Source:            %s\n", p.Source)
 	fmt.Printf("State:             %s\n", summarizeState(p.State))
+	fmt.Println()
+
+	fmt.Println("Provenance:")
+	if p.Provenance == nil {
+		fmt.Println("  none recorded")
+	} else {
+		fmt.Printf("  registry: %s\n", p.Provenance.Registry)
+		fmt.Printf("  location: %s\n", p.Provenance.RegistryLocation)
+		fmt.Printf("  artifact: %s\n", p.Provenance.Artifact)
+		fmt.Printf("  sha256:   %s\n", p.Provenance.SHA256)
+	}
 	fmt.Println()
 
 	fmt.Println("Dependencies:")
@@ -625,6 +659,33 @@ func (c *Command) discover(rootDir string) ([]PackMetadata, error) {
 	if err != nil {
 		return nil, err
 	}
+	installed, err := ReadInstalledPacks(rootDir)
+	if err != nil {
+		return nil, err
+	}
+	provenanceByID := make(map[string]InstalledPack, len(installed.Packs))
+	for _, entry := range installed.Packs {
+		localPack, ok := local[entry.ID]
+		if !ok {
+			return nil, fmt.Errorf(
+				"%s: registry-managed pack %s is missing from %s",
+				InstalledPacksFileName, entry.ID, entry.InstalledPath,
+			)
+		}
+		if localPack.Version != entry.Version {
+			return nil, fmt.Errorf(
+				"%s: pack %s declares version %q, provenance records %q",
+				InstalledPacksFileName, entry.ID, localPack.Version, entry.Version,
+			)
+		}
+		if localPack.SHA256 != entry.SHA256 {
+			return nil, fmt.Errorf(
+				"%s: pack %s has drifted (expected SHA-256 %s, got %s)",
+				InstalledPacksFileName, entry.ID, entry.SHA256, localPack.SHA256,
+			)
+		}
+		provenanceByID[entry.ID] = entry
+	}
 
 	idsMap := map[string]bool{}
 	for id := range bundled {
@@ -673,6 +734,17 @@ func (c *Command) discover(rootDir string) ([]PackMetadata, error) {
 		// Legacy compatibility fallback. When profiles.json exists this is
 		// replaced below with explicit profile-driven activation.
 		state.Active = state.Selected
+		var provenance *PackProvenance
+		source := deriveSource(state)
+		if entry, ok := provenanceByID[id]; ok {
+			source = "registry:" + entry.Registry
+			provenance = &PackProvenance{
+				Registry:         entry.Registry,
+				RegistryLocation: entry.RegistryLocation,
+				Artifact:         entry.Artifact,
+				SHA256:           entry.SHA256,
+			}
+		}
 
 		// The repository-local copy is authoritative for composition
 		// metadata when it declares any; otherwise the bundled copy applies.
@@ -700,11 +772,12 @@ func (c *Command) discover(rootDir string) ([]PackMetadata, error) {
 			Title:          title,
 			Description:    description,
 			Category:       category,
-			Source:         deriveSource(state),
+			Source:         source,
 			State:          state,
 			OwnedArtifacts: owned,
 			Dependencies:   deps,
 			Precedence:     precedence,
+			Provenance:     provenance,
 		})
 	}
 
@@ -846,6 +919,7 @@ func parsePackFileMetadata(packPath string, data []byte) (packFileMetadata, erro
 	m := packFileMetadata{
 		Path:        path.Clean(strings.ReplaceAll(packPath, "\\", "/")),
 		Version:     extractVersion(data),
+		SHA256:      digestSHA256(data),
 		Title:       extractTitle(data),
 		Description: extractDescription(data),
 	}

@@ -128,7 +128,10 @@ Repositories already running AADLC can migrate their accumulated durable knowled
 │   ├── memory.md                    # Durable architectural truth cache
 │   ├── current-pr-contract.md          # Active PR contract (populate before each PR)
 │   ├── current-pr-contract.template.md # Blank template — copy to current-pr-contract.md
+│   ├── packs.json                      # User-owned repository pack selection (when configured)
 │   ├── profiles.json                   # User-owned named profiles and active role/task context (when configured)
+│   ├── registries.json                 # Explicit pack registry locations (when configured)
+│   ├── installed-packs.json            # Verified registry-pack provenance (when installed)
 │   ├── invariants.yml               # Machine-readable governance invariants
 │   ├── trust-boundaries.md          # Trust boundary definitions and crossing rules
 │   ├── tool-policy.yml              # Tool permission tier policy (Tier 0/1/2)
@@ -327,9 +330,10 @@ See [CLI.md](CLI.md) for the full command reference.
 ### 6. Explore and compose packs
 
 List every discoverable instruction pack (bundled in the binary, present in
-the repository, or selected in `.github/carl/packs.json`), inspect one pack's
-versioned metadata, select packs for the repository, activate a named
-profile/role/task context, and compute the effective pack set:
+the repository, selected in `.github/carl/packs.json`, or installed from an
+explicit registry), inspect one pack's versioned metadata, select packs for
+the repository, activate a named profile/role/task context, and compute the
+effective pack set:
 
 ```sh
 carl pack list
@@ -340,6 +344,25 @@ carl pack profile list
 carl pack profile activate developer
 carl pack effective
 ```
+
+Repositories may optionally define HTTPS or repository-local registry indexes
+in `.github/carl/registries.json`. Registry access happens only when a
+registry search, install, or update command is invoked:
+
+```sh
+carl pack registry list
+carl pack registry search rust
+carl pack install languages/rust
+carl pack update languages/rust
+```
+
+Registry artifacts must be relative to their configured index and carry a
+SHA-256 digest. cARL verifies the digest and pack metadata before writing,
+records deterministic provenance in `.github/carl/installed-packs.json`, and
+refuses to overwrite unowned repository-local packs or locally drifted
+registry-managed packs. SHA-256 verifies integrity against the configured
+index; it does not authenticate publisher identity. Installation does not
+select or activate a pack and never writes `.github/carl/runtime.json`.
 
 All subcommands support `--json` for machine-readable output; `list`, `show`,
 `profile list`, and `effective` work outside an initialised repository
