@@ -1,6 +1,7 @@
 package repomap_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -49,7 +50,8 @@ func TestMap_CreatesOutputFile(t *testing.T) {
 	}
 }
 
-// Contract assertion 2: output JSON contains generated_by, last_updated, and _note.
+// Contract assertion 2: output JSON contains schema_version, generated_by,
+// last_updated, and _note.
 func TestMap_ValidJSONWithRequiredFields(t *testing.T) {
 	dir := t.TempDir()
 	cmd := repomap.New()
@@ -69,6 +71,9 @@ func TestMap_ValidJSONWithRequiredFields(t *testing.T) {
 	if err := json.Unmarshal(data, &m); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
+	if m.SchemaVersion != repomap.SchemaVersion {
+		t.Errorf("schema_version: got %d, want %d", m.SchemaVersion, repomap.SchemaVersion)
+	}
 	if m.GeneratedBy != "carl map" {
 		t.Errorf("generated_by: got %q, want %q", m.GeneratedBy, "carl map")
 	}
@@ -77,6 +82,9 @@ func TestMap_ValidJSONWithRequiredFields(t *testing.T) {
 	}
 	if m.Note == "" {
 		t.Error("_note must not be empty")
+	}
+	if len(m.Graph.Nodes) == 0 {
+		t.Error("graph.nodes must not be empty")
 	}
 }
 
@@ -292,12 +300,23 @@ func TestMap_Idempotent(t *testing.T) {
 	dir := t.TempDir()
 	cmd := repomap.New()
 
-	for i := range 2 {
+	var stable []byte
+	for i := range 3 {
 		_ = captureStdout(t, func() {
 			if err := cmd.RunInDir(dir); err != nil {
 				t.Fatalf("run %d: %v", i, err)
 			}
 		})
+		data, err := os.ReadFile(filepath.Join(dir, ".github", "carl", "repo-map.json"))
+		if err != nil {
+			t.Fatalf("read output after run %d: %v", i, err)
+		}
+		if i == 1 {
+			stable = data
+		}
+		if i == 2 && !bytes.Equal(stable, data) {
+			t.Error("successive runs must be byte-identical after the generated output is present")
+		}
 	}
 
 	data, err := os.ReadFile(filepath.Join(dir, ".github", "carl", "repo-map.json"))
@@ -469,5 +488,8 @@ func TestMap_PrintsSummary(t *testing.T) {
 	}
 	if !strings.Contains(output, repomap.OutputFile) {
 		t.Errorf("expected output file path in summary; got: %q", output)
+	}
+	if !strings.Contains(output, "Graph nodes:") || !strings.Contains(output, "Graph edges:") {
+		t.Errorf("expected graph counts in summary; got: %q", output)
 	}
 }

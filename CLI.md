@@ -1,4 +1,4 @@
-<!-- version: 1.5.0 -->
+<!-- version: 1.6.0 -->
 # cARL CLI Reference
 
 The `carl` CLI installs and manages the cARL governance runtime inside a repository.
@@ -299,7 +299,7 @@ No cARL runtime installed.
 ### `carl map`
 
 Generates and updates `.github/carl/repo-map.json` by deriving the repository
-structure from the filesystem.
+inventory and an evidence-scoped cognitive graph from the filesystem.
 
 **Usage**
 
@@ -317,7 +317,14 @@ carl map
 5. Lists GitHub Actions workflows from `.github/workflows/`.
 6. Lists governance artefacts from `.github/carl/`.
 7. Lists root-level documentation files.
-8. Writes the result to `.github/carl/repo-map.json`.
+8. Discovers instruction-pack definitions as policy nodes.
+9. Parses repository-local Go imports without compiling or executing code.
+10. Builds stable component and artefact nodes, containment and dependency
+    edges, direct reverse-dependency change impact, criticality and
+    trust-boundary classifications, and policy attachment points.
+11. Reports evidence coverage for ownership, dependencies, data flows, trust
+    boundaries, criticality, policy attachments, and change impact.
+12. Writes the result to `.github/carl/repo-map.json`.
 
 The command is idempotent — running it again updates the file in place.
 `.git/`, `node_modules/`, and `vendor/` are always excluded from the scan.
@@ -332,12 +339,15 @@ Repo map updated: .github/carl/repo-map.json
   Workflows:     1
   Governance:    8
   Documentation: 7
+  Graph nodes:   74
+  Graph edges:   91
 ```
 
 **Generated file structure**
 
 ```json
 {
+  "schema_version": 1,
   "_note": "Repository map derived by `carl map`. Re-run to update after structural changes.",
   "generated_by": "carl map",
   "last_updated": "2026-06-18",
@@ -358,7 +368,40 @@ Repo map updated: .github/carl/repo-map.json
   ],
   "documentation": [
     { "path": "README.md", "purpose": "Repository overview and pack catalogue" }
-  ]
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "component:internal/mylib",
+        "kind": "package",
+        "path": "internal/mylib",
+        "purpose": "Implements the mylib subsystem.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Implements the mylib subsystem.",
+        "change_impact": ["component:cmd/myapp"]
+      }
+    ],
+    "edges": [
+      {
+        "from": "component:cmd/myapp",
+        "to": "component:internal/mylib",
+        "type": "depends_on",
+        "evidence": ["cmd/myapp/main.go"]
+      }
+    ],
+    "coverage": {
+      "ownership": {
+        "status": "unavailable",
+        "detail": "Ownership is not inferred. No owner is reported without a supported authoritative ownership source."
+      },
+      "dependencies": {
+        "status": "partial",
+        "detail": "Repository-local Go import declarations are derived statically; dependencies in other languages and dynamic dependencies are not inferred."
+      }
+    }
+  }
 }
 ```
 
@@ -366,6 +409,17 @@ Repo map updated: .github/carl/repo-map.json
 
 - Directory purpose descriptions are derived from Go `// Package ...` or
   `// Command ...` doc comments, well-known path heuristics, or left blank.
+- Graph node IDs and edges are sorted deterministically and contain only
+  repository-relative paths.
+- `contains` edges describe repository structure. `depends_on` edges describe
+  observed repository-local Go imports.
+- `change_impact` contains direct reverse Go-import dependants only. It is not
+  transitive and does not guarantee runtime impact.
+- Static imports are not treated as runtime data flow. Ownership is not
+  guessed. `coverage` makes these evidence limits explicit.
+- Policy nodes identify definitions and component/package nodes identify
+  possible attachment points. They do not claim that a policy is active; use
+  `carl trace` for active policy provenance.
 - The generated file itself appears in the `governance` section on subsequent runs.
 - Run `carl map` after adding new packages, workflows, or documentation to keep
   the map current.

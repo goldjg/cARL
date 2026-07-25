@@ -1,18 +1,19 @@
-<!-- version: 1.8.0 -->
+<!-- version: 1.9.0 -->
 # Current PR Contract
 
 ## Goal
 
-Implement Pack Phase 5: Policy Provenance and Explanation:
+Implement Pack Phase 6: Cognitive Repository Graph as a bounded,
+backward-compatible extension of `carl map`:
 
-1. Add top-level `carl explain <pack-id>` and `carl trace` commands.
-2. Explain pack-level policy provenance from canonical repository state:
-   source, canonical definition, selection/profile activation, dependency
-   expansion, precedence, and override decisions.
-3. Report deterministic, schema-versioned human and JSON output.
-4. Preserve local-only, read-only, offline behaviour.
-5. State explicitly that the commands report policy evaluation provenance,
-   not hidden model reasoning or chain-of-thought.
+1. Add a schema-versioned graph to `.github/carl/repo-map.json`.
+2. Represent repository components, key artefacts, Go package dependencies,
+   trust-boundary classifications, policy attachment points, criticality,
+   agent-relevant context, and direct change impact.
+3. Report the evidence coverage and limitations of ownership, dependency,
+   data-flow, policy, and change-impact knowledge.
+4. Preserve deterministic, local-only, offline behaviour and all existing
+   inventory fields consumed by `carl reconcile`.
 
 ## Contract status
 
@@ -20,96 +21,96 @@ complete
 
 ## Previous contract
 
-Pack Phase 4 is delivered. Its completed contract remains historical evidence;
-the durable registry, installation, integrity, and offline-first constraints
-promoted to memory, trust boundaries, and architecture remain binding.
+Pack Phase 5 is delivered. Its completed contract is historical evidence.
+The durable deterministic, schema-versioned, local-only, provenance, and
+diagnostic-not-authoritative constraints promoted to memory, architecture,
+and trust boundaries remain binding.
 
 ## Non-goals
 
-- No parsing of natural-language instruction text into individual rules.
+- No runtime instrumentation or dynamic data-flow tracing.
+- No speculative ownership, runtime-flow, or policy-activation inference.
+- No replacement of `carl trace` as the policy activation authority.
+- No natural-language parsing of documentation or instruction-pack rules.
 - No compiled policy intermediate representation.
-- No hidden model reasoning, chain-of-thought, prompt, or session inspection.
-- No mutation of selection, profiles, registries, installed provenance, or
-  runtime state.
-- No conflict auto-resolution or change to existing composition semantics.
-- No new registry, publishing, signing, repository-graph, harness, CI, or
-  release behaviour.
+- No repository-graph query language, visual UI, database, or remote service.
+- No changes to `carl reconcile` output or managed-marker semantics.
 - No new third-party dependencies.
 
 ## Approved scope
 
-- `cmd/carl/main.go`
-- `internal/pack/explain.go` (new)
-- `internal/pack/explain_command.go` (new)
-- `internal/pack/explain_test.go` (new)
-- Focused existing tests under `internal/pack/` if required
-- `.github/carl/plans/pack-phase5-policy-provenance.md` (new)
+- `internal/repomap/repomap.go`
+- `internal/repomap/graph.go` (new)
+- `internal/repomap/repomap_test.go`
+- `internal/repomap/graph_test.go` (new)
+- Focused existing tests under `internal/reconcile/` if compatibility requires
+- `.github/carl/current-pr-contract.md`
+- `.github/carl/plans/pack-phase6-cognitive-repository-graph.md` (new)
+- `.github/carl/repo-map.json`
+- `.github/carl/repo-map.example.json`
 - `README.md`, `CLI.md`, `ARCHITECTURE.md`, `GLOSSARY.md`, `ROADMAP.md`
 - `.github/carl/memory.md`
 - `embedded/assets/.github/carl/memory.md`
 - `.github/carl/trust-boundaries.md`
-- This contract file
 
 ## Forbidden scope
 
-- No writes to `.github/carl/runtime.json`, `.github/carl/packs.json`,
-  `.github/carl/profiles.json`, `.github/carl/registries.json`, or
-  `.github/carl/installed-packs.json`.
-- No network access from `explain` or `trace`.
-- No execution of instruction-pack content.
-- No inference of policy order from filesystem enumeration.
-- No silent suppression or automatic resolution of composition conflicts.
-- No edits to harness adapters, instruction packs, CI, release workflows, or
-  dependency manifests.
+- No edits to harness adapters, instruction packs, CI, release workflows,
+  dependency manifests, pack selection/profile/registry/provenance state, or
+  `.github/carl/runtime.json`.
+- No network access or execution of repository content.
+- No following symlinks outside the repository.
+- No inferred policy activation or precedence.
+- No claims that static imports prove runtime data flow.
 - No destructive repository operations.
 
 ## Architectural constraints
 
-- The explained policy unit is an instruction pack. Individual prose rules
-  remain opaque until a future structured policy representation is approved.
-- Existing pack discovery, profile activation, dependency expansion,
-  precedence, and override semantics remain the source of evaluation truth.
-- Canonical definitions are repository-relative instruction-pack paths; the
-  explanation distinguishes bundled, repository-local, and registry-managed
-  sources without making a registry a policy authority.
-- `explain` reports one discoverable pack whether or not it is effective.
-- `trace` reports the complete effective pack set, ordered exactly like
-  `carl pack effective`, plus structured evaluation decisions.
-- Permitted overrides are resolved decisions. Invalid or mutual overrides
-  remain explicit conflicts and produce a non-zero exit.
-- Output is deterministic and uses schema version 1.
-- Existing commands and JSON fields remain backward compatible.
+- Existing top-level repo-map inventory fields and JSON meanings remain
+  backward compatible.
+- The graph schema is version 1 and uses stable repository-relative node IDs.
+- Nodes and edges are sorted deterministically; filesystem enumeration order
+  never becomes graph order or dependency precedence.
+- Go package dependencies come only from statically parsed repository-local
+  import declarations.
+- Direct change impact is the reverse of observed repository-local dependency
+  edges; it is not a transitive or runtime impact guarantee.
+- Policy definitions may be represented as graph nodes, while component and
+  package nodes may be marked as policy attachment points. Active policy
+  assignment remains the responsibility of `carl trace`.
+- Every graph knowledge facet reports whether evidence is derived, partial,
+  or unavailable.
 
 ## Security constraints
 
-- Treat repository pack, selection, profile, and provenance artefacts as
-  untrusted input and reuse their existing strict validation.
-- Keep both commands read-only, network-free, and confined to the current
-  repository plus embedded assets.
-- Emit repository-relative canonical paths only.
-- Do not expose secrets, prompts, session data, hidden reasoning, or
-  chain-of-thought.
-- Fail explicitly on invalid metadata or unresolved composition conflicts.
+- Treat repository paths, Go source, and governance artefacts as untrusted
+  local input.
+- Parse Go imports without compiling or executing repository code.
+- Emit only repository-relative paths and stable identifiers.
+- Keep writes confined to `.github/carl/repo-map.json`.
+- Do not expose secrets, environment values, prompts, session data, or hidden
+  reasoning.
 
 ## Trust boundaries
 
-- Current repository state remains the highest authority for local pack and
-  activation facts.
-- Pack metadata, selection, profiles, and installed provenance remain
-  validated inputs rather than authorities.
-- Explanation output is derived diagnostic evidence, not a new canonical
-  governance source.
-- Registry provenance describes artifact origin and integrity only; it does
-  not establish publisher identity.
+- Current repository state is the authority for structural graph evidence.
+- Source imports and filesystem paths are validated evidence, not proof of
+  runtime execution or data flow.
+- Generated graph output is derived orientation evidence, not a canonical
+  governance or ownership authority.
+- `carl trace` remains authoritative diagnostic evidence for active policy
+  evaluation; graph policy attachment points do not override it.
 
 ## Expected files
 
 - `.github/carl/current-pr-contract.md`
-- `.github/carl/plans/pack-phase5-policy-provenance.md`
-- `cmd/carl/main.go`
-- `internal/pack/explain.go`
-- `internal/pack/explain_command.go`
-- `internal/pack/explain_test.go`
+- `.github/carl/plans/pack-phase6-cognitive-repository-graph.md`
+- `internal/repomap/repomap.go`
+- `internal/repomap/graph.go`
+- `internal/repomap/repomap_test.go`
+- `internal/repomap/graph_test.go`
+- `.github/carl/repo-map.json`
+- `.github/carl/repo-map.example.json`
 - `README.md`
 - `CLI.md`
 - `ARCHITECTURE.md`
@@ -121,66 +122,69 @@ promoted to memory, trust boundaries, and architecture remain binding.
 
 ## Contract assertions
 
-1. `carl explain <pack-id>` deterministically reports whether the pack is in
-   the effective policy, its canonical definition and source, structured
-   activation/dependency provenance, precedence, and resolved override state.
-2. `carl trace` deterministically reports the full effective set in precedence
-   order plus activation, dependency, ordering, override, and conflict
-   decisions; unresolved conflicts produce a non-zero exit in human and JSON
-   modes.
-3. Both commands are schema-versioned, local-only, read-only, and make no
-   network or repository writes.
-4. Output explicitly states its epistemic boundary: pack-level policy
-   provenance is reported, while natural-language rule evaluation, prompts,
-   hidden reasoning, and chain-of-thought are not.
-5. Existing pack discovery, selection, profile, registry, installation,
-   update, and effective-set behaviour remains unchanged and fully validated.
+1. `carl map` preserves all existing inventory fields and adds
+   `schema_version: 1` plus a deterministic graph of stable, unique,
+   repository-relative nodes and edges.
+2. Repository-local Go imports produce dependency edges, and direct reverse
+   dependants produce explicit change-impact references without compiling or
+   executing repository code.
+3. Graph nodes classify criticality and trust boundaries, identify component
+   policy attachment points, and provide agent context without claiming active
+   policy assignment.
+4. Graph coverage explicitly distinguishes derived, partial, and unavailable
+   ownership, dependency, data-flow, policy, and change-impact evidence.
+5. `carl map` remains local-only and idempotent, and existing `carl reconcile`
+   behaviour remains compatible with the extended JSON.
 
 ## Validation plan
 
-- `gofmt -w internal/pack/explain.go internal/pack/explain_command.go internal/pack/explain_test.go cmd/carl/main.go`
-- `go test ./internal/pack`
+- `gofmt -w internal/repomap/repomap.go internal/repomap/graph.go internal/repomap/repomap_test.go internal/repomap/graph_test.go`
+- `go test ./internal/repomap`
+- `go test ./internal/reconcile`
 - `go test ./...`
 - `go vet ./...`
 - `go build ./cmd/carl`
 - `git diff --check`
-- Manual human and JSON smoke checks for `carl explain` and `carl trace`
+- Manual repeated `carl map` smoke check and graph JSON inspection
+- Manual `carl reconcile` compatibility smoke check without retaining
+  unrelated generated changes
 
 ## cARL/docs update expectation
 
 Expected.
 
-Phase 5 adds durable commands, output semantics, and an explanation-output
-trust boundary. CLI, architecture, roadmap, glossary, memory, embedded memory,
-and trust-boundary documentation must be reconciled.
+Phase 6 changes the durable repo-map schema, command output, orientation model,
+and graph-output trust boundary. CLI, architecture, roadmap, glossary, memory,
+embedded memory, trust boundaries, and the repo-map example must be reconciled.
 
 ## Stop conditions
 
 Stop and escalate if:
 
-- meaningful explanation requires parsing or executing natural-language pack
-  contents as individual rules;
-- policy provenance requires inspecting prompts, sessions, hidden reasoning,
-  or model chain-of-thought;
-- the commands require network access or repository mutation;
-- implementation requires changing existing composition or conflict semantics;
-- validation cannot prove deterministic output and read-only behaviour.
+- useful graph generation requires executing repository code;
+- ownership or runtime-flow claims require unsupported inference;
+- backward compatibility requires removing or changing existing fields;
+- implementation requires a graph database, new dependency, network access,
+  or a new canonical governance authority;
+- validation cannot prove deterministic IDs, edges, and read-only scanning.
 
 ## Escalation triggers
 
 Escalate if:
 
-- a compiled policy intermediate representation becomes necessary;
-- a new canonical governance authority is required;
-- individual-rule override semantics must be invented;
-- compatibility requires changing existing JSON fields or exit codes;
-- documentation conflicts with current architecture or durable memory.
+- graph metadata needs to become authoritative policy state;
+- `carl trace` semantics must change;
+- a human-owned graph override artefact becomes necessary;
+- CI, release, harness, runtime state, or dependency policy changes become
+  necessary;
+- repository graph output would expose absolute paths or sensitive data.
 
 ## Context reset notes
 
-When complete, retain this contract as the delivered Phase 5 record until the
-next task supersedes it. Promote only stable command semantics and the
-diagnostic-not-authoritative explanation boundary into durable artefacts.
+When complete, retain this contract as the delivered Phase 6 record until the
+next task supersedes it. Promote only stable graph schema semantics,
+evidence-quality boundaries, and `carl map` compatibility facts into durable
+artefacts.
 
 ## Completion checklist
 

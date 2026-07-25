@@ -1,4 +1,4 @@
-<!-- version: 1.7.0 -->
+<!-- version: 1.8.0 -->
 # cARL — Roadmap
 
 This roadmap describes the strategic direction and future evolution of cARL. None of the items marked as not started are implemented in the current codebase. Items are recorded here to preserve intent and prevent rediscovery.
@@ -377,7 +377,7 @@ dependency downloading.
 
 ## Pack Runtime Phase Plan (Policy-as-Code Direction)
 
-Planned evolution of the versioned pack runtime. Phases 1 through 5 are
+Planned evolution of the versioned pack runtime. Phases 1 through 6 are
 delivered (see above and the Phase 2/3 entries below). Each later phase is a
 candidate vertical slice; constraints noted per
 phase are binding until explicitly revisited. Each entry is intended to be a
@@ -457,12 +457,18 @@ instruction pack; the commands do not interpret individual natural-language
 rules or claim to expose prompts, hidden model reasoning, or chain-of-thought.
 
 ### Pack Phase 6: Cognitive Repository Graph
-**Status:** Exploratory
-**Description:** Evolve the repository map beyond a static inventory towards a
-graph of components, ownership, dependencies, trust boundaries, data flows,
-criticality, policy attachment points, agent-relevant context, and change
-impact. The pack metadata model must not preclude this; no repo-map redesign
-until this phase is taken up.
+**Status:** Delivered
+**Description:** `carl map` preserves its existing inventory fields and adds a
+schema-versioned deterministic graph of repository components, Go packages,
+entry points, workflows, governance artefacts, documentation, and policy
+definitions. Structural containment and repository-local Go imports produce
+evidence-backed edges; direct reverse imports produce bounded change-impact
+references. Nodes classify criticality and trust boundaries, identify policy
+attachment points, and provide agent context. Coverage metadata states whether
+ownership, dependencies, runtime data flows, policy attachment, and impact
+knowledge is derived, partial, or unavailable. The graph never guesses owners
+or runtime flows and does not replace `carl trace` as the active-policy
+provenance authority.
 
 ### Pack Phase 7: Publishing
 **Status:** Not started — do not implement prematurely
