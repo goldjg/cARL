@@ -218,10 +218,8 @@ See [DISTRIBUTION.md](DISTRIBUTION.md) for install commands.
 #### Homebrew (macOS / Linux)
 
 macOS release artefacts are configured to be Developer ID codesigned from v0.4.2
-onward (hardened runtime). Full notarisation is not yet enabled; see
-[DISTRIBUTION.md](DISTRIBUTION.md) for the current macOS signing status,
-Gatekeeper implications, and the App Store Connect API-key path required for
-notarisation.
+onward (hardened runtime). Full notarisation is enabled from v0.4.3 onward; see
+[DISTRIBUTION.md](DISTRIBUTION.md) for more details.
 
 ```sh
 brew tap goldjg/carl
