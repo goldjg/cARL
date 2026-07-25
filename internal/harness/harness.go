@@ -72,7 +72,7 @@ var knownAdapters = []Adapter{
 	{
 		ID:            "claude",
 		Name:          "Claude Code",
-		Support:       "experimental",
+		Support:       "production",
 		DetectionFile: "CLAUDE.md",
 		Files: []AdapterFile{
 			{Path: loaderPath, SourceFile: loaderPath},
@@ -82,7 +82,7 @@ var knownAdapters = []Adapter{
 	{
 		ID:            "codex",
 		Name:          "Codex",
-		Support:       "theoretical",
+		Support:       "production",
 		DetectionFile: "AGENTS.md",
 		Files: []AdapterFile{
 			{Path: loaderPath, SourceFile: loaderPath},
@@ -116,6 +116,18 @@ var knownAdapters = []Adapter{
 func Adapters() []Adapter {
 	result := make([]Adapter, len(knownAdapters))
 	copy(result, knownAdapters)
+	return result
+}
+
+// ProductionAdapterIDs returns production-supported harness IDs in canonical
+// registry order.
+func ProductionAdapterIDs() []string {
+	var result []string
+	for _, adapter := range knownAdapters {
+		if adapter.Support == "production" {
+			result = append(result, adapter.ID)
+		}
+	}
 	return result
 }
 

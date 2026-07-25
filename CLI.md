@@ -1,4 +1,4 @@
-<!-- version: 1.2.0 -->
+<!-- version: 1.4.0 -->
 # cARL CLI Reference
 
 The `carl` CLI installs and manages the cARL governance runtime inside a repository.
@@ -156,7 +156,7 @@ carl doctor
 2. Detects and categorises findings as ERROR, WARNING, or INFO:
    - **ERROR** — missing runtime manifest, unreadable manifest, artefact absent from disk
    - **WARNING** — artefact content differs from its canonical version (drifted), or a harness adapter is missing/drifted
-   - **INFO** — no issues found; runtime is healthy
+   - **INFO** — runtime health and production harness support
 3. For each finding, provides a suggested remediation action.
 4. Exits with code `0` regardless of whether issues are found — the command is
    diagnostic only and never modifies any files.
@@ -179,6 +179,7 @@ ERROR   missing runtime manifest (.github/carl/runtime.json)
 
 ```
 INFO    runtime is healthy — all managed artefacts are present and canonical
+INFO    production harnesses: copilot, claude, codex
 ```
 
 **Output (missing and drifted artefacts)**
@@ -190,8 +191,9 @@ WARNING .github/copilot-instructions.md — artefact has drifted from its canoni
         Action: run `carl repair`
 WARNING claude (CLAUDE.md) — harness adapter file has drifted from its canonical version
         Action: run `carl harness sync`
+INFO    production harnesses: copilot, claude, codex
 
-1 error(s), 2 warning(s), 0 info(s) found.
+1 error(s), 2 warning(s), 1 info(s) found.
 ```
 
 **Finding levels**
@@ -220,7 +222,7 @@ carl status
    version (byte-for-byte), classifying files as missing (absent from disk) or
    drifted (present but content differs).
 4. Inspects harness adapters and reports a separate summary of active, missing,
-   drifted, and healthy adapters.
+   drifted, healthy, and production adapters.
 5. Reports overall runtime status: `Healthy`, `Drifted`, or `Incomplete`.
 
 **Protected files** — the following are never reported as missing or drifted:
@@ -253,6 +255,7 @@ Harness Summary:
   Missing adapters: 0
   Drifted adapters: 0
   Healthy adapters: 5
+  Production:       copilot, claude, codex
 
 Status:           Healthy
 ```
@@ -272,6 +275,7 @@ Harness Summary:
   Missing adapters: 1
   Drifted adapters: 1
   Healthy adapters: 3
+  Production:       copilot, claude, codex
 
 Status:           Incomplete
 ```
@@ -381,6 +385,10 @@ carl pack list [--json]
 carl pack show <pack-id> [--json]
 carl pack select <pack-id>... [--json]
 carl pack unselect <pack-id>... [--json]
+carl pack profile list [--json]
+carl pack profile show <profile-id> [--json]
+carl pack profile activate <profile-id> [--role <role-id>] [--task <task-id>] [--json]
+carl pack profile clear [--json]
 carl pack effective [--json]
 ```
 
@@ -392,7 +400,11 @@ carl pack effective [--json]
 | `show <pack-id>` | Show full metadata for a single pack (e.g. `carl pack show core/security`) |
 | `select <pack-id>...` | Add packs to the repository selection in `.github/carl/packs.json` |
 | `unselect <pack-id>...` | Remove packs from the repository selection |
-| `effective` | Compute and print the effective pack set (selection + required dependencies, precedence order, overrides, conflicts) |
+| `profile list` | List named policy profiles and the active profile/role/task context |
+| `profile show <profile-id>` | Show one profile's base packs and role/task overlays |
+| `profile activate <profile-id>` | Activate a profile with optional `--role` and `--task` overlays |
+| `profile clear` | Clear the active profile and overlays; organisation/repository defaults remain active |
+| `effective` | Compute and print the effective pack set (active profile seeds + required dependencies, precedence order, overrides, conflicts) |
 
 **Behaviour**
 
@@ -421,6 +433,11 @@ carl pack effective [--json]
   Malformed headers are explicit errors; a repository-local pack's composition
   headers take precedence over the bundled copy's when it declares any.
 - The metadata model is versioned: every payload carries `"schemaVersion": 1`.
+- When `.github/carl/profiles.json` exists, `state.active` is driven by the
+  additive union of organisation defaults, repository defaults, the active
+  profile, and its active role/task overlays. Every profile pack reference
+  must already be selected. When `profiles.json` is absent, selected packs
+  remain active as a compatibility fallback.
 - The discovered pack set is validated before output: malformed IDs, duplicate
   IDs, invalid versions, unknown schema versions, missing or cyclic
   dependencies, invalid owned-artefact paths, and contradictory states are
@@ -473,13 +490,55 @@ selection deterministically (deduplicated, sorted by pack ID) in
 `.github/carl/runtime.json`. Selecting validates that every named pack is
 discoverable. Unselecting a pack that other selected packs still require
 leaves it in the *effective* set as a dependency (with its reason reported by
-`carl pack effective`).
+`carl pack effective`). A pack referenced by any configured profile/default/
+role/task cannot be unselected until that profile reference is removed.
+
+`profiles.json` is also user-owned and committed. Profile definitions are
+edited as policy-as-code; the CLI validates and activates them:
+
+```json
+{
+  "schemaVersion": 1,
+  "defaults": {
+    "organization": ["core/security"],
+    "repository": ["core/baseline", "languages/go"]
+  },
+  "profiles": [
+    {
+      "id": "developer",
+      "description": "Default implementation context.",
+      "packs": ["core/carl"],
+      "roles": {
+        "reviewer": ["core/pr-contract"]
+      },
+      "tasks": {
+        "security-review": ["core/identity"]
+      }
+    }
+  ],
+  "active": {
+    "profile": "developer",
+    "role": "reviewer",
+    "task": "security-review"
+  }
+}
+```
+
+Profile, role, and task IDs use lower-case kebab-case. Defaults and overlays
+compose additively; they never remove a selected pack or imply override
+authority. `carl pack profile activate` and `clear` write only
+`profiles.json`, deterministically. Unknown profiles, roles, tasks, duplicate
+profile IDs, malformed fields, and references to unselected packs are errors.
 
 `carl pack effective` computes the effective pack set:
 
-1. Start from the explicitly selected packs.
+1. Start from profile-driven active packs: organisation/repository defaults,
+   active-profile packs, and active role/task overlays. Without
+   `profiles.json`, start from selected packs for compatibility.
 2. Expand required dependencies transitively; every entry carries explicit
-   reasons (`selected`, `dependency of <id>`).
+   reasons (`organization default`, `profile <id>`,
+   `role <id> in profile <id>`, `task <id> in profile <id>`,
+   `selected` for legacy fallback, or `dependency of <id>`).
 3. Apply explicit override declarations: an override is honoured only when
    the overriding pack declares it in metadata **and** the target pack
    declares `precedence-mode: overridable`. Overridden packs remain in the
@@ -522,6 +581,8 @@ overrides) are reported and cause a non-zero exit. With `--json`:
 | `unknown pack "<id>"` | The pack ID does not match any discoverable pack | Run `carl pack list` to see valid IDs |
 | `pack validation failed: ...` | Discovered pack set contains invalid metadata | Fix the reported pack file or manifest entry |
 | `parse .github/carl/packs.json: ...` | Selection artefact is malformed | Fix or delete `.github/carl/packs.json` |
+| `.github/carl/profiles.json validation failed: ...` | Profile schema, context, or references are invalid | Fix the reported profile/default/overlay entry |
+| `unknown profile "<id>"` | The requested profile is not configured | Run `carl pack profile list` |
 | `pack composition conflicts detected` | `carl pack effective` found override or dependency conflicts | Fix the conflicting pack metadata or selection |
 
 With `--json`, errors are emitted as a structured payload on stderr with a
@@ -536,8 +597,9 @@ non-zero exit code:
 
 **Notes**
 
-- `state.active` is currently derived from `state.selected`; explicit
-  activation profiles are future work (Pack Phase 3).
+- `state.selected` identifies the repository's eligible policy packs;
+  `state.active` identifies profile-driven active seeds. Required dependencies
+  appear in the effective set even when they are not active seeds.
 - Pack *selection* (which packs are in play) is distinct from *priority*
   (ordering among selected packs) and *override authority* (whether a pack may
   relax another pack's rules). All three are modelled: selection lives in
@@ -857,12 +919,12 @@ This subcommand is purely informational — it does not check the filesystem.
 Harness Adapters:
 
   copilot       GitHub Copilot       production
-  claude        Claude Code          experimental
-  codex         Codex                theoretical
+  claude        Claude Code          production
+  codex         Codex                production
   cursor        Cursor               theoretical
   antigravity   Antigravity          theoretical
 
-1 production, 1 experimental, 3 theoretical (5 total).
+3 production, 0 experimental, 2 theoretical (5 total).
 ```
 
 **Support status values**
@@ -900,8 +962,8 @@ carl harness status
 Harness Adapter Status:
 
   copilot       GitHub Copilot       production    Present  Synced
-  claude        Claude Code          experimental  Missing  Missing
-  codex         Codex                theoretical   Missing  Missing
+  claude        Claude Code          production    Missing  Missing
+  codex         Codex                production    Missing  Missing
   cursor        Cursor               theoretical   Missing  Missing
   antigravity   Antigravity          theoretical   Missing  Missing
 
@@ -914,8 +976,8 @@ Harness Adapter Status:
 Harness Adapter Status:
 
   copilot       GitHub Copilot       production    Present  Synced
-  claude        Claude Code          experimental  Present  Drifted
-  codex         Codex                theoretical   Missing  Missing
+  claude        Claude Code          production    Present  Drifted
+  codex         Codex                production    Missing  Missing
   cursor        Cursor               theoretical   Missing  Missing
   antigravity   Antigravity          theoretical   Missing  Missing
 
@@ -1041,8 +1103,9 @@ Aliases: `carl --version`, `carl -v`
    - `Unknown` (non-semver comparison)
 4. When runtime is installed, prints installed instruction packs and installed versions
    derived from each installed pack file metadata header: `<!-- version: X.Y.Z -->`.
-5. Prints harness shim versions from installed detection files.
-6. With `--components`, prints bundled vs installed component versions and drift state.
+5. Prints harness support tiers and shim versions from installed detection files.
+6. With `--components`, prints support tiers plus bundled vs installed component
+   versions and drift state.
 
 **Output (runtime not installed)**
 
@@ -1057,11 +1120,12 @@ Bundled Runtime:
 Repository Runtime:
   Not installed in the current repository.
 Harness Shims:
-  copilot      .github/copilot-instructions.md    2.1.0
-  claude       CLAUDE.md                          unknown
-  codex        AGENTS.md                          not installed
-  cursor       .cursor/rules/carl.mdc             not installed
-  antigravity  .agents/rules/carl.md              not installed
+  Harness       Support      File                                Version
+  copilot       production   .github/copilot-instructions.md     2.1.0
+  claude        production   CLAUDE.md                           unknown
+  codex         production   AGENTS.md                           not installed
+  cursor        theoretical  .cursor/rules/carl.mdc              not installed
+  antigravity   theoretical  .agents/rules/carl.md               not installed
 ```
 
 **Output (runtime installed)**
@@ -1087,11 +1151,12 @@ Installed Packs:
   core/carl                         2.0.0
 
 Harness Shims:
-  copilot      .github/copilot-instructions.md    2.1.0
-  claude       CLAUDE.md                          1.0.0
-  codex        AGENTS.md                          unknown
-  cursor       .cursor/rules/carl.mdc             not installed
-  antigravity  .agents/rules/carl.md              not installed
+  Harness       Support      File                                Version
+  copilot       production   .github/copilot-instructions.md     2.1.0
+  claude        production   CLAUDE.md                           1.0.0
+  codex         production   AGENTS.md                           unknown
+  cursor        theoretical  .cursor/rules/carl.mdc              not installed
+  antigravity   theoretical  .agents/rules/carl.md               not installed
 ```
 
 **`--components` output**
@@ -1104,10 +1169,10 @@ Instruction Packs:
   cloud/azure                       1.0.1     missing    missing
 
 Harness Shims:
-  Harness       File                              Bundled   Installed  State
-  copilot       .github/copilot-instructions.md   2.1.0     1.0.0      older
-  claude        CLAUDE.md                         unknown   unknown    unknown
-  codex         AGENTS.md                         unknown   missing    missing
+  Harness       Support      File                              Bundled   Installed  State
+  copilot       production   .github/copilot-instructions.md   2.1.0     1.0.0      older
+  claude        production   CLAUDE.md                         unknown   unknown    unknown
+  codex         production   AGENTS.md                         unknown   missing    missing
 ```
 
 **Repository Runtime status values**

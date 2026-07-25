@@ -163,9 +163,9 @@ func TestVersion_InstalledRuntimeAndStatusCurrent(t *testing.T) {
 		"  core/baseline                     1.1.0",
 		"  core/carl                         2.0.0",
 		"Harness Shims:",
-		"  copilot      .github/copilot-instructions.md",
-		"  claude       CLAUDE.md",
-		"  codex        AGENTS.md",
+		"  copilot       production   .github/copilot-instructions.md",
+		"  claude        production   CLAUDE.md",
+		"  codex         production   AGENTS.md",
 	} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("missing %q in output:\n%s", want, output)
@@ -286,9 +286,9 @@ func TestVersion_HarnessShimMissingMalformedAndLoaderDedup(t *testing.T) {
 		t.Fatalf("shared loader path should appear once in Harness Shims section:\n%s", output)
 	}
 	for _, want := range []string{
-		"  copilot      .github/copilot-instructions.md",
-		"  claude       CLAUDE.md",
-		"  codex        AGENTS.md",
+		"  copilot       production   .github/copilot-instructions.md",
+		"  claude        production   CLAUDE.md",
+		"  codex         production   AGENTS.md",
 	} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("expected %q in output:\n%s", want, output)
@@ -362,9 +362,9 @@ func TestVersion_ComponentsComparisonOutput(t *testing.T) {
 		"core/carl                         2.0.0     2.0.0      current",
 		"cloud/azure                       1.0.1     missing    missing",
 		"Harness Shims:",
-		"Harness       File                              Bundled   Installed  State",
-		"copilot       .github/copilot-instructions.md   2.1.0     2.0.0      older",
-		"codex         AGENTS.md",
+		"Harness       Support      File                              Bundled   Installed  State",
+		"copilot       production   .github/copilot-instructions.md   2.1.0     2.0.0      older",
+		"codex         production   AGENTS.md",
 	} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("missing %q in output:\n%s", want, output)

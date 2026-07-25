@@ -10,6 +10,12 @@
 [![GoReleaser Check](https://img.shields.io/github/actions/workflow/status/goldjg/cARL/goreleaser-check.yml?label=goreleaser%20check)](https://github.com/goldjg/cARL/actions/workflows/goreleaser-check.yml)
 [![License: MIT](https://img.shields.io/github/license/goldjg/cARL)](LICENSE)
 
+[![GitHub Copilot: production](https://img.shields.io/badge/GitHub%20Copilot-production-brightgreen)](CLI.md#carl-harness-list)
+[![Claude Code: production](https://img.shields.io/badge/Claude%20Code-production-brightgreen)](CLI.md#carl-harness-list)
+[![Codex: production](https://img.shields.io/badge/Codex-production-brightgreen)](CLI.md#carl-harness-list)
+[![Cursor: theoretical](https://img.shields.io/badge/Cursor-theoretical-lightgrey)](CLI.md#carl-harness-list)
+[![Antigravity: theoretical](https://img.shields.io/badge/Antigravity-theoretical-lightgrey)](CLI.md#carl-harness-list)
+
 > **"cARL remembers why you made that decision three months ago, because neither you nor your coding agent will."**
 
 ---
@@ -79,13 +85,16 @@ cARL is persistent. Instructions live in committed files. They are version-contr
 
 Agent frameworks (LangChain, AutoGen, CrewAI, etc.) are code. They orchestrate agents programmatically, define tool schemas, and wire up models in code.
 
-cARL is behavioural governance. It does not execute code. It shapes how an agent reasons, plans, and acts inside an existing tool (GitHub Copilot). No new runtime dependencies. No code to run.
+cARL is behavioural governance. It does not execute code. It shapes how an
+agent reasons, plans, and acts inside an existing coding-agent harness.
+GitHub Copilot, Claude Code, and Codex are production-supported. No new
+runtime dependencies. No code to run.
 
 | | Agent Frameworks | cARL |
 |---|---|---|
 | **Nature** | Code libraries | Committed governance files |
 | **Deployment** | Runtime dependency | Repository files |
-| **Target** | New agent applications | Existing coding agents (Copilot) |
+| **Target** | New agent applications | Existing coding agents (Copilot, Claude Code, Codex) |
 | **Concern** | Orchestration and tooling | Behavioural governance and discipline |
 | **Language coupling** | Yes | Language-agnostic |
 
@@ -119,6 +128,7 @@ Repositories already running AADLC can migrate their accumulated durable knowled
 │   ├── memory.md                    # Durable architectural truth cache
 │   ├── current-pr-contract.md          # Active PR contract (populate before each PR)
 │   ├── current-pr-contract.template.md # Blank template — copy to current-pr-contract.md
+│   ├── profiles.json                   # User-owned named profiles and active role/task context (when configured)
 │   ├── invariants.yml               # Machine-readable governance invariants
 │   ├── trust-boundaries.md          # Trust boundary definitions and crossing rules
 │   ├── tool-policy.yml              # Tool permission tier policy (Tier 0/1/2)
@@ -167,10 +177,14 @@ CLI.md
 
 ## How It Works
 
-1. GitHub Copilot automatically reads `.github/copilot-instructions.md` at the start of every agent session.
-2. That file is the root operating model — plan-first discipline, security constraints, cognition governance.
-3. Individual packs under `.github/instructions/` provide focused guidance per language, platform, or cloud provider.
-4. `.github/carl/` contains durable governance artefacts: memory cache, PR contract, invariants, trust boundaries, and plans.
+1. A harness adapter loads `.github/copilot-instructions.md`, the shared cARL
+   adapter loader, at the start of an agent session.
+2. The loader hydrates the root operating model: plan-first discipline,
+   security constraints, and cognition governance.
+3. Individual packs under `.github/instructions/` provide focused guidance
+   per language, platform, or cloud provider.
+4. `.github/carl/` contains durable governance artefacts: memory cache, PR
+   contract, invariants, trust boundaries, and plans.
 
 ---
 
@@ -314,22 +328,29 @@ See [CLI.md](CLI.md) for the full command reference.
 
 List every discoverable instruction pack (bundled in the binary, present in
 the repository, or selected in `.github/carl/packs.json`), inspect one pack's
-versioned metadata, select packs for the repository, and compute the effective
-pack set:
+versioned metadata, select packs for the repository, activate a named
+profile/role/task context, and compute the effective pack set:
 
 ```sh
 carl pack list
 carl pack show core/security
 carl pack select languages/go core/security
+carl pack profile list
+# After defining .github/carl/profiles.json:
+carl pack profile activate developer
 carl pack effective
 ```
 
 All subcommands support `--json` for machine-readable output; `list`, `show`,
-and `effective` work outside an initialised repository (bundled packs only).
+`profile list`, and `effective` work outside an initialised repository
+(bundled packs only).
 Ordering is deterministic (sorted by pack ID; effective output in precedence
 order), never filesystem order. Composition is conservative: packs add
 constraints, required dependencies are expanded with explicit reasons, and no
-pack silently disables another — overrides require explicit metadata.
+pack silently disables another — overrides require explicit metadata. Named
+profiles are defined in the committed `.github/carl/profiles.json` artefact;
+organisation/repository defaults and role/task overlays compose additively.
+When that artefact is absent, selected packs remain active for compatibility.
 
 ### 7. Migrate from AADLC (existing repositories)
 
@@ -365,7 +386,9 @@ carl harness sync
 
 ### Using this repository directly
 
-Fork or copy into your GitHub account or organisation. Copilot picks up the instructions automatically.
+Fork or copy into your GitHub account or organisation. Run
+`carl harness sync` to generate the production-supported Copilot, Claude Code,
+and Codex adapters from the canonical embedded artefacts.
 
 ### Copying packs into another repository
 

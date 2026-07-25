@@ -115,6 +115,7 @@ func (c *Command) RunInDir(rootDir string) error {
 	fmt.Printf("  Missing adapters: %d\n", harnessSummary.Missing)
 	fmt.Printf("  Drifted adapters: %d\n", harnessSummary.Drifted)
 	fmt.Printf("  Healthy adapters: %d\n", harnessSummary.Healthy)
+	fmt.Printf("  Production:       %s\n", strings.Join(harness.ProductionAdapterIDs(), ", "))
 	fmt.Println()
 
 	fmt.Printf("Status:           %s\n", overallStatus(missing, drifted))

@@ -70,10 +70,11 @@ type PackMetadata struct {
 
 // PackState captures current observed pack state.
 type PackState struct {
-	Bundled   bool `json:"bundled"`
-	Installed bool `json:"installed"`
-	Selected  bool `json:"selected"`
-	Active    bool `json:"active"`
+	Bundled       bool     `json:"bundled"`
+	Installed     bool     `json:"installed"`
+	Selected      bool     `json:"selected"`
+	Active        bool     `json:"active"`
+	ActiveReasons []string `json:"activeReasons,omitempty"`
 }
 
 // PackDependency declares a dependency on another pack.
@@ -163,6 +164,8 @@ func (c *Command) Run(_ context.Context, args []string) error {
 			return nil
 		}
 		return c.RunEffectiveInDir(cwd, jsonOut)
+	case "profile":
+		return c.runProfile(cwd, args[1:])
 	default:
 		return fmt.Errorf("unknown subcommand %q\n\nRun 'carl pack --help' for usage", args[0])
 	}
@@ -351,6 +354,19 @@ func (c *Command) RunUnselectInDir(rootDir string, ids []string, jsonOut bool) e
 			remaining = append(remaining, id)
 		}
 	}
+	profiles, err := ReadProfiles(rootDir)
+	if err != nil {
+		return err
+	}
+	if profiles != nil {
+		selected := make(map[string]bool, len(remaining))
+		for _, id := range remaining {
+			selected[id] = true
+		}
+		if err := ValidateProfileReferences(profiles, selected); err != nil {
+			return fmt.Errorf("cannot unselect packs: %w", err)
+		}
+	}
 	if err := WriteSelection(rootDir, remaining); err != nil {
 		return err
 	}
@@ -475,6 +491,7 @@ func printUsage() {
 	fmt.Println("  select <pack-id>...    Select packs for this repository")
 	fmt.Println("  unselect <pack-id>...  Remove packs from the repository selection")
 	fmt.Println("  effective              Show the computed effective pack set")
+	fmt.Println("  profile                Inspect and activate policy profiles")
 	fmt.Println()
 	fmt.Println("Options:")
 	fmt.Println("  --json         Print machine-readable JSON output")
@@ -653,6 +670,8 @@ func (c *Command) discover(rootDir string) ([]PackMetadata, error) {
 			Installed: hasLocal,
 			Selected:  selected[id],
 		}
+		// Legacy compatibility fallback. When profiles.json exists this is
+		// replaced below with explicit profile-driven activation.
 		state.Active = state.Selected
 
 		// The repository-local copy is authoritative for composition
@@ -687,6 +706,30 @@ func (c *Command) discover(rootDir string) ([]PackMetadata, error) {
 			Dependencies:   deps,
 			Precedence:     precedence,
 		})
+	}
+
+	profiles, err := ReadProfiles(rootDir)
+	if err != nil {
+		return nil, err
+	}
+	if profiles != nil {
+		selectedSet := make(map[string]bool, len(out))
+		for _, p := range out {
+			if p.State.Selected {
+				selectedSet[p.ID] = true
+			}
+		}
+		if err := ValidateProfileReferences(profiles, selectedSet); err != nil {
+			return nil, err
+		}
+		reasons, err := ResolveActivation(profiles, selectedSet)
+		if err != nil {
+			return nil, err
+		}
+		for i := range out {
+			out[i].State.Active = len(reasons[out[i].ID]) > 0
+			out[i].State.ActiveReasons = reasons[out[i].ID]
+		}
 	}
 
 	return out, nil

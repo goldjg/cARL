@@ -34,8 +34,8 @@ var harnessContent = map[string][]byte{
 	".github/copilot-instructions.md": []byte("# canonical harness content\n"),
 	"CLAUDE.md":                       []byte("# Claude Code cARL Adapter\nTest shim.\n"),
 	"AGENTS.md":                       []byte("# Codex cARL Adapter\nTest shim.\n"),
-	".cursor/rules/carl.mdc":           []byte("# Cursor cARL Adapter\nTest shim.\n"),
-	".agents/rules/carl.md":            []byte("# Antigravity cARL Adapter\nTest shim.\n"),
+	".cursor/rules/carl.mdc":          []byte("# Cursor cARL Adapter\nTest shim.\n"),
+	".agents/rules/carl.md":           []byte("# Antigravity cARL Adapter\nTest shim.\n"),
 }
 
 // newFakeArts returns a fakeArts pre-loaded with standard harness content
@@ -182,6 +182,7 @@ func TestStatus_Healthy(t *testing.T) {
 		"Missing adapters: 0",
 		"Drifted adapters: 0",
 		"Healthy adapters: 5",
+		"Production:       copilot, claude, codex",
 		"Status:           Healthy",
 	} {
 		if !strings.Contains(output, want) {
@@ -354,6 +355,7 @@ func TestStatus_HarnessSummaryCounts(t *testing.T) {
 		"Missing adapters: 1",
 		"Drifted adapters: 1",
 		"Healthy adapters: 3",
+		"Production:       copilot, claude, codex",
 		"Status:           Healthy",
 	} {
 		if !strings.Contains(output, want) {
