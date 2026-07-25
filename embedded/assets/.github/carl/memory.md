@@ -1,4 +1,4 @@
-<!-- version: 1.8.0 -->
+<!-- version: 1.9.0 -->
 # Durable Architectural Truth Cache
 
 This cache stores durable project truths that should persist beyond a
@@ -147,6 +147,8 @@ Pack Phase 3 policy profiles live in the schema-versioned, user-owned `.github/c
 
 Pack Phase 4 registries are configured explicitly in the schema-versioned, user-owned `.github/carl/registries.json` artefact; there is no built-in or inferred registry. Registry indexes may be HTTPS or repository-local and advertise releases by pack ID, canonical semantic version, relative artifact, and SHA-256. `carl pack registry list` is local-only; `registry search`, `install`, and `update` access only configured sources. Resolution chooses the highest semantic version or an exact requested version and rejects equal-version cross-registry ambiguity unless a registry is named. Install verifies bounded artifact bytes, SHA-256, declared pack version, composition metadata, required dependencies, ownership, symlink-safe paths, and the complete planned pack set before any write. It writes only canonical instruction-pack paths and deterministic provenance in `.github/carl/installed-packs.json`; it does not select or activate packs and never writes `runtime.json`. Updates use recorded registry provenance, reject local digest drift, changed registry location, and same-version digest mutation, and never downgrade. SHA-256 proves integrity against the configured index, not publisher identity or a signing trust chain.
 
+Pack Phase 5 provides top-level `carl explain <pack-id>` and `carl trace` commands. They are deterministic, schema-versioned, local-only, network-free, and read-only views over existing validated discovery and `ComputeEffectiveSet` semantics. `explain` works for effective and inactive discoverable packs and reports source, repository-relative canonical definition, selection/profile/default/dependency activation, precedence, registry provenance, and override state. `trace` reports the complete effective pack set in precedence order plus structured activation, dependency, ordering, pack-level constraint, resolved-override, and unresolved-conflict decisions; unresolved conflicts retain non-zero exits. The policy unit is an instruction pack: these commands do not parse natural-language prose into individual rules and do not expose prompts, hidden model reasoning, or chain-of-thought. Explanation output is derived diagnostic evidence, not a canonical governance authority.
+
 `carl harness` manages and inspects harness adapters for AI coding agents. Its subcommands are `list`, `status`, and `sync`.
 
 Harness adapters bridge cARL canonical artefacts to agent context injection mechanisms. cARL artefacts are the canonical source of truth; harness files are adapters, not authorities.
@@ -255,4 +257,4 @@ The active authority order is:
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-07-25 by Pack Phase 4 registry and installation implementation
+2026-07-25 by Pack Phase 5 policy provenance and explanation implementation

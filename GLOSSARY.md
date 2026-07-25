@@ -1,4 +1,4 @@
-<!-- version: 1.3.0 -->
+<!-- version: 1.4.0 -->
 # cARL — Glossary
 
 This glossary defines the terms used in cARL documentation, instruction packs, and governance artefacts.
@@ -130,6 +130,12 @@ Deterministic selection of the highest semantic version advertised for a pack, o
 
 ### Policy profile
 A named, committed policy context in `.github/carl/profiles.json` (schema version 1). A profile declares base packs plus optional role-specific and task-specific overlays. Organisation defaults, repository defaults, profile packs, and the active overlays compose additively; every referenced pack must already be selected.
+
+### Policy explanation
+A deterministic, read-only account produced by `carl explain <pack-id>` of one instruction pack's source, canonical definition, activation/dependency provenance, precedence, and override state. The explained policy unit is a pack, not an individual natural-language rule. Explanation output is diagnostic evidence rather than a canonical governance source and does not expose hidden model reasoning or chain-of-thought.
+
+### Policy trace
+The schema-versioned output of `carl trace`: the complete effective pack set in precedence order plus structured activation, dependency, ordering, constraint, override, and unresolved-conflict decisions. It reuses the existing effective-pack evaluator and performs no network access or repository writes.
 
 ### Profile activation
 The explicit profile, role, and task context stored under `active` in `.github/carl/profiles.json`. `carl pack profile activate` changes that context and `clear` removes it while retaining organisation/repository defaults. Profile activation determines `state.active`; it does not change selection, precedence, or override authority.

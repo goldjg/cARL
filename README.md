@@ -1,4 +1,4 @@
-<!-- version: 1.1.0 -->
+<!-- version: 1.2.0 -->
 
 ![](cARL.png)
 
@@ -44,6 +44,7 @@ cARL solves this by providing:
 | Agent uses wrong tools recklessly | Tiered tool-permission governance |
 | Agent over-reasons or under-reasons | Cognition governance: minimum sufficient depth |
 | Session is lost, work is lost | Prompt-as-code plans in `.github/carl/plans/` |
+| Team cannot tell why policy is active | Local policy provenance via `carl explain` and `carl trace` |
 
 ---
 
@@ -343,6 +344,8 @@ carl pack profile list
 # After defining .github/carl/profiles.json:
 carl pack profile activate developer
 carl pack effective
+carl explain core/security
+carl trace
 ```
 
 Repositories may optionally define HTTPS or repository-local registry indexes
@@ -374,6 +377,16 @@ pack silently disables another — overrides require explicit metadata. Named
 profiles are defined in the committed `.github/carl/profiles.json` artefact;
 organisation/repository defaults and role/task overlays compose additively.
 When that artefact is absent, selected packs remain active for compatibility.
+
+`carl explain <pack-id>` reports whether one discoverable pack is in the
+effective policy, where its canonical definition came from, how selection or
+profile activation included it, which pack required it, and its precedence
+and resolved override state. `carl trace` reports the complete effective set
+and its activation, dependency, ordering, override, and conflict decisions.
+Both commands are deterministic, local-only, read-only, and support `--json`.
+They explain pack-level policy provenance; they do not interpret individual
+natural-language rules or expose prompts, hidden model reasoning, or
+chain-of-thought.
 
 ### 7. Migrate from AADLC (existing repositories)
 

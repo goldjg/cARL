@@ -1,4 +1,4 @@
-<!-- version: 1.3.0 -->
+<!-- version: 1.4.0 -->
 # cARL — Architecture Overview
 
 ---
@@ -201,7 +201,38 @@ same-version registry mutation, and never downgrades.
 
 SHA-256 establishes artifact integrity relative to the configured index. It
 does not authenticate a publisher, establish a signing-key trust root, or
-provide the policy evaluation trace deferred to Pack Phase 5.
+provide a signing trust chain.
+
+### Policy Provenance and Explanation (schema version 1)
+
+`carl explain <pack-id>` and `carl trace` are read-only diagnostic views over
+the existing pack evaluator. They do not introduce a second policy authority
+or evaluation algorithm:
+
+1. strict discovery validates bundled, repository-local, registry-managed,
+   selected, and profile-driven state;
+2. `ComputeEffectiveSet` remains the source of dependency, precedence,
+   override, and conflict truth;
+3. the explanation layer attaches repository-relative canonical definitions
+   and structured source artefacts to those observable results.
+
+The explained policy unit is an instruction pack. The runtime does not parse
+natural-language pack prose into individual rules and has no compiled policy
+intermediate representation. An effective pack therefore reports that it adds
+constraints at pack level; permitted override relationships name their source
+and target packs. Overridden packs remain visible, while invalid and mutual
+overrides remain unresolved conflicts with non-zero exits.
+
+The trace order is identical to `carl pack effective`: priority descending,
+then pack ID. Activation steps distinguish legacy selection, organisation and
+repository defaults, named profiles, role/task overlays, and dependency
+expansion. Registry-managed definitions retain their verified artifact
+provenance, but registry integrity does not become policy authority.
+
+Explanation output is derived diagnostic evidence, not canonical governance.
+Both commands are local-only, network-free, and make no repository writes.
+They explicitly do not expose prompts, hidden model reasoning, or
+chain-of-thought.
 
 ---
 

@@ -1,4 +1,4 @@
-<!-- version: 1.4.0 -->
+<!-- version: 1.5.0 -->
 # cARL CLI Reference
 
 The `carl` CLI installs and manages the cARL governance runtime inside a repository.
@@ -722,6 +722,97 @@ non-zero exit code:
   flagged but never removed, and no pack silently disables another.
 - Registry integrity and policy activation are separate: installing a verified
   artifact records provenance but does not select or activate it.
+
+---
+
+### `carl explain` / `carl trace`
+
+Reports pack-level policy provenance and the observable decisions made by the
+existing effective-pack evaluator.
+
+**Usage**
+
+```
+carl explain <pack-id> [--json]
+carl trace [--json]
+```
+
+`carl explain` works for every discoverable pack, including an inactive one.
+It reports:
+
+- whether the pack is applied, effective, overridden, or inactive;
+- its version, source, and repository-relative canonical definition;
+- registry provenance when it is registry-managed;
+- whether it is selected or an active seed;
+- structured selection, organisation/repository default, profile, role, task,
+  and dependency activation steps with their source artefact;
+- effective order, priority, and precedence mode;
+- required and requiring packs;
+- whether it adds constraints, declares or resolves overrides, or is
+  overridden by another effective pack.
+
+`carl trace` reports the complete effective policy set in the same precedence
+order as `carl pack effective`, followed by structured decisions:
+
+- active seed and dependency inclusion;
+- precedence ordering (priority descending, then pack-ID tie-break);
+- conservative pack-level constraint strengthening;
+- permitted overrides, including why they resolve (explicit declaration plus
+  an `overridable` target);
+- unresolved composition conflicts.
+
+Both commands are read-only, local-only, and network-free. They reuse strict
+pack, selection, profile, and installed-provenance validation and never fetch
+configured registries. An unresolved composition conflict is printed and
+causes a non-zero exit in human and JSON modes.
+
+JSON output uses schema version 1. A shortened
+`carl explain core/baseline --json` example:
+
+```json
+{
+  "schemaVersion": 1,
+  "notice": "Pack-level policy provenance only. ...",
+  "context": {
+    "mode": "profiles",
+    "source": ".github/carl/profiles.json",
+    "profile": "developer"
+  },
+  "policy": {
+    "id": "core/baseline",
+    "version": "1.2.0",
+    "applied": true,
+    "status": "effective",
+    "source": "bundled+repository-local",
+    "canonicalDefinition": ".github/instructions/core/baseline.instructions.md",
+    "order": 1,
+    "activation": [
+      {
+        "kind": "dependency",
+        "description": "dependency of languages/go",
+        "source": ".github/instructions/languages/go.instructions.md",
+        "relatedPack": "languages/go"
+      }
+    ],
+    "effect": {
+      "addsConstraints": true,
+      "declaredOverrides": [],
+      "resolvedOverrides": [],
+      "overriddenBy": []
+    }
+  },
+  "decisions": [],
+  "conflicts": []
+}
+```
+
+Every human and JSON response includes an explicit boundary notice:
+explanation is limited to pack-level policy provenance. The commands do not
+interpret individual natural-language rules and do not expose prompts, hidden
+model reasoning, or chain-of-thought.
+
+With `--json`, unknown packs use the existing `pack_not_found` structured
+error. Invalid repository policy inputs use `policy_evaluation_failed`.
 
 ---
 
