@@ -1,4 +1,4 @@
-<!-- version: 1.4.0 -->
+<!-- version: 1.5.0 -->
 # cARL — Glossary
 
 This glossary defines the terms used in cARL documentation, instruction packs, and governance artefacts.
@@ -163,7 +163,10 @@ A failure pattern in which repeated corrective prompts fail to fix a misundersto
 ## R
 
 ### Repo map
-A structured file (`.github/carl/repo-map.example.json`) that provides a cognitive orientation map of a repository: directory purposes, key files, and pack registry. Reduces agent time-to-orientation.
+A schema-versioned generated file (`.github/carl/repo-map.json`) that preserves a repository inventory and adds the cognitive repository graph. It is derived orientation evidence, not canonical governance.
+
+### Repository graph
+The `graph` section of the repo map. It contains stable repository-relative nodes, structural containment edges, evidence-backed repository-local Go dependency edges, direct reverse-dependency change impact, trust-boundary and criticality classifications, policy attachment points, and evidence coverage. It does not claim runtime data flow, ownership, or active policy when those facts are unavailable.
 
 ### Runtime layer
 The layer of committed files that an agent reads to understand its operating context. In cARL, this includes the root operating model, instruction packs, and governance artefacts.

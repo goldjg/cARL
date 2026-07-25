@@ -1,9 +1,11 @@
 {
+  "schema_version": 1,
   "_note": "Repository map derived by `carl map`. Re-run to update after structural changes.",
   "generated_by": "carl map",
-  "last_updated": "2026-06-20",
+  "last_updated": "2026-07-25",
   "languages": [
-    "Go"
+    "Go",
+    "Shell"
   ],
   "entry_points": [
     {
@@ -16,6 +18,10 @@
     }
   ],
   "directories": {
+    ".agents": "",
+    ".agents/rules": "",
+    ".cursor": "",
+    ".cursor/rules": "",
     ".github": "GitHub configuration and Copilot instruction root",
     ".github/carl": "cARLv2 governance artefacts and templates",
     ".github/carl/plans": "Prompt-as-code planning artefacts",
@@ -24,6 +30,7 @@
     ".github/instructions/core": "Core governance packs",
     ".github/instructions/languages": "Language-specific guidance packs",
     ".github/instructions/platform": "Platform guidance packs",
+    ".github/scripts": "",
     ".github/workflows": "GitHub Actions workflows",
     "cmd": "CLI command entry points",
     "cmd/carl": "Is the cARL CLI — a governance runtime manager for coding agents.",
@@ -36,14 +43,20 @@
     "internal/harness": "Implements the `carl harness` command and its subcommands.",
     "internal/install": "Implements the `carl init` command.",
     "internal/manifest": "Manages the cARL runtime manifest (.github/carl/runtime.json).",
+    "internal/pack": "Implements the `carl pack` command and its subcommands.",
     "internal/plan": "Implements the `carl plan` command.",
     "internal/reconcile": "Implements the `carl reconcile` command.",
     "internal/repair": "Implements the `carl repair` command.",
     "internal/repomap": "Implements the `carl map` command.",
     "internal/status": "Implements the `carl status` command.",
-    "internal/version": "Implements the `carl version` command."
+    "internal/version": "Implements the `carl version` command.",
+    "scripts": "Build and automation scripts"
   },
   "workflows": [
+    {
+      "path": ".github/workflows/goreleaser-check.yml",
+      "purpose": "goreleaser-check workflow"
+    },
     {
       "path": ".github/workflows/release.yml",
       "purpose": "release workflow"
@@ -85,12 +98,24 @@
   ],
   "documentation": [
     {
+      "path": "AGENTS.md"
+    },
+    {
+      "path": "ANTIGRAVITY.md"
+    },
+    {
       "path": "ARCHITECTURE.md",
       "purpose": "Architecture documentation"
     },
     {
+      "path": "CLAUDE.md"
+    },
+    {
       "path": "CLI.md",
       "purpose": "CLI command reference"
+    },
+    {
+      "path": "DISTRIBUTION.md"
     },
     {
       "path": "GLOSSARY.md",
@@ -112,5 +137,1778 @@
       "path": "VISION.md",
       "purpose": "Project vision"
     }
-  ]
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "component:.agents",
+        "kind": "component",
+        "path": ".agents",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Repository component at .agents."
+      },
+      {
+        "id": "component:.agents/rules",
+        "kind": "component",
+        "path": ".agents/rules",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Repository component at .agents/rules."
+      },
+      {
+        "id": "component:.cursor",
+        "kind": "component",
+        "path": ".cursor",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Repository component at .cursor."
+      },
+      {
+        "id": "component:.cursor/rules",
+        "kind": "component",
+        "path": ".cursor/rules",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Repository component at .cursor/rules."
+      },
+      {
+        "id": "component:.github",
+        "kind": "component",
+        "path": ".github",
+        "purpose": "GitHub configuration and Copilot instruction root",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "GitHub configuration and Copilot instruction root"
+      },
+      {
+        "id": "component:.github/carl",
+        "kind": "component",
+        "path": ".github/carl",
+        "purpose": "cARLv2 governance artefacts and templates",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "cARLv2 governance artefacts and templates"
+      },
+      {
+        "id": "component:.github/carl/plans",
+        "kind": "component",
+        "path": ".github/carl/plans",
+        "purpose": "Prompt-as-code planning artefacts",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Prompt-as-code planning artefacts"
+      },
+      {
+        "id": "component:.github/instructions",
+        "kind": "component",
+        "path": ".github/instructions",
+        "purpose": "Copilot instruction packs",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Copilot instruction packs"
+      },
+      {
+        "id": "component:.github/instructions/cloud",
+        "kind": "component",
+        "path": ".github/instructions/cloud",
+        "purpose": "Cloud guidance packs",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Cloud guidance packs"
+      },
+      {
+        "id": "component:.github/instructions/core",
+        "kind": "component",
+        "path": ".github/instructions/core",
+        "purpose": "Core governance packs",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Core governance packs"
+      },
+      {
+        "id": "component:.github/instructions/languages",
+        "kind": "component",
+        "path": ".github/instructions/languages",
+        "purpose": "Language-specific guidance packs",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Language-specific guidance packs"
+      },
+      {
+        "id": "component:.github/instructions/platform",
+        "kind": "component",
+        "path": ".github/instructions/platform",
+        "purpose": "Platform guidance packs",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Platform guidance packs"
+      },
+      {
+        "id": "component:.github/scripts",
+        "kind": "component",
+        "path": ".github/scripts",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Repository component at .github/scripts."
+      },
+      {
+        "id": "component:.github/workflows",
+        "kind": "component",
+        "path": ".github/workflows",
+        "purpose": "GitHub Actions workflows",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "GitHub Actions workflows"
+      },
+      {
+        "id": "component:cmd",
+        "kind": "component",
+        "path": "cmd",
+        "purpose": "CLI command entry points",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "CLI command entry points"
+      },
+      {
+        "id": "component:cmd/carl",
+        "kind": "package",
+        "path": "cmd/carl",
+        "purpose": "Is the cARL CLI — a governance runtime manager for coding agents.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Is the cARL CLI — a governance runtime manager for coding agents."
+      },
+      {
+        "id": "component:embedded",
+        "kind": "package",
+        "path": "embedded",
+        "purpose": "Provides access to the cARL runtime assets bundled into the CLI binary.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Provides access to the cARL runtime assets bundled into the CLI binary.",
+        "change_impact": [
+          "component:cmd/carl"
+        ]
+      },
+      {
+        "id": "component:embedded/assets",
+        "kind": "component",
+        "path": "embedded/assets",
+        "purpose": "Embedded runtime asset mirror",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Embedded runtime asset mirror"
+      },
+      {
+        "id": "component:internal",
+        "kind": "component",
+        "path": "internal",
+        "purpose": "Internal implementation packages",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Internal implementation packages"
+      },
+      {
+        "id": "component:internal/cmdutil",
+        "kind": "package",
+        "path": "internal/cmdutil",
+        "purpose": "Defines shared types for cARL CLI commands.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Defines shared types for cARL CLI commands.",
+        "change_impact": [
+          "component:cmd/carl",
+          "component:internal/pack"
+        ]
+      },
+      {
+        "id": "component:internal/convert",
+        "kind": "package",
+        "path": "internal/convert",
+        "purpose": "Implements the `carl convert` command and its converter framework.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Implements the `carl convert` command and its converter framework.",
+        "change_impact": [
+          "component:cmd/carl"
+        ]
+      },
+      {
+        "id": "component:internal/doctor",
+        "kind": "package",
+        "path": "internal/doctor",
+        "purpose": "Implements the `carl doctor` command.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Implements the `carl doctor` command.",
+        "change_impact": [
+          "component:cmd/carl"
+        ]
+      },
+      {
+        "id": "component:internal/harness",
+        "kind": "package",
+        "path": "internal/harness",
+        "purpose": "Implements the `carl harness` command and its subcommands.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Implements the `carl harness` command and its subcommands.",
+        "change_impact": [
+          "component:cmd/carl",
+          "component:internal/doctor",
+          "component:internal/status",
+          "component:internal/version"
+        ]
+      },
+      {
+        "id": "component:internal/install",
+        "kind": "package",
+        "path": "internal/install",
+        "purpose": "Implements the `carl init` command.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Implements the `carl init` command.",
+        "change_impact": [
+          "component:cmd/carl",
+          "component:internal/repair"
+        ]
+      },
+      {
+        "id": "component:internal/manifest",
+        "kind": "package",
+        "path": "internal/manifest",
+        "purpose": "Manages the cARL runtime manifest (.github/carl/runtime.json).",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Manages the cARL runtime manifest (.github/carl/runtime.json).",
+        "change_impact": [
+          "component:internal/doctor",
+          "component:internal/install",
+          "component:internal/pack",
+          "component:internal/repair",
+          "component:internal/status",
+          "component:internal/version"
+        ]
+      },
+      {
+        "id": "component:internal/pack",
+        "kind": "package",
+        "path": "internal/pack",
+        "purpose": "Implements the `carl pack` command and its subcommands.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Implements the `carl pack` command and its subcommands.",
+        "change_impact": [
+          "component:cmd/carl"
+        ]
+      },
+      {
+        "id": "component:internal/plan",
+        "kind": "package",
+        "path": "internal/plan",
+        "purpose": "Implements the `carl plan` command.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Implements the `carl plan` command.",
+        "change_impact": [
+          "component:cmd/carl"
+        ]
+      },
+      {
+        "id": "component:internal/reconcile",
+        "kind": "package",
+        "path": "internal/reconcile",
+        "purpose": "Implements the `carl reconcile` command.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Implements the `carl reconcile` command.",
+        "change_impact": [
+          "component:cmd/carl"
+        ]
+      },
+      {
+        "id": "component:internal/repair",
+        "kind": "package",
+        "path": "internal/repair",
+        "purpose": "Implements the `carl repair` command.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Implements the `carl repair` command.",
+        "change_impact": [
+          "component:cmd/carl",
+          "component:internal/doctor",
+          "component:internal/harness",
+          "component:internal/status"
+        ]
+      },
+      {
+        "id": "component:internal/repomap",
+        "kind": "package",
+        "path": "internal/repomap",
+        "purpose": "Implements the `carl map` command.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Implements the `carl map` command.",
+        "change_impact": [
+          "component:cmd/carl",
+          "component:internal/reconcile"
+        ]
+      },
+      {
+        "id": "component:internal/status",
+        "kind": "package",
+        "path": "internal/status",
+        "purpose": "Implements the `carl status` command.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Implements the `carl status` command.",
+        "change_impact": [
+          "component:cmd/carl"
+        ]
+      },
+      {
+        "id": "component:internal/version",
+        "kind": "package",
+        "path": "internal/version",
+        "purpose": "Implements the `carl version` command.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Implements the `carl version` command.",
+        "change_impact": [
+          "component:cmd/carl"
+        ]
+      },
+      {
+        "id": "component:scripts",
+        "kind": "component",
+        "path": "scripts",
+        "purpose": "Build and automation scripts",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Build and automation scripts"
+      },
+      {
+        "id": "documentation:AGENTS.md",
+        "kind": "documentation",
+        "path": "AGENTS.md",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "documentation artefact at AGENTS.md."
+      },
+      {
+        "id": "documentation:ANTIGRAVITY.md",
+        "kind": "documentation",
+        "path": "ANTIGRAVITY.md",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "documentation artefact at ANTIGRAVITY.md."
+      },
+      {
+        "id": "documentation:ARCHITECTURE.md",
+        "kind": "documentation",
+        "path": "ARCHITECTURE.md",
+        "purpose": "Architecture documentation",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "Architecture documentation"
+      },
+      {
+        "id": "documentation:CLAUDE.md",
+        "kind": "documentation",
+        "path": "CLAUDE.md",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "documentation artefact at CLAUDE.md."
+      },
+      {
+        "id": "documentation:CLI.md",
+        "kind": "documentation",
+        "path": "CLI.md",
+        "purpose": "CLI command reference",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "CLI command reference"
+      },
+      {
+        "id": "documentation:DISTRIBUTION.md",
+        "kind": "documentation",
+        "path": "DISTRIBUTION.md",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "documentation artefact at DISTRIBUTION.md."
+      },
+      {
+        "id": "documentation:GLOSSARY.md",
+        "kind": "documentation",
+        "path": "GLOSSARY.md",
+        "purpose": "Terminology glossary",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "Terminology glossary"
+      },
+      {
+        "id": "documentation:LICENSE",
+        "kind": "documentation",
+        "path": "LICENSE",
+        "purpose": "Licence",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "Licence"
+      },
+      {
+        "id": "documentation:README.md",
+        "kind": "documentation",
+        "path": "README.md",
+        "purpose": "Repository overview and pack catalogue",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "Repository overview and pack catalogue"
+      },
+      {
+        "id": "documentation:ROADMAP.md",
+        "kind": "documentation",
+        "path": "ROADMAP.md",
+        "purpose": "Feature roadmap and backlog",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "Feature roadmap and backlog"
+      },
+      {
+        "id": "documentation:VISION.md",
+        "kind": "documentation",
+        "path": "VISION.md",
+        "purpose": "Project vision",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "Project vision"
+      },
+      {
+        "id": "entry_point:cmd/carl/main.go",
+        "kind": "entry-point",
+        "path": "cmd/carl/main.go",
+        "purpose": "carl CLI entry point",
+        "criticality": "high",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "carl CLI entry point"
+      },
+      {
+        "id": "entry_point:go.mod",
+        "kind": "entry-point",
+        "path": "go.mod",
+        "purpose": "Go module definition: github.com/goldjg/carl",
+        "criticality": "high",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "Go module definition: github.com/goldjg/carl"
+      },
+      {
+        "id": "governance:.github/carl/current-pr-contract.md",
+        "kind": "governance",
+        "path": ".github/carl/current-pr-contract.md",
+        "purpose": "Active PR scope and constraints",
+        "criticality": "high",
+        "trust_boundary": "governance",
+        "policy_attachment_point": false,
+        "agent_context": "Active PR scope and constraints"
+      },
+      {
+        "id": "governance:.github/carl/current-pr-contract.template.md",
+        "kind": "governance",
+        "path": ".github/carl/current-pr-contract.template.md",
+        "purpose": "PR contract template",
+        "criticality": "high",
+        "trust_boundary": "governance",
+        "policy_attachment_point": false,
+        "agent_context": "PR contract template"
+      },
+      {
+        "id": "governance:.github/carl/invariants.yml",
+        "kind": "governance",
+        "path": ".github/carl/invariants.yml",
+        "purpose": "Runtime invariants enforced by all implementation PRs",
+        "criticality": "high",
+        "trust_boundary": "governance",
+        "policy_attachment_point": false,
+        "agent_context": "Runtime invariants enforced by all implementation PRs"
+      },
+      {
+        "id": "governance:.github/carl/memory.md",
+        "kind": "governance",
+        "path": ".github/carl/memory.md",
+        "purpose": "Durable architectural truth cache",
+        "criticality": "high",
+        "trust_boundary": "governance",
+        "policy_attachment_point": false,
+        "agent_context": "Durable architectural truth cache"
+      },
+      {
+        "id": "governance:.github/carl/repo-map.example.json",
+        "kind": "governance",
+        "path": ".github/carl/repo-map.example.json",
+        "purpose": "Repo map template example",
+        "criticality": "high",
+        "trust_boundary": "governance",
+        "policy_attachment_point": false,
+        "agent_context": "Repo map template example"
+      },
+      {
+        "id": "governance:.github/carl/repo-map.json",
+        "kind": "governance",
+        "path": ".github/carl/repo-map.json",
+        "purpose": "Generated cognitive repository map",
+        "criticality": "high",
+        "trust_boundary": "governance",
+        "policy_attachment_point": false,
+        "agent_context": "Generated cognitive repository map"
+      },
+      {
+        "id": "governance:.github/carl/tool-policy.yml",
+        "kind": "governance",
+        "path": ".github/carl/tool-policy.yml",
+        "purpose": "Tool permission tier definitions",
+        "criticality": "high",
+        "trust_boundary": "governance",
+        "policy_attachment_point": false,
+        "agent_context": "Tool permission tier definitions"
+      },
+      {
+        "id": "governance:.github/carl/trust-boundaries.md",
+        "kind": "governance",
+        "path": ".github/carl/trust-boundaries.md",
+        "purpose": "Trust boundary documentation",
+        "criticality": "high",
+        "trust_boundary": "governance",
+        "policy_attachment_point": false,
+        "agent_context": "Trust boundary documentation"
+      },
+      {
+        "id": "policy:cloud/azure",
+        "kind": "policy",
+        "path": ".github/instructions/cloud/azure.instructions.md",
+        "purpose": "Instruction pack cloud/azure",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:cloud/entra",
+        "kind": "policy",
+        "path": ".github/instructions/cloud/entra.instructions.md",
+        "purpose": "Instruction pack cloud/entra",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:cloud/gcp",
+        "kind": "policy",
+        "path": ".github/instructions/cloud/gcp.instructions.md",
+        "purpose": "Instruction pack cloud/gcp",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:cloud/microsoft-graph",
+        "kind": "policy",
+        "path": ".github/instructions/cloud/microsoft-graph.instructions.md",
+        "purpose": "Instruction pack cloud/microsoft-graph",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:cloud/netlify",
+        "kind": "policy",
+        "path": ".github/instructions/cloud/netlify.instructions.md",
+        "purpose": "Instruction pack cloud/netlify",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:core/baseline",
+        "kind": "policy",
+        "path": ".github/instructions/core/baseline.instructions.md",
+        "purpose": "Instruction pack core/baseline",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:core/carl",
+        "kind": "policy",
+        "path": ".github/instructions/core/carl.instructions.md",
+        "purpose": "Instruction pack core/carl",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:core/cognition-governance",
+        "kind": "policy",
+        "path": ".github/instructions/core/cognition-governance.instructions.md",
+        "purpose": "Instruction pack core/cognition-governance",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:core/dependency",
+        "kind": "policy",
+        "path": ".github/instructions/core/dependency.instructions.md",
+        "purpose": "Instruction pack core/dependency",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:core/identity",
+        "kind": "policy",
+        "path": ".github/instructions/core/identity.instructions.md",
+        "purpose": "Instruction pack core/identity",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:core/memory-cache",
+        "kind": "policy",
+        "path": ".github/instructions/core/memory-cache.instructions.md",
+        "purpose": "Instruction pack core/memory-cache",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:core/pr-contract",
+        "kind": "policy",
+        "path": ".github/instructions/core/pr-contract.instructions.md",
+        "purpose": "Instruction pack core/pr-contract",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:core/security",
+        "kind": "policy",
+        "path": ".github/instructions/core/security.instructions.md",
+        "purpose": "Instruction pack core/security",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:core/tool-permission-tiers",
+        "kind": "policy",
+        "path": ".github/instructions/core/tool-permission-tiers.instructions.md",
+        "purpose": "Instruction pack core/tool-permission-tiers",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:languages/go",
+        "kind": "policy",
+        "path": ".github/instructions/languages/go.instructions.md",
+        "purpose": "Instruction pack languages/go",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:languages/html",
+        "kind": "policy",
+        "path": ".github/instructions/languages/html.instructions.md",
+        "purpose": "Instruction pack languages/html",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:languages/javascript",
+        "kind": "policy",
+        "path": ".github/instructions/languages/javascript.instructions.md",
+        "purpose": "Instruction pack languages/javascript",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:languages/powershell",
+        "kind": "policy",
+        "path": ".github/instructions/languages/powershell.instructions.md",
+        "purpose": "Instruction pack languages/powershell",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:languages/python",
+        "kind": "policy",
+        "path": ".github/instructions/languages/python.instructions.md",
+        "purpose": "Instruction pack languages/python",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:languages/terraform",
+        "kind": "policy",
+        "path": ".github/instructions/languages/terraform.instructions.md",
+        "purpose": "Instruction pack languages/terraform",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:languages/typescript",
+        "kind": "policy",
+        "path": ".github/instructions/languages/typescript.instructions.md",
+        "purpose": "Instruction pack languages/typescript",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:platform/cicd",
+        "kind": "policy",
+        "path": ".github/instructions/platform/cicd.instructions.md",
+        "purpose": "Instruction pack platform/cicd",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:platform/docker",
+        "kind": "policy",
+        "path": ".github/instructions/platform/docker.instructions.md",
+        "purpose": "Instruction pack platform/docker",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:platform/kubernetes",
+        "kind": "policy",
+        "path": ".github/instructions/platform/kubernetes.instructions.md",
+        "purpose": "Instruction pack platform/kubernetes",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "repository:.",
+        "kind": "repository",
+        "path": ".",
+        "purpose": "Repository root",
+        "criticality": "high",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Repository orientation anchor; inspect connected components before changing cross-cutting behaviour."
+      },
+      {
+        "id": "workflow:.github/workflows/goreleaser-check.yml",
+        "kind": "workflow",
+        "path": ".github/workflows/goreleaser-check.yml",
+        "purpose": "goreleaser-check workflow",
+        "criticality": "high",
+        "trust_boundary": "automation",
+        "policy_attachment_point": false,
+        "agent_context": "goreleaser-check workflow"
+      },
+      {
+        "id": "workflow:.github/workflows/release.yml",
+        "kind": "workflow",
+        "path": ".github/workflows/release.yml",
+        "purpose": "release workflow",
+        "criticality": "high",
+        "trust_boundary": "automation",
+        "policy_attachment_point": false,
+        "agent_context": "release workflow"
+      }
+    ],
+    "edges": [
+      {
+        "from": "component:.agents",
+        "to": "component:.agents/rules",
+        "type": "contains",
+        "evidence": [
+          ".agents/rules"
+        ]
+      },
+      {
+        "from": "component:.cursor",
+        "to": "component:.cursor/rules",
+        "type": "contains",
+        "evidence": [
+          ".cursor/rules"
+        ]
+      },
+      {
+        "from": "component:.github",
+        "to": "component:.github/carl",
+        "type": "contains",
+        "evidence": [
+          ".github/carl"
+        ]
+      },
+      {
+        "from": "component:.github",
+        "to": "component:.github/instructions",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions"
+        ]
+      },
+      {
+        "from": "component:.github",
+        "to": "component:.github/scripts",
+        "type": "contains",
+        "evidence": [
+          ".github/scripts"
+        ]
+      },
+      {
+        "from": "component:.github",
+        "to": "component:.github/workflows",
+        "type": "contains",
+        "evidence": [
+          ".github/workflows"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
+        "to": "component:.github/carl/plans",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/plans"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
+        "to": "governance:.github/carl/current-pr-contract.md",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/current-pr-contract.md"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
+        "to": "governance:.github/carl/current-pr-contract.template.md",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/current-pr-contract.template.md"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
+        "to": "governance:.github/carl/invariants.yml",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/invariants.yml"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
+        "to": "governance:.github/carl/memory.md",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/memory.md"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
+        "to": "governance:.github/carl/repo-map.example.json",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/repo-map.example.json"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
+        "to": "governance:.github/carl/repo-map.json",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/repo-map.json"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
+        "to": "governance:.github/carl/tool-policy.yml",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/tool-policy.yml"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
+        "to": "governance:.github/carl/trust-boundaries.md",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/trust-boundaries.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions",
+        "to": "component:.github/instructions/cloud",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/cloud"
+        ]
+      },
+      {
+        "from": "component:.github/instructions",
+        "to": "component:.github/instructions/core",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/core"
+        ]
+      },
+      {
+        "from": "component:.github/instructions",
+        "to": "component:.github/instructions/languages",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/languages"
+        ]
+      },
+      {
+        "from": "component:.github/instructions",
+        "to": "component:.github/instructions/platform",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/platform"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/cloud",
+        "to": "policy:cloud/azure",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/cloud/azure.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/cloud",
+        "to": "policy:cloud/entra",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/cloud/entra.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/cloud",
+        "to": "policy:cloud/gcp",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/cloud/gcp.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/cloud",
+        "to": "policy:cloud/microsoft-graph",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/cloud/microsoft-graph.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/cloud",
+        "to": "policy:cloud/netlify",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/cloud/netlify.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/core",
+        "to": "policy:core/baseline",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/core/baseline.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/core",
+        "to": "policy:core/carl",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/core/carl.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/core",
+        "to": "policy:core/cognition-governance",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/core/cognition-governance.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/core",
+        "to": "policy:core/dependency",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/core/dependency.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/core",
+        "to": "policy:core/identity",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/core/identity.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/core",
+        "to": "policy:core/memory-cache",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/core/memory-cache.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/core",
+        "to": "policy:core/pr-contract",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/core/pr-contract.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/core",
+        "to": "policy:core/security",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/core/security.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/core",
+        "to": "policy:core/tool-permission-tiers",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/core/tool-permission-tiers.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/languages",
+        "to": "policy:languages/go",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/languages/go.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/languages",
+        "to": "policy:languages/html",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/languages/html.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/languages",
+        "to": "policy:languages/javascript",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/languages/javascript.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/languages",
+        "to": "policy:languages/powershell",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/languages/powershell.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/languages",
+        "to": "policy:languages/python",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/languages/python.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/languages",
+        "to": "policy:languages/terraform",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/languages/terraform.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/languages",
+        "to": "policy:languages/typescript",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/languages/typescript.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/platform",
+        "to": "policy:platform/cicd",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/platform/cicd.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/platform",
+        "to": "policy:platform/docker",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/platform/docker.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/platform",
+        "to": "policy:platform/kubernetes",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/platform/kubernetes.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/workflows",
+        "to": "workflow:.github/workflows/goreleaser-check.yml",
+        "type": "contains",
+        "evidence": [
+          ".github/workflows/goreleaser-check.yml"
+        ]
+      },
+      {
+        "from": "component:.github/workflows",
+        "to": "workflow:.github/workflows/release.yml",
+        "type": "contains",
+        "evidence": [
+          ".github/workflows/release.yml"
+        ]
+      },
+      {
+        "from": "component:cmd",
+        "to": "component:cmd/carl",
+        "type": "contains",
+        "evidence": [
+          "cmd/carl"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "entry_point:cmd/carl/main.go",
+        "type": "contains",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:embedded",
+        "to": "component:embedded/assets",
+        "type": "contains",
+        "evidence": [
+          "embedded/assets"
+        ]
+      },
+      {
+        "from": "component:internal",
+        "to": "component:internal/cmdutil",
+        "type": "contains",
+        "evidence": [
+          "internal/cmdutil"
+        ]
+      },
+      {
+        "from": "component:internal",
+        "to": "component:internal/convert",
+        "type": "contains",
+        "evidence": [
+          "internal/convert"
+        ]
+      },
+      {
+        "from": "component:internal",
+        "to": "component:internal/doctor",
+        "type": "contains",
+        "evidence": [
+          "internal/doctor"
+        ]
+      },
+      {
+        "from": "component:internal",
+        "to": "component:internal/harness",
+        "type": "contains",
+        "evidence": [
+          "internal/harness"
+        ]
+      },
+      {
+        "from": "component:internal",
+        "to": "component:internal/install",
+        "type": "contains",
+        "evidence": [
+          "internal/install"
+        ]
+      },
+      {
+        "from": "component:internal",
+        "to": "component:internal/manifest",
+        "type": "contains",
+        "evidence": [
+          "internal/manifest"
+        ]
+      },
+      {
+        "from": "component:internal",
+        "to": "component:internal/pack",
+        "type": "contains",
+        "evidence": [
+          "internal/pack"
+        ]
+      },
+      {
+        "from": "component:internal",
+        "to": "component:internal/plan",
+        "type": "contains",
+        "evidence": [
+          "internal/plan"
+        ]
+      },
+      {
+        "from": "component:internal",
+        "to": "component:internal/reconcile",
+        "type": "contains",
+        "evidence": [
+          "internal/reconcile"
+        ]
+      },
+      {
+        "from": "component:internal",
+        "to": "component:internal/repair",
+        "type": "contains",
+        "evidence": [
+          "internal/repair"
+        ]
+      },
+      {
+        "from": "component:internal",
+        "to": "component:internal/repomap",
+        "type": "contains",
+        "evidence": [
+          "internal/repomap"
+        ]
+      },
+      {
+        "from": "component:internal",
+        "to": "component:internal/status",
+        "type": "contains",
+        "evidence": [
+          "internal/status"
+        ]
+      },
+      {
+        "from": "component:internal",
+        "to": "component:internal/version",
+        "type": "contains",
+        "evidence": [
+          "internal/version"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "component:.agents",
+        "type": "contains",
+        "evidence": [
+          ".agents"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "component:.cursor",
+        "type": "contains",
+        "evidence": [
+          ".cursor"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "component:.github",
+        "type": "contains",
+        "evidence": [
+          ".github"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "component:cmd",
+        "type": "contains",
+        "evidence": [
+          "cmd"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "component:embedded",
+        "type": "contains",
+        "evidence": [
+          "embedded"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "component:internal",
+        "type": "contains",
+        "evidence": [
+          "internal"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "component:scripts",
+        "type": "contains",
+        "evidence": [
+          "scripts"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "documentation:AGENTS.md",
+        "type": "contains",
+        "evidence": [
+          "AGENTS.md"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "documentation:ANTIGRAVITY.md",
+        "type": "contains",
+        "evidence": [
+          "ANTIGRAVITY.md"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "documentation:ARCHITECTURE.md",
+        "type": "contains",
+        "evidence": [
+          "ARCHITECTURE.md"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "documentation:CLAUDE.md",
+        "type": "contains",
+        "evidence": [
+          "CLAUDE.md"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "documentation:CLI.md",
+        "type": "contains",
+        "evidence": [
+          "CLI.md"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "documentation:DISTRIBUTION.md",
+        "type": "contains",
+        "evidence": [
+          "DISTRIBUTION.md"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "documentation:GLOSSARY.md",
+        "type": "contains",
+        "evidence": [
+          "GLOSSARY.md"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "documentation:LICENSE",
+        "type": "contains",
+        "evidence": [
+          "LICENSE"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "documentation:README.md",
+        "type": "contains",
+        "evidence": [
+          "README.md"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "documentation:ROADMAP.md",
+        "type": "contains",
+        "evidence": [
+          "ROADMAP.md"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "documentation:VISION.md",
+        "type": "contains",
+        "evidence": [
+          "VISION.md"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "entry_point:go.mod",
+        "type": "contains",
+        "evidence": [
+          "go.mod"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "component:embedded",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "component:internal/cmdutil",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "component:internal/convert",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "component:internal/doctor",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "component:internal/harness",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "component:internal/install",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "component:internal/pack",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "component:internal/plan",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "component:internal/reconcile",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "component:internal/repair",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "component:internal/repomap",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "component:internal/status",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:cmd/carl",
+        "to": "component:internal/version",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/carl/main.go"
+        ]
+      },
+      {
+        "from": "component:internal/doctor",
+        "to": "component:internal/harness",
+        "type": "depends_on",
+        "evidence": [
+          "internal/doctor/doctor.go",
+          "internal/doctor/doctor_test.go"
+        ]
+      },
+      {
+        "from": "component:internal/doctor",
+        "to": "component:internal/manifest",
+        "type": "depends_on",
+        "evidence": [
+          "internal/doctor/doctor.go",
+          "internal/doctor/doctor_test.go"
+        ]
+      },
+      {
+        "from": "component:internal/doctor",
+        "to": "component:internal/repair",
+        "type": "depends_on",
+        "evidence": [
+          "internal/doctor/doctor.go"
+        ]
+      },
+      {
+        "from": "component:internal/harness",
+        "to": "component:internal/repair",
+        "type": "depends_on",
+        "evidence": [
+          "internal/harness/health.go"
+        ]
+      },
+      {
+        "from": "component:internal/install",
+        "to": "component:internal/manifest",
+        "type": "depends_on",
+        "evidence": [
+          "internal/install/install.go",
+          "internal/install/install_test.go"
+        ]
+      },
+      {
+        "from": "component:internal/pack",
+        "to": "component:internal/cmdutil",
+        "type": "depends_on",
+        "evidence": [
+          "internal/pack/compose_test.go",
+          "internal/pack/explain_command.go",
+          "internal/pack/explain_test.go",
+          "internal/pack/pack.go",
+          "internal/pack/pack_test.go",
+          "internal/pack/profile_test.go",
+          "internal/pack/registry_test.go"
+        ]
+      },
+      {
+        "from": "component:internal/pack",
+        "to": "component:internal/manifest",
+        "type": "depends_on",
+        "evidence": [
+          "internal/pack/explain.go",
+          "internal/pack/pack.go",
+          "internal/pack/pack_test.go"
+        ]
+      },
+      {
+        "from": "component:internal/reconcile",
+        "to": "component:internal/repomap",
+        "type": "depends_on",
+        "evidence": [
+          "internal/reconcile/reconcile.go",
+          "internal/reconcile/reconcile_test.go"
+        ]
+      },
+      {
+        "from": "component:internal/repair",
+        "to": "component:internal/install",
+        "type": "depends_on",
+        "evidence": [
+          "internal/repair/repair_test.go"
+        ]
+      },
+      {
+        "from": "component:internal/repair",
+        "to": "component:internal/manifest",
+        "type": "depends_on",
+        "evidence": [
+          "internal/repair/repair.go",
+          "internal/repair/repair_test.go"
+        ]
+      },
+      {
+        "from": "component:internal/status",
+        "to": "component:internal/harness",
+        "type": "depends_on",
+        "evidence": [
+          "internal/status/status.go",
+          "internal/status/status_test.go"
+        ]
+      },
+      {
+        "from": "component:internal/status",
+        "to": "component:internal/manifest",
+        "type": "depends_on",
+        "evidence": [
+          "internal/status/status.go",
+          "internal/status/status_test.go"
+        ]
+      },
+      {
+        "from": "component:internal/status",
+        "to": "component:internal/repair",
+        "type": "depends_on",
+        "evidence": [
+          "internal/status/status.go"
+        ]
+      },
+      {
+        "from": "component:internal/version",
+        "to": "component:internal/harness",
+        "type": "depends_on",
+        "evidence": [
+          "internal/version/version.go"
+        ]
+      },
+      {
+        "from": "component:internal/version",
+        "to": "component:internal/manifest",
+        "type": "depends_on",
+        "evidence": [
+          "internal/version/version.go",
+          "internal/version/version_test.go"
+        ]
+      }
+    ],
+    "coverage": {
+      "ownership": {
+        "status": "unavailable",
+        "detail": "Ownership is not inferred. No owner is reported without a supported authoritative ownership source."
+      },
+      "dependencies": {
+        "status": "partial",
+        "detail": "Repository-local Go import declarations are derived statically; dependencies in other languages and dynamic dependencies are not inferred."
+      },
+      "data_flows": {
+        "status": "unavailable",
+        "detail": "Static imports do not prove runtime data flow, so runtime flows are not inferred."
+      },
+      "trust_boundaries": {
+        "status": "derived",
+        "detail": "Nodes are classified as repository, governance, policy, or automation surfaces from canonical repository-relative paths."
+      },
+      "criticality": {
+        "status": "derived",
+        "detail": "Criticality is a deterministic orientation heuristic based on node kind, not a risk assessment."
+      },
+      "policy_attachments": {
+        "status": "partial",
+        "detail": "Repository components are marked as policy attachment points and policy definitions are discoverable; active policy assignment remains the responsibility of `carl trace`."
+      },
+      "change_impact": {
+        "status": "partial",
+        "detail": "Change impact lists direct reverse repository-local Go import dependencies only; it is not transitive or a runtime impact guarantee."
+      }
+    }
+  }
 }

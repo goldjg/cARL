@@ -19,8 +19,12 @@ import (
 // OutputFile is the path of the generated repo map relative to the repository root.
 const OutputFile = ".github/carl/repo-map.json"
 
+// SchemaVersion is the current repo-map JSON schema version.
+const SchemaVersion = 1
+
 // Map is the top-level structure written to repo-map.json.
 type Map struct {
+	SchemaVersion int               `json:"schema_version"`
 	Note          string            `json:"_note"`
 	GeneratedBy   string            `json:"generated_by"`
 	LastUpdated   string            `json:"last_updated"`
@@ -30,6 +34,7 @@ type Map struct {
 	Workflows     []File            `json:"workflows"`
 	Governance    []File            `json:"governance"`
 	Documentation []File            `json:"documentation"`
+	Graph         Graph             `json:"graph"`
 }
 
 // File is a path with an optional human-readable purpose description.
@@ -78,6 +83,8 @@ func (c *Command) RunInDir(rootDir string) error {
 	fmt.Printf("  Workflows:     %d\n", len(m.Workflows))
 	fmt.Printf("  Governance:    %d\n", len(m.Governance))
 	fmt.Printf("  Documentation: %d\n", len(m.Documentation))
+	fmt.Printf("  Graph nodes:   %d\n", len(m.Graph.Nodes))
+	fmt.Printf("  Graph edges:   %d\n", len(m.Graph.Edges))
 	return nil
 }
 
@@ -85,9 +92,10 @@ func (c *Command) RunInDir(rootDir string) error {
 // The scan is bounded to rootDir; it never follows symlinks outside it.
 func Build(rootDir string) (*Map, error) {
 	m := &Map{
-		Note:        "Repository map derived by `carl map`. Re-run to update after structural changes.",
-		GeneratedBy: "carl map",
-		LastUpdated: time.Now().UTC().Format("2006-01-02"),
+		SchemaVersion: SchemaVersion,
+		Note:          "Repository map derived by `carl map`. Re-run to update after structural changes.",
+		GeneratedBy:   "carl map",
+		LastUpdated:   time.Now().UTC().Format("2006-01-02"),
 	}
 
 	langs, err := detectLanguages(rootDir)
@@ -126,6 +134,12 @@ func Build(rootDir string) (*Map, error) {
 	}
 	m.Documentation = docs
 
+	graph, err := buildGraph(rootDir, m)
+	if err != nil {
+		return nil, fmt.Errorf("build cognitive graph: %w", err)
+	}
+	m.Graph = graph
+
 	return m, nil
 }
 
@@ -154,25 +168,25 @@ func skipDir(name string) bool {
 
 // extToLanguage maps common source-file extensions to programming language names.
 var extToLanguage = map[string]string{
-	".go":   "Go",
-	".py":   "Python",
-	".ts":   "TypeScript",
-	".tsx":  "TypeScript",
-	".js":   "JavaScript",
-	".jsx":  "JavaScript",
-	".rs":   "Rust",
-	".java": "Java",
-	".rb":   "Ruby",
-	".sh":   "Shell",
-	".bash": "Shell",
-	".ps1":  "PowerShell",
-	".tf":   "Terraform",
-	".cs":   "C#",
-	".cpp":  "C++",
-	".cc":   "C++",
-	".c":    "C",
+	".go":    "Go",
+	".py":    "Python",
+	".ts":    "TypeScript",
+	".tsx":   "TypeScript",
+	".js":    "JavaScript",
+	".jsx":   "JavaScript",
+	".rs":    "Rust",
+	".java":  "Java",
+	".rb":    "Ruby",
+	".sh":    "Shell",
+	".bash":  "Shell",
+	".ps1":   "PowerShell",
+	".tf":    "Terraform",
+	".cs":    "C#",
+	".cpp":   "C++",
+	".cc":    "C++",
+	".c":     "C",
 	".swift": "Swift",
-	".kt":   "Kotlin",
+	".kt":    "Kotlin",
 }
 
 // detectLanguages walks rootDir and returns a sorted, deduplicated list of
@@ -232,7 +246,8 @@ func detectEntryPoints(rootDir string) ([]File, error) {
 
 	for _, ep := range candidateEntryPoints {
 		p := filepath.Join(rootDir, ep.name)
-		if _, err := os.Stat(p); err != nil {
+		info, err := os.Lstat(p)
+		if err != nil || info.Mode()&os.ModeSymlink != 0 {
 			continue
 		}
 		purpose := ep.purpose
@@ -283,6 +298,10 @@ func detectEntryPoints(rootDir string) ([]File, error) {
 // readGoModuleName reads and returns the module name from a go.mod file.
 // Returns an empty string on any read or parse error.
 func readGoModuleName(path string) string {
+	info, err := os.Lstat(path)
+	if err != nil || info.Mode()&os.ModeSymlink != 0 {
+		return ""
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		return ""
@@ -518,14 +537,14 @@ func detectWorkflows(rootDir string) ([]File, error) {
 
 // knownGovernancePurposes maps known .github/carl/ filenames to purpose descriptions.
 var knownGovernancePurposes = map[string]string{
-	"invariants.yml":                   "Runtime invariants enforced by all implementation PRs",
-	"memory.md":                        "Durable architectural truth cache",
-	"current-pr-contract.md":           "Active PR scope and constraints",
-	"current-pr-contract.template.md":  "PR contract template",
-	"tool-policy.yml":                  "Tool permission tier definitions",
-	"trust-boundaries.md":              "Trust boundary documentation",
-	"repo-map.example.json":            "Repo map template example",
-	"repo-map.json":                    "Generated cognitive repository map",
+	"invariants.yml":                  "Runtime invariants enforced by all implementation PRs",
+	"memory.md":                       "Durable architectural truth cache",
+	"current-pr-contract.md":          "Active PR scope and constraints",
+	"current-pr-contract.template.md": "PR contract template",
+	"tool-policy.yml":                 "Tool permission tier definitions",
+	"trust-boundaries.md":             "Trust boundary documentation",
+	"repo-map.example.json":           "Repo map template example",
+	"repo-map.json":                   "Generated cognitive repository map",
 }
 
 // detectGovernance returns a sorted list of files found directly under

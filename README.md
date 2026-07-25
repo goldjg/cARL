@@ -1,4 +1,4 @@
-<!-- version: 1.2.0 -->
+<!-- version: 1.3.0 -->
 
 ![](cARL.png)
 
@@ -139,7 +139,8 @@ Repositories already running AADLC can migrate their accumulated durable knowled
 │   ├── plans/
 │   │   ├── README.md                # Prompt-as-code guidance for substantial tasks
 │   │   └── plan-template.md         # Reusable cARL planning contract template
-│   └── repo-map.example.json        # Example cognitive repo map for fast orientation
+│   ├── repo-map.json                # Generated inventory and cognitive repository graph
+│   └── repo-map.example.json        # Example graph schema for fast orientation
 └── instructions/
     ├── core/
     │   ├── baseline.instructions.md
@@ -189,6 +190,10 @@ CLI.md
    per language, platform, or cloud provider.
 4. `.github/carl/` contains durable governance artefacts: memory cache, PR
    contract, invariants, trust boundaries, and plans.
+5. `carl map` generates a schema-versioned cognitive graph of components,
+   artefacts, repository-local Go dependencies, direct change impact,
+   trust-boundary classifications, policy attachment points, and evidence
+   coverage. It does not guess owners, runtime data flows, or active policy.
 
 ---
 
@@ -415,6 +420,10 @@ carl reconcile
 carl convert aadlc
 carl harness sync
 ```
+
+The generated repo map keeps its original inventory sections for compatibility
+and adds stable graph nodes and evidence-backed edges. Use `carl trace`—not the
+graph—to determine which instruction packs are active.
 
 ---
 

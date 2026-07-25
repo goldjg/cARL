@@ -1,72 +1,128 @@
 {
-  "_note": "Cognitive repository map for cARL. Populate and version-control for your repository.",
+  "schema_version": 1,
+  "_note": "Repository map derived by `carl map`. Re-run to update after structural changes.",
+  "generated_by": "carl map",
   "last_updated": "YYYY-MM-DD",
+  "languages": [
+    "Go"
+  ],
+  "entry_points": [
+    {
+      "path": "go.mod",
+      "purpose": "Go module definition: github.com/example/project"
+    },
+    {
+      "path": "cmd/app/main.go",
+      "purpose": "app CLI entry point"
+    }
+  ],
   "directories": {
-    ".github": "Root Copilot instruction architecture",
+    ".github": "GitHub configuration and Copilot instruction root",
     ".github/carl": "cARLv2 governance artefacts and templates",
-    ".github/instructions/core": "Core operating model and governance packs",
-    ".github/instructions/languages": "Language-specific guidance packs",
-    ".github/instructions/platform": "Platform guidance packs",
-    ".github/instructions/cloud": "Cloud guidance packs",
-    ".github/carl/plans": "Version-controlled prompt-as-code planning artefacts"
+    "cmd/app": "app CLI entry point",
+    "internal/service": "Implements the service."
   },
-  "key_files": [
+  "workflows": [
     {
-      "path": ".github/copilot-instructions.md",
-      "purpose": "Root constitution and operating model"
-    },
-    {
-      "path": "README.md",
-      "purpose": "Repository overview and instruction-pack catalogue"
-    },
+      "path": ".github/workflows/ci.yml",
+      "purpose": "ci workflow"
+    }
+  ],
+  "governance": [
     {
       "path": ".github/carl/memory.md",
       "purpose": "Durable architectural truth cache"
-    },
-    {
-      "path": ".github/carl/current-pr-contract.md",
-      "purpose": "Current PR scope and constraints"
-    },
-    {
-      "path": ".github/carl/plans/README.md",
-      "purpose": "Prompt-as-code usage guidance"
-    },
-    {
-      "path": ".github/carl/plans/plan-template.md",
-      "purpose": "Reusable cARL planning contract template"
     }
   ],
-  "pack_registry": {
-    "core": [
-      "baseline.instructions.md",
-      "security.instructions.md",
-      "dependency.instructions.md",
-      "identity.instructions.md",
-      "carl.instructions.md",
-      "cognition-governance.instructions.md",
-      "tool-permission-tiers.instructions.md",
-      "memory-cache.instructions.md",
-      "pr-contract.instructions.md"
+  "documentation": [
+    {
+      "path": "README.md",
+      "purpose": "Repository overview and pack catalogue"
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "component:cmd/app",
+        "kind": "package",
+        "path": "cmd/app",
+        "purpose": "app CLI entry point",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "app CLI entry point"
+      },
+      {
+        "id": "component:internal/service",
+        "kind": "package",
+        "path": "internal/service",
+        "purpose": "Implements the service.",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Implements the service.",
+        "change_impact": [
+          "component:cmd/app"
+        ]
+      },
+      {
+        "id": "repository:.",
+        "kind": "repository",
+        "path": ".",
+        "purpose": "Repository root",
+        "criticality": "high",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Repository orientation anchor; inspect connected components before changing cross-cutting behaviour."
+      }
     ],
-    "languages": [
-      "python.instructions.md",
-      "typescript.instructions.md",
-      "javascript.instructions.md",
-      "terraform.instructions.md",
-      "powershell.instructions.md",
-      "html.instructions.md"
+    "edges": [
+      {
+        "from": "component:cmd/app",
+        "to": "component:internal/service",
+        "type": "depends_on",
+        "evidence": [
+          "cmd/app/main.go"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "component:cmd/app",
+        "type": "contains",
+        "evidence": [
+          "cmd/app"
+        ]
+      }
     ],
-    "platform": [
-      "cicd.instructions.md",
-      "docker.instructions.md",
-      "kubernetes.instructions.md"
-    ],
-    "cloud": [
-      "azure.instructions.md",
-      "entra.instructions.md",
-      "microsoft-graph.instructions.md",
-      "gcp.instructions.md",
-      "netlify.instructions.md"
-    ]
+    "coverage": {
+      "ownership": {
+        "status": "unavailable",
+        "detail": "Ownership is not inferred. No owner is reported without a supported authoritative ownership source."
+      },
+      "dependencies": {
+        "status": "partial",
+        "detail": "Repository-local Go import declarations are derived statically; dependencies in other languages and dynamic dependencies are not inferred."
+      },
+      "data_flows": {
+        "status": "unavailable",
+        "detail": "Static imports do not prove runtime data flow, so runtime flows are not inferred."
+      },
+      "trust_boundaries": {
+        "status": "derived",
+        "detail": "Nodes are classified as repository, governance, policy, or automation surfaces from canonical repository-relative paths."
+      },
+      "criticality": {
+        "status": "derived",
+        "detail": "Criticality is a deterministic orientation heuristic based on node kind, not a risk assessment."
+      },
+      "policy_attachments": {
+        "status": "partial",
+        "detail": "Repository components are marked as policy attachment points and policy definitions are discoverable; active policy assignment remains the responsibility of `carl trace`."
+      },
+      "change_impact": {
+        "status": "partial",
+        "detail": "Change impact lists direct reverse repository-local Go import dependencies only; it is not transitive or a runtime impact guarantee."
+      }
+    }
   }
 }

@@ -1,4 +1,4 @@
-<!-- version: 1.4.0 -->
+<!-- version: 1.5.0 -->
 # cARL — Architecture Overview
 
 ---
@@ -234,6 +234,36 @@ Both commands are local-only, network-free, and make no repository writes.
 They explicitly do not expose prompts, hidden model reasoning, or
 chain-of-thought.
 
+### Cognitive Repository Graph (schema version 1)
+
+`carl map` preserves its original repository inventory fields and adds a
+schema-versioned `graph` to `.github/carl/repo-map.json`.
+
+The graph uses stable repository-relative IDs for the repository root,
+components, Go packages, entry points, workflows, governance artefacts,
+documentation, and instruction-pack policy definitions. `contains` edges
+represent structural containment. `depends_on` edges come only from statically
+parsed repository-local Go imports and carry the source files as evidence.
+Direct reverse dependency edges populate each target node's `change_impact`.
+
+Nodes provide deterministic orientation metadata:
+
+- purpose and agent context;
+- `high`, `medium`, or `low` criticality as a navigation heuristic;
+- repository, governance, policy, or automation trust-boundary classification;
+- explicit component/package policy attachment points;
+- direct dependency-based change impact where available.
+
+The graph records evidence coverage separately for ownership, dependencies,
+data flows, trust boundaries, criticality, policy attachments, and change
+impact. Static imports are not runtime data-flow proof, ownership is never
+guessed, and policy attachment points do not claim policy activation. Active
+policy provenance remains owned by `carl trace`.
+
+Graph output is derived orientation evidence, not canonical governance,
+ownership, risk, or runtime evidence. Existing `carl reconcile` consumers
+continue to read the unchanged inventory fields and ignore the additive graph.
+
 ---
 
 ## Layer 3: Governance Artefacts
@@ -253,7 +283,7 @@ Templates and data artefacts used by cARLv2 packs. These are not instruction-pac
 | `profiles.json` | User-owned named profiles, defaults, role/task overlays, and active context (created only when configured) |
 | `registries.json` | User-owned explicit HTTPS or repository-local pack registry configuration (created only when configured) |
 | `installed-packs.json` | User-owned deterministic provenance for SHA-256-verified registry-managed packs (created on first install) |
-| `repo-map.example.json` | Cognitive repository map for fast agent orientation |
+| `repo-map.example.json` | Schema-versioned cognitive repository inventory and graph for fast agent orientation |
 | `plans/README.md` | Prompt-as-code guidance and when to use it |
 | `plans/plan-template.md` | Reusable planning contract template |
 

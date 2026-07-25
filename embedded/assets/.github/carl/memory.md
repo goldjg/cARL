@@ -1,4 +1,4 @@
-<!-- version: 1.9.0 -->
+<!-- version: 2.0.0 -->
 # Durable Architectural Truth Cache
 
 This cache stores durable project truths that should persist beyond a
@@ -149,6 +149,8 @@ Pack Phase 4 registries are configured explicitly in the schema-versioned, user-
 
 Pack Phase 5 provides top-level `carl explain <pack-id>` and `carl trace` commands. They are deterministic, schema-versioned, local-only, network-free, and read-only views over existing validated discovery and `ComputeEffectiveSet` semantics. `explain` works for effective and inactive discoverable packs and reports source, repository-relative canonical definition, selection/profile/default/dependency activation, precedence, registry provenance, and override state. `trace` reports the complete effective pack set in precedence order plus structured activation, dependency, ordering, pack-level constraint, resolved-override, and unresolved-conflict decisions; unresolved conflicts retain non-zero exits. The policy unit is an instruction pack: these commands do not parse natural-language prose into individual rules and do not expose prompts, hidden model reasoning, or chain-of-thought. Explanation output is derived diagnostic evidence, not a canonical governance authority.
 
+Pack Phase 6 extends `carl map` with repo-map schema version 1 and an additive cognitive `graph` while preserving all prior inventory fields consumed by `carl reconcile`. Stable repository-relative nodes cover the repository root, components, Go packages, entry points, workflows, governance artefacts, documentation, and instruction-pack definitions. Sorted `contains` edges describe structure; sorted `depends_on` edges come only from statically parsed repository-local Go imports and cite source-file evidence. Direct reverse dependencies populate bounded `change_impact`. Nodes include agent context, deterministic criticality heuristics, trust-boundary classifications, and component/package policy attachment points. Graph `coverage` records whether ownership, dependencies, data flows, trust boundaries, criticality, policy attachments, and impact evidence is derived, partial, or unavailable. The graph never guesses ownership or runtime data flow, never executes repository code, and does not claim policy activation; `carl trace` remains the active-policy provenance view. Graph output is derived orientation evidence, not canonical governance, ownership, runtime, or risk evidence.
+
 `carl harness` manages and inspects harness adapters for AI coding agents. Its subcommands are `list`, `status`, and `sync`.
 
 Harness adapters bridge cARL canonical artefacts to agent context injection mechanisms. cARL artefacts are the canonical source of truth; harness files are adapters, not authorities.
@@ -193,7 +195,7 @@ The `repair` package exports `Inspect(rootDir, managed, arts)`, which returns se
 
 `repair.CompareFile(rootDir, targetPath, canonicalPath, arts)` is the shared byte-comparison helper used by both runtime artefact inspection and harness adapter health checks.
 
-The `repomap` package implements `carl map`. Its `Build(rootDir)` function derives all map sections from the filesystem using `filepath.WalkDir`. It exports `RunInDir(rootDir)` for testability. `OutputFile` is `.github/carl/repo-map.json`.
+The `repomap` package implements `carl map`. Its `Build(rootDir)` function derives the compatible inventory and schema-versioned cognitive graph from the filesystem using `filepath.WalkDir` and Go standard-library import parsing. It exports `RunInDir(rootDir)` for testability. `OutputFile` is `.github/carl/repo-map.json`.
 
 The `convert` package implements `carl convert <source> [--dry-run | --apply]`, an AADLC-to-cARL governance migration command.
 
@@ -257,4 +259,4 @@ The active authority order is:
 <!-- Populate with unresolved questions that should persist into future work. -->
 
 ## Last updated
-2026-07-25 by Pack Phase 5 policy provenance and explanation implementation
+2026-07-25 by Pack Phase 6 cognitive repository graph implementation
