@@ -280,4 +280,5 @@ python -c "<PyYAML parse of release workflows and GoReleaser config>"
 
 Read-only public GitHub API calls verified the latest `main` commit, the
 authoritative v0.4.3 release, its 12 assets, and the successful release
-workflow/job/step conclusions. No external state was changed.
+workflow/job/step conclusions. Those evidence lookups changed no external
+state.
