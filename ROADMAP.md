@@ -1,4 +1,4 @@
-<!-- version: 1.9.0 -->
+<!-- version: 1.11.0 -->
 # cARL — Roadmap
 
 This roadmap describes the strategic direction and future evolution of cARL. None of the items marked as not started are implemented in the current codebase. Items are recorded here to preserve intent and prevent rediscovery.
@@ -297,6 +297,19 @@ surfaces missing or drifted harness adapters as `WARNING` findings with
 section (detected, missing, drifted, healthy) without changing overall runtime
 status semantics.
 
+### Shared-Loader Effective Pack Hydration
+**Status:** Delivered
+**Surface:** `.github/copilot-instructions.md`
+**Description:** Every supported harness routes through one normative,
+repository-local hydration procedure. The loader distinguishes pack presence,
+selection, activation, effective dependency/precedence composition, and
+override state; uses `packs.json` or the legacy `runtime.json` fallback; applies
+profile defaults and active overlays; and hydrates only effective,
+non-overridden definitions. Invalid or unresolved state fails closed without a
+load-all or filesystem-order fallback. The CLI remains optional management and
+diagnostic tooling, and loader/trace availability does not prove model
+adherence.
+
 ### `carl convert` Command (AADLC Migration)
 **Status:** Delivered
 **Command:** `carl convert aadlc [--dry-run | --apply]`
@@ -389,10 +402,10 @@ required dependencies transitively with explicit per-pack reasons, orders by
 precedence (priority descending, pack-ID tie-break — never load order), and
 detects conflicts (missing dependencies, overriding a non-overridable pack,
 mutual overrides) with non-zero exit. Composition remains conservative:
-packs add constraints; overridden packs stay in the set flagged
-`overriddenBy`; no pack silently disables another. Override authority is
-explicit metadata (target must declare `precedence-mode: overridable`),
-never inferred from load order.
+non-overridden effective packs add constraints; overridden packs stay visible
+in the evaluation flagged `overriddenBy` for provenance but are not applied.
+Override authority is explicit metadata (target must declare
+`precedence-mode: overridable`), never inferred from load order.
 
 ### Pack Phase 3: Profiles and Agent Roles
 **Status:** Delivered
@@ -410,6 +423,15 @@ only as a compatibility fallback for repositories without `profiles.json`.
 Profile commands provide human-readable and schema-versioned JSON output,
 validate all identifiers and references, and write only `profiles.json`;
 `runtime.json` remains init-only.
+
+Fresh installations ship `.github/carl/profiles.example.json` as an inactive,
+cloneable `default` baseline with explicit references to the complete bundled
+pack set and the existing role-neutral context. It is ordinary profile data,
+not evaluator magic, and repositories without `profiles.json` retain the
+compatibility fallback. A later menu/TUI workflow may create, clone, and edit
+profiles on this same canonical model; a shape such as
+`carl pack profile clone default my-team` is non-binding direction, not a
+currently implemented command or a new state format.
 
 ### Pack Phase 4: Registry and Installation
 **Status:** Delivered
@@ -440,6 +462,8 @@ effective-pack evaluator and unresolved conflicts keep their non-zero exit.
 Both commands are local-only and network-free. The policy unit is an
 instruction pack; the commands do not interpret individual natural-language
 rules or claim to expose prompts, hidden model reasoning, or chain-of-thought.
+Overridden entries remain visible for provenance with `applied: false` and a
+structured non-application decision.
 
 ### Pack Phase 6: Cognitive Repository Graph
 **Status:** Delivered

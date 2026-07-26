@@ -1,4 +1,4 @@
-<!-- version: 1.4.0 -->
+<!-- version: 1.6.0 -->
 
 ![](cARL.png)
 
@@ -132,6 +132,7 @@ Repositories already running AADLC can migrate their accumulated durable knowled
 │   ├── current-pr-contract.md          # Active PR contract (populate before each PR)
 │   ├── current-pr-contract.template.md # Blank template — copy to current-pr-contract.md
 │   ├── packs.json                      # User-owned repository pack selection (when configured)
+│   ├── profiles.example.json           # Inactive, cloneable complete-pack profile baseline
 │   ├── profiles.json                   # User-owned named profiles and active role/task context (when configured)
 │   ├── registries.json                 # Explicit pack registry locations (when configured)
 │   ├── installed-packs.json            # Verified registry-pack provenance (when installed)
@@ -394,12 +395,28 @@ All subcommands support `--json` for machine-readable output; `list`, `show`,
 `profile list`, and `effective` work outside an initialised repository
 (bundled packs only).
 Ordering is deterministic (sorted by pack ID; effective output in precedence
-order), never filesystem order. Composition is conservative: packs add
-constraints, required dependencies are expanded with explicit reasons, and no
-pack silently disables another — overrides require explicit metadata. Named
+order), never filesystem order. Composition is conservative: non-overridden
+effective packs add constraints, required dependencies are expanded with
+explicit reasons, and
+overrides require explicit metadata plus an `overridable` target. Overridden
+entries remain visible for provenance but their instruction definitions are
+not applied. Named
 profiles are defined in the committed `.github/carl/profiles.json` artefact;
 organisation/repository defaults and role/task overlays compose additively.
 When that artefact is absent, selected packs remain active for compatibility.
+Fresh installations also include `.github/carl/profiles.example.json`, an
+inactive `default` profile that explicitly names the complete shipped pack
+set. Copy it to `.github/carl/profiles.json` to adopt and customise the
+baseline. The example does not select or activate anything merely by being
+installed, and every copied profile reference must already be selected.
+
+Agents do not need the `carl` binary to hydrate governance. The shared loader
+in `.github/copilot-instructions.md` derives selection from `packs.json` or
+the legacy `runtime.json` fallback, derives active seeds from `profiles.json`
+when present, resolves dependencies/precedence/overrides, and applies only
+effective non-overridden definitions. Repository presence is not activation,
+filesystem order is not policy order, and invalid state stops hydration rather
+than loading every pack.
 
 `carl explain <pack-id>` reports whether one discoverable pack is in the
 effective policy, where its canonical definition came from, how selection or

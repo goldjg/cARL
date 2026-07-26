@@ -1,4 +1,4 @@
-<!-- version: 1.6.0 -->
+<!-- version: 1.8.0 -->
 # cARL — Architecture Overview
 
 ---
@@ -16,7 +16,7 @@ cARL is a three-layer system:
 ┌──────────────────────▼──────────────────────────────────────┐
 │                  Operating Model Layer                      │
 │  .github/copilot-instructions.md                            │
-│  (root constitution: modes, discipline, security baseline)  │
+│  (shared loader: lifecycle + effective-pack hydration)       │
 └──────────────────────┬──────────────────────────────────────┘
                        │ references
        ┌───────────────┴──────────────────┐
@@ -40,16 +40,18 @@ cARL is a three-layer system:
 
 ---
 
-## Layer 1: Operating Model (Root Constitution)
+## Layer 1: Shared Agent Loader
 
 **File:** `.github/copilot-instructions.md`
 
-This is the root governance file and shared adapter loader. GitHub Copilot
+This is the shared adapter loader, not a separate governance authority.
+GitHub Copilot
 reads it directly; the production Claude Code and Codex adapters route their
 agent sessions through it. Cursor and Antigravity use the same shim pattern,
 but have not yet been validated end-to-end in their native harnesses. It
 defines:
 
+- Repository-local selection/profile/effective-pack hydration
 - The agent's default operating mode (plan-first)
 - Mode selection logic (plan-only / assisted / automatic)
 - Core engineering principles (spec before code, small changes, tests are mandatory)
@@ -58,7 +60,9 @@ defines:
 - Cognition governance overview (cARLv2)
 - Required final response headings
 
-This file acts as the repository constitution. It should be stable and modified only via deliberate governance change.
+Canonical policy state remains in `.github/carl/` and pack metadata. The
+loader is the normative consumption path and should be stable and modified
+only via deliberate governance change.
 
 ---
 
@@ -90,7 +94,8 @@ Modular, single-concern instruction files that provide focused guidance per lang
 
 ### Core Packs (`.github/instructions/core/`)
 
-Foundational rules for every task:
+Available foundational rules. Only core packs in the derived effective,
+non-overridden set apply to a task:
 
 | Pack | Content |
 |---|---|
@@ -165,17 +170,23 @@ Phase 2: selection is an explicit committed artefact
 (`.github/carl/packs.json`), while priority and override authority come only
 from explicit pack metadata headers — never from load order.
 
-**Effective pack set.** `carl pack effective` computes the composed policy
-surface: explicitly selected packs plus transitively expanded required
-dependencies, each entry carrying explicit reasons. Composition is
-conservative — packs add constraints; an override is honoured only when
-declared in explicit metadata *and* the target pack declares itself
-`overridable`; overridden packs remain in the set flagged with
-`overriddenBy`, so no pack silently disables another. Conflicts (missing
-dependencies, overriding a non-overridable pack, mutual overrides) fail with
-a non-zero exit. Ordering is priority descending with pack-ID tie-breaks. Any
-future policy intermediate representation compiled from pack metadata builds
-on this effective set and must never be inferred from load order.
+**Effective pack evaluation.** `carl pack effective` starts from active seeds
+(or selected-as-active compatibility seeds when profiles are absent) and adds
+transitively required dependencies, each entry carrying explicit reasons.
+Composition is conservative and explicit: an override is honoured only when
+declared in metadata *and* the target pack declares itself `overridable`.
+Overridden packs remain visible in the evaluation flagged with
+`overriddenBy` for provenance, but their instruction definitions are not
+applied. Conflicts (missing dependencies, overriding a non-overridable pack,
+mutual overrides) fail with a non-zero exit. Ordering is priority descending
+with pack-ID tie-breaks. Policy meaning must never be inferred from load
+order.
+
+The shared loader derives the same evaluation directly from repository-local
+`runtime.json`, optional `packs.json`, optional `profiles.json`, and pack
+metadata. The CLI is optional validation/diagnostic tooling rather than an
+agent runtime dependency. Invalid or unresolved state stops hydration; loading
+every instruction file is not a safe fallback.
 
 ### Profiles and Agent Roles (schema version 1)
 
@@ -194,6 +205,15 @@ precedence, override, and conflict rules then produce the effective set.
 `carl pack profile activate` and `clear` write only `profiles.json`;
 `runtime.json` remains init-only. Invalid profile IDs, duplicate profiles,
 unknown contexts, and unselected pack references are explicit errors.
+
+The bundled `.github/carl/profiles.example.json` is an inactive reference
+artefact, not a second policy source. Its ordinary schema-version 1 `default`
+profile explicitly reproduces the complete shipped-pack baseline and keeps the
+existing role-neutral context by omitting optional role/task overlays.
+`carl init` installs the example, but evaluation reads only `profiles.json`;
+users deliberately copy and customise the example when they want active
+profile state. This preserves profile-absent compatibility and avoids
+silently creating or owning a mutable user policy file.
 
 ### Registry and Installation (schema version 1)
 
@@ -240,10 +260,12 @@ or evaluation algorithm:
 
 The explained policy unit is an instruction pack. The runtime does not parse
 natural-language pack prose into individual rules and has no compiled policy
-intermediate representation. An effective pack therefore reports that it adds
-constraints at pack level; permitted override relationships name their source
-and target packs. Overridden packs remain visible, while invalid and mutual
-overrides remain unresolved conflicts with non-zero exits.
+intermediate representation. A non-overridden effective pack therefore
+reports that it adds constraints at pack level; permitted override
+relationships name their source and target packs. Overridden packs remain
+visible for provenance with `applied: false` and `addsConstraints: false`,
+while invalid and mutual overrides remain unresolved conflicts with non-zero
+exits.
 
 The trace order is identical to `carl pack effective`: priority descending,
 then pack ID. Activation steps distinguish legacy selection, organisation and
@@ -254,7 +276,8 @@ provenance, but registry integrity does not become policy authority.
 Explanation output is derived diagnostic evidence, not canonical governance.
 Both commands are local-only, network-free, and make no repository writes.
 They explicitly do not expose prompts, hidden model reasoning, or
-chain-of-thought.
+chain-of-thought, and they do not claim that instruction availability or
+loading proves model adherence.
 
 ### Cognitive Repository Graph (schema version 1)
 
@@ -302,6 +325,7 @@ Templates and data artefacts used by cARLv2 packs. These are not instruction-pac
 | `invariants.yml` | Machine-readable invariant set: secrets policy, scope discipline, security baseline, plan-first, dependency approval |
 | `trust-boundaries.md` | Trust boundary classification table and crossing rules |
 | `tool-policy.yml` | Tier 0/1/2 tool permission policy |
+| `profiles.example.json` | Bundled inactive, cloneable `default` profile for the complete shipped pack baseline |
 | `profiles.json` | User-owned named profiles, defaults, role/task overlays, and active context (created only when configured) |
 | `registries.json` | User-owned explicit HTTPS or repository-local pack registry configuration (created only when configured) |
 | `installed-packs.json` | User-owned deterministic provenance for SHA-256-verified registry-managed packs (created on first install) |

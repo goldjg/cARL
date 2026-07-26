@@ -23,9 +23,10 @@ type Conflict struct {
 	Message string `json:"message"`
 }
 
-// EffectiveSet is the computed effective pack set: explicit selection plus
-// transitively expanded required dependencies, ordered by explicit
-// precedence (priority descending, then pack ID) — never load order.
+// EffectiveSet is the computed effective pack evaluation: active profile
+// seeds (or selected-as-active compatibility seeds) plus transitively expanded
+// required dependencies, ordered by explicit precedence (priority descending,
+// then pack ID) — never load order.
 type EffectiveSet struct {
 	Packs     []EffectivePack `json:"packs"`
 	Conflicts []Conflict      `json:"conflicts,omitempty"`
@@ -37,9 +38,9 @@ const (
 )
 
 // ComputeEffectiveSet computes the effective pack set from the discovered
-// pack universe. Composition is conservative: packs add constraints, no pack
-// is ever removed from the set by an override, and override authority comes
-// only from explicit metadata.
+// pack universe. Composition is conservative: entries remain visible for
+// provenance when overridden, and override authority comes only from explicit
+// metadata.
 func ComputeEffectiveSet(packs []PackMetadata) (*EffectiveSet, error) {
 	index := map[string]PackMetadata{}
 	for _, p := range packs {

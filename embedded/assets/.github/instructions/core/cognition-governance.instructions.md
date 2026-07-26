@@ -1,4 +1,4 @@
-<!-- version: 1.3.0 -->
+<!-- version: 1.3.1 -->
 # Cognition Governance Pack
 
 Defines how reasoning depth is selected, how ambiguity is reduced, and how governance checkpoints are preserved across model and harness differences.
@@ -22,7 +22,7 @@ Defines how reasoning depth is selected, how ambiguity is reduced, and how gover
 
 For implementation tasks, preserve these checkpoints explicitly:
 
-1. **Hydration checkpoint** — read the active PR contract, memory, invariants, trust boundaries, tool policy, relevant plans, and relevant instruction packs.
+1. **Hydration checkpoint** — read the active PR contract, memory, invariants, trust boundaries, tool policy, runtime/selection/profile state, relevant plans, and only the effective non-overridden instruction packs derived through the shared loader.
 2. **Scope checkpoint** — confirm the requested work fits approved scope and does not hit forbidden scope or stop conditions.
 3. **Execution checkpoint** — implement the smallest reversible change that satisfies the contract.
 4. **Validation checkpoint** — validate contract, implementation, and tests together.

@@ -7,9 +7,39 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/goldjg/carl/embedded"
 	"github.com/goldjg/carl/internal/cmdutil"
+	"github.com/goldjg/carl/internal/manifest"
 )
+
+var defaultProfilePackIDs = []string{
+	"cloud/azure",
+	"cloud/entra",
+	"cloud/gcp",
+	"cloud/microsoft-graph",
+	"cloud/netlify",
+	"core/baseline",
+	"core/carl",
+	"core/cognition-governance",
+	"core/dependency",
+	"core/identity",
+	"core/memory-cache",
+	"core/pr-contract",
+	"core/security",
+	"core/tool-permission-tiers",
+	"languages/go",
+	"languages/html",
+	"languages/javascript",
+	"languages/powershell",
+	"languages/python",
+	"languages/terraform",
+	"languages/typescript",
+	"platform/cicd",
+	"platform/docker",
+	"platform/kubernetes",
+}
 
 func testProfiles() *Profiles {
 	return &Profiles{
@@ -174,6 +204,80 @@ func TestProfileReferencesRequireSelectedPacks(t *testing.T) {
 	}
 }
 
+func TestDefaultProfileExampleSchemaAndReferences(t *testing.T) {
+	dir := t.TempDir()
+	profiles := installDefaultProfileExample(t, dir)
+
+	if profiles.SchemaVersion != metadataSchemaVersion {
+		t.Fatalf("schemaVersion = %d; want %d", profiles.SchemaVersion, metadataSchemaVersion)
+	}
+	if len(profiles.Defaults.Organization) != 0 || len(profiles.Defaults.Repository) != 0 {
+		t.Fatalf("default context = %+v; want empty organization and repository defaults", profiles.Defaults)
+	}
+	if profiles.Active != (ActiveProfileContext{Profile: "default"}) {
+		t.Fatalf("active context = %+v; want role-neutral default profile", profiles.Active)
+	}
+	if len(profiles.Profiles) != 1 {
+		t.Fatalf("profiles = %+v; want one default profile", profiles.Profiles)
+	}
+	profile := profiles.Profiles[0]
+	if profile.ID != "default" || profile.Description == "" {
+		t.Fatalf("default profile identity = %+v", profile)
+	}
+	if len(profile.Roles) != 0 || len(profile.Tasks) != 0 {
+		t.Fatalf("default profile invents role/task overlays: %+v", profile)
+	}
+	if strings.Join(profile.Packs, ",") != strings.Join(defaultProfilePackIDs, ",") {
+		t.Fatalf("default profile packs = %v; want %v", profile.Packs, defaultProfilePackIDs)
+	}
+
+	selected := make(map[string]bool, len(defaultProfilePackIDs))
+	for _, id := range defaultProfilePackIDs {
+		selected[id] = true
+	}
+	if err := ValidateProfileReferences(profiles, selected); err != nil {
+		t.Fatalf("ValidateProfileReferences: %v", err)
+	}
+	delete(selected, defaultProfilePackIDs[len(defaultProfilePackIDs)-1])
+	if err := ValidateProfileReferences(profiles, selected); err == nil {
+		t.Fatal("expected an unselected example reference to fail validation")
+	}
+}
+
+func TestDefaultProfileExampleMatchesLegacyEffectiveSet(t *testing.T) {
+	managed, err := embedded.Assets.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	legacyDir := t.TempDir()
+	writeLegacyRuntime(t, legacyDir, managed)
+	profileDir := t.TempDir()
+	writeLegacyRuntime(t, profileDir, managed)
+	installDefaultProfileExample(t, profileDir)
+
+	cmd := New(embedded.Assets)
+	legacy := discoverEffectiveSet(t, cmd, legacyDir)
+	profile := discoverEffectiveSet(t, cmd, profileDir)
+	legacyIDs := effectivePackIDs(legacy)
+	profileIDs := effectivePackIDs(profile)
+
+	if strings.Join(legacyIDs, ",") != strings.Join(defaultProfilePackIDs, ",") {
+		t.Fatalf("legacy effective packs = %v; want complete baseline %v", legacyIDs, defaultProfilePackIDs)
+	}
+	if strings.Join(profileIDs, ",") != strings.Join(legacyIDs, ",") {
+		t.Fatalf("default profile effective packs = %v; want legacy baseline %v", profileIDs, legacyIDs)
+	}
+	if len(profile.Conflicts) != 0 {
+		t.Fatalf("default profile conflicts = %+v", profile.Conflicts)
+	}
+	for _, p := range profile.Packs {
+		if p.Priority != defaultPriority || p.Mode != defaultMode || len(p.OverriddenBy) != 0 {
+			t.Fatalf("default profile changed ordinary composition for %s: %+v", p.ID, p)
+		}
+	}
+}
+
 // Contract assertions 2 and 5: discovery marks profile seeds active, and
 // effective composition uses those seeds with their profile provenance.
 func TestProfileDrivenActiveAndEffectiveSet(t *testing.T) {
@@ -319,4 +423,54 @@ func writeProfileFile(t *testing.T, rootDir, content string) {
 	if err := os.WriteFile(p, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func installDefaultProfileExample(t *testing.T, rootDir string) *Profiles {
+	t.Helper()
+	data, err := embedded.Assets.Open(".github/carl/profiles.example.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, rootDir, ProfileFileName, data)
+	profiles, err := ReadProfiles(rootDir)
+	if err != nil {
+		t.Fatalf("ReadProfiles(default example): %v", err)
+	}
+	return profiles
+}
+
+func writeLegacyRuntime(t *testing.T, rootDir string, managed []string) {
+	t.Helper()
+	err := manifest.Write(rootDir, &manifest.Runtime{
+		RuntimeVersion:   "test",
+		Source:           "test",
+		SourceTag:        "test",
+		SourceCommit:     "test",
+		InstalledAt:      time.Unix(0, 0).UTC(),
+		ManagedArtifacts: managed,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func discoverEffectiveSet(t *testing.T, cmd *Command, rootDir string) *EffectiveSet {
+	t.Helper()
+	packs, err := cmd.discover(rootDir)
+	if err != nil {
+		t.Fatalf("discover: %v", err)
+	}
+	set, err := ComputeEffectiveSet(packs)
+	if err != nil {
+		t.Fatalf("ComputeEffectiveSet: %v", err)
+	}
+	return set
+}
+
+func effectivePackIDs(set *EffectiveSet) []string {
+	ids := make([]string, 0, len(set.Packs))
+	for _, p := range set.Packs {
+		ids = append(ids, p.ID)
+	}
+	return ids
 }

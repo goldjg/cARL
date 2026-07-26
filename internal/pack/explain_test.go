@@ -216,7 +216,12 @@ func TestTraceResolvedOverrideJSON(t *testing.T) {
 		trace.Policies[1].ID != "core/custom" {
 		t.Fatalf("policy order = %#v", trace.Policies)
 	}
+	if !strings.Contains(trace.Notice, "does not prove model adherence") {
+		t.Fatalf("trace evidence boundary missing from notice: %q", trace.Notice)
+	}
 	if trace.Policies[0].Status != "overridden" ||
+		trace.Policies[0].Applied ||
+		trace.Policies[0].Effect.AddsConstraints ||
 		!reflect.DeepEqual(trace.Policies[0].Effect.OverriddenBy, []string{"core/custom"}) {
 		t.Fatalf("base policy = %#v", trace.Policies[0])
 	}
@@ -226,18 +231,27 @@ func TestTraceResolvedOverrideJSON(t *testing.T) {
 	) {
 		t.Fatalf("custom policy = %#v", trace.Policies[1])
 	}
-	found := false
+	foundOverride := false
+	foundNotApplied := false
 	for _, decision := range trace.Decisions {
 		if decision.Kind == "override" &&
 			decision.Outcome == "resolved" &&
 			decision.Subject == "core/custom" &&
 			decision.Target == "core/base" &&
 			strings.Contains(decision.Reason, "overridable") {
-			found = true
+			foundOverride = true
+		}
+		if decision.Kind == "constraint" &&
+			decision.Outcome == "not-applied" &&
+			decision.Subject == "core/base" {
+			foundNotApplied = true
 		}
 	}
-	if !found {
+	if !foundOverride {
 		t.Fatalf("resolved override decision missing: %#v", trace.Decisions)
+	}
+	if !foundNotApplied {
+		t.Fatalf("overridden definition must be explicitly not applied: %#v", trace.Decisions)
 	}
 }
 
