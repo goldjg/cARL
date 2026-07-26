@@ -1,4 +1,4 @@
-<!-- version: 1.8.0 -->
+<!-- version: 1.9.0 -->
 # cARL — Architecture Overview
 
 ---
@@ -112,7 +112,7 @@ non-overridden set apply to a task:
 ### Language Packs (`.github/instructions/languages/`)
 
 Language-specific conventions and guardrails. Current packs:
-- Python, TypeScript, JavaScript, Terraform, PowerShell, HTML
+- Go, Python, TypeScript, JavaScript, Terraform, PowerShell, HTML
 
 ### Platform Packs (`.github/instructions/platform/`)
 
@@ -148,13 +148,20 @@ Pack state is a chain of distinct facts:
 
 - **bundled** — shipped inside the `carl` binary,
 - **installed** — present as a file in the repository,
+- **present** — discoverable from a bundled, repository-local, or verified
+  registry-installed source,
 - **selected** — recorded in `.github/carl/packs.json` (written by
   `carl pack select` / `unselect`; falls back to the legacy
   `.github/carl/runtime.json` derivation when `packs.json` is absent),
 - **active** — explicitly activated by organisation/repository defaults plus
   the current named profile and its role/task overlays in
   `.github/carl/profiles.json`. When that artefact is absent, active falls
-  back to selected for compatibility.
+  back to selected for compatibility,
+- **effective** — active seeds plus required dependencies after validation and
+  deterministic composition,
+- **overridden** — still visible in the effective evaluation for provenance,
+  but its definitions are not applied because an authorised effective pack
+  explicitly overrides it.
 
 Discovery merges bundled, repository-local, and manifest sources
 deterministically (sorted by pack ID); repository-local metadata takes
@@ -238,6 +245,17 @@ if a transaction fails. Installation does not alter selection or activation.
 The installed-pack manifest is committed provenance rather than runtime
 authority. It records the configured registry, artifact, digest, version, and
 installed path. Discovery exposes that provenance and rejects digest drift.
+
+---
+
+## Public compatibility boundary
+
+The durable compatibility promise for the `1.x` line is defined in
+[COMPATIBILITY.md](COMPATIBILITY.md). It covers the documented CLI and
+schema-versioned data contracts, composition semantics, lifecycle behaviour,
+and runtime-owned versus user-owned artefact boundary. Internal package
+structure, human-readable formatting, and explicitly theoretical harness
+behaviour are not byte-for-byte compatibility contracts.
 `carl pack update` uses the recorded source, rejects local drift and
 same-version registry mutation, and never downgrades.
 

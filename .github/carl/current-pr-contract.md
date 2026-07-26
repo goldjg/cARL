@@ -1,199 +1,199 @@
-<!-- version: 1.2.1 -->
+<!-- version: 1.0.0 -->
 # Current PR Contract
 
 ## Contract status
 
-Completed
+Complete
 
 ## Goal
 
-Make opt-in enterprise-example adoption fail-safe throughout the complete
-setup sequence while preserving the existing repository default.
+Establish whether the current `main` branch is genuinely ready for the
+`v1.0.0-rc.1` release candidate, close only demonstrated release-blocking
+gaps, and leave auditable compatibility, lifecycle, distribution, and
+release-pipeline evidence without creating a tag or publishing a release.
 
-## Intentional amendment
+## Previous contract status
 
-PR #44 originally committed active `packs.json` and `profiles.json` state,
-which changed the repository's effective pack set from the pre-PR baseline.
-This revision makes the fictional enterprise material present but inactive,
-removes active selection/profile state from the PR, and proves exact default
-effective-set parity with `main`.
-
-Manual adoption testing then identified a sequencing hazard: selecting the 11
-enterprise packs before copying the fixture temporarily makes all selected
-packs active under profile-absent compatibility behaviour. This correction
-requires copying the fixture first so its active `default` profile constrains
-the effective set before enterprise selection is expanded.
+The enterprise-example adoption contract was completed by PR #44. It is
+historical evidence, not active authority, and is superseded for this task.
+Its durable opt-in and fail-safe adoption semantics remain binding through
+memory, documentation, tests, and current repository behaviour.
 
 ## Non-goals
 
-- No profile, selection, pack, composition, or trace schema change.
-- No CLI or evaluator behaviour change.
-- No hidden special case for enterprise examples.
-- No registry, network-runtime, dependency, source-code, test-code, CI/CD,
-  release, embedded-runtime, or generated-map change.
-- No claim that fixture composition proves model execution, hidden reasoning,
-  or complete instruction compliance.
+- No new product capability, command, TUI, policy IR, Pack Phase 7 publishing
+  model, marketplace, or schema redesign.
+- No support-tier promotion without native-harness execution evidence.
+- No tag, GitHub Release, Homebrew publication, or WinGet submission.
+- No change to release secrets or weakening of validation.
+- No byte-for-byte stability promise for human-readable output or prose.
+- No claim that cARL exposes hidden model reasoning or proves perfect
+  instruction compliance.
 
 ## Approved scope
 
-- `.github/carl/current-pr-contract.md`
-- `.github/carl/enterprise-profiles.md`
-- `.github/carl/profiles.enterprise.example.json`
-- `.github/carl/profiles.enterprise.scenarios.example.json`
-- `.github/carl/plans/enterprise-profile-adherence-scenarios.md`
-- `.github/instructions/enterprise/*.instructions.md`
-- Removal of PR-added `.github/carl/packs.json`
-- Removal of PR-added `.github/carl/profiles.json`
-- PR #44 title and description
+- Release-readiness governance and prompt-as-code artefacts under
+  `.github/carl/`.
+- A durable v1 compatibility policy.
+- Release-readiness evidence and `v1.0.0-rc.1` prerelease notes.
+- Release-facing documentation: `README.md`, `CLI.md`, `ARCHITECTURE.md`,
+  `DISTRIBUTION.md`, `ROADMAP.md`, and directly related documentation.
+- Tests, scripts, embedded assets, build metadata, GoReleaser configuration,
+  and release workflows only when a demonstrated release blocker requires a
+  narrowly scoped correction.
+- Generated repository map and reconciled durable memory after final file
+  changes.
+- Branch, commit, push, and draft pull-request metadata for this readiness
+  change.
 
 ## Forbidden scope
 
-- Do not modify `.github/carl/runtime.json` or the shipped
-  `.github/carl/profiles.example.json`.
-- Do not modify existing built-in packs under `.github/instructions/cloud/`,
-  `.github/instructions/core/`, `.github/instructions/languages/`, or
-  `.github/instructions/platform/`.
-- Do not modify embedded assets, source code, tests, dependencies, harness
-  adapters, CI/CD, release files, registries, or generated repository maps.
-- Do not add active profile/selection state to the merged repository.
-- Do not use overrides to weaken built-in controls.
-- Do not include the unrelated local session record in PR #44.
+- Do not add major commands, a TUI, Pack Phase 7, a marketplace, or a new
+  policy intermediate representation.
+- Do not change a schema unless an observed release blocker cannot be fixed
+  compatibly.
+- Do not weaken validation, path safety, provenance, conflict handling,
+  runtime ownership boundaries, or release failure behaviour.
+- Do not alter secret values or expose secret material.
+- Do not promote Cursor or Antigravity beyond theoretical support without
+  native-harness evidence.
+- Do not rewrite user-owned policy, provenance, memory, or profile state.
+- Do not modify unrelated local files.
+- Do not create or move a tag, publish a GitHub Release, update Homebrew, or
+  submit WinGet manifests.
+
+## Compatibility constraints
+
+- Stable v1 contracts must cover documented commands and semantics, documented
+  exits, schema-versioned JSON, runtime/pack/profile/registry/provenance state,
+  repository-map schema, pack metadata, policy composition, ownership
+  boundaries, and the documented lifecycle commands.
+- Additive JSON fields are compatible unless an individual contract forbids
+  them. Removing a field or changing its meaning requires a schema-version
+  transition.
+- User-owned policy files are never silently replaced. Repair remains limited
+  to declared repairable runtime-owned assets.
+- Intentional breaking changes to stable public contracts require a new major
+  version.
+- Human-readable formatting, undeclared wording/order, documentation prose,
+  compatible bundled pack revisions, implementation details, and explicitly
+  experimental/theoretical behaviour are not byte-for-byte stable.
 
 ## Architectural constraints
 
-- “Installing or merging these examples does not change agent behaviour until
-  a user explicitly activates or adopts one.”
-- “During safe adoption, the effective set remains the existing 24-pack
-  repository baseline at every step.”
-- `main` is the default-behaviour authority for parity validation.
-- With no PR-added `packs.json`, selection continues to use the existing
-  `runtime.json` compatibility derivation.
-- With no PR-added `profiles.json`, selected packs continue to be active under
-  the existing compatibility behaviour.
-- Enterprise pack definitions may be present/discoverable but are not selected
-  merely because their files exist.
-- The bootstrap fixture uses ordinary schema-version 1 data in
-  `.github/carl/profiles.enterprise.example.json` and contains only the active
-  `default` profile reproducing the 24-pack `main` baseline.
-- The full catalogue uses ordinary schema-version 1 data in
-  `.github/carl/profiles.enterprise.scenarios.example.json` and contains the
-  same active `default` plus all six fictional profiles.
-- Safe adoption must copy the fixture to `.github/carl/profiles.json` before
-  selecting the 11 enterprise packs.
-- Without `profiles.json`, selected packs are active compatibility seeds, so
-  selecting the enterprise packs first would temporarily activate every
-  enterprise example.
-- Copying the fixture first establishes the active `default` profile; later
-  selection makes all 11 enterprise packs selected but inactive.
-- After selection, copying the full catalogue over `profiles.json` preserves
-  `default` and the 24-pack effective baseline while making all seven profiles
-  available for explicit activation.
-- During safe adoption, the effective set remains the existing 24-pack
-  repository baseline at every step.
-- No fictional profile, role, or task becomes effective until a user
-  explicitly activates one.
-- Dependencies, priority, and overrides retain ordinary evaluator semantics.
+- Use release-equivalent host binaries built with the repository's actual
+  GoReleaser ldflags and `v1.0.0-rc.1` provenance model.
+- Run destructive lifecycle scenarios only in isolated temporary
+  repositories, never in the source repository.
+- Obtain or build the v0.4.3 state from the authoritative tag or release
+  asset; do not simulate upgrade evidence.
+- Preserve exact profile-absent/default-profile parity and the documented
+  fail-safe enterprise adoption sequence.
+- Harness adapters remain thin routes to the shared loader. Local
+  detection/sync evidence is distinct from native-harness production evidence.
+- Repository-map and reconcile output remain deterministic and
+  evidence-scoped.
+- Release-pipeline claims must be classified as statically validated,
+  previously production-proven, or requiring `v1.0.0-rc.1` execution evidence.
 
 ## Security constraints
 
-- No secrets, credentials, personal data, payment data, clinical data, live OT
-  data, or production endpoints may appear in examples or validation.
-- Strict examples strengthen built-in controls additively.
-- Bounded-lightweight examples narrow the permitted operating boundary; they
-  do not relax repository governance or override built-in controls.
-- The documentation must state that fixtures are not certifications.
+- Use no live customer, tenant, production, or secret data in fixtures.
+- Do not print, inspect, modify, or infer release secret values.
+- Registry checksum claims remain limited to integrity against the configured
+  index, not publisher identity or a signing trust root.
+- Adoption, repair, pack installation, map, reconcile, and harness tests must
+  preserve repository path and symlink trust boundaries.
+- Release automation must fail closed when required Apple credentials are
+  absent and must not report partial publication as complete success.
 
 ## Expected files
 
 - `.github/carl/current-pr-contract.md`
-- `.github/carl/enterprise-profiles.md`
-- `.github/carl/profiles.enterprise.example.json`
-- `.github/carl/profiles.enterprise.scenarios.example.json`
-- `.github/carl/plans/enterprise-profile-adherence-scenarios.md`
-- Eleven `.github/instructions/enterprise/*.instructions.md` files
-- No `.github/carl/packs.json`
-- No `.github/carl/profiles.json`
+- `.github/carl/plans/v1.0.0-rc.1-release-readiness.md`
+- `COMPATIBILITY.md`
+- `RELEASE_READINESS.md`
+- `RELEASE_NOTES_v1.0.0-rc.1.md`
+- `README.md`
+- `CLI.md`
+- `ARCHITECTURE.md`
+- `DISTRIBUTION.md`
+- `ROADMAP.md`
+- `.github/carl/memory.md`
+- `.github/carl/repo-map.json`
+- Additional implementation, test, embedded, or release files only when
+  required by a demonstrated blocker and recorded in the readiness evidence.
 
 ## Contract assertions
 
-1. The effective pack IDs and order after this revision are exactly equal to
-   `main`: the same 24 packs, in the same order, with zero conflicts.
-2. Merely merging the enterprise pack files and inactive fixture selects or
-   activates none of them; no fictional profile, role, or task is active.
-3. The ordinary schema-version 1 bootstrap contains only the safe `default`;
-   the full catalogue contains that default plus all six fictional scenarios,
-   five roles per scenario, three tasks per scenario, and only discoverable
-   pack references.
-4. From a clean state, copying the bootstrap fixture first preserves the 24-pack
-   baseline; selecting all 11 enterprise packs next yields 35 selected packs
-   while all enterprise packs remain inactive and ineffective.
-5. Copying the full catalogue after selection preserves the active `default`
-   and ordered 24-pack baseline.
-6. Activating `brindleforge-process-pilot / implementer / sandbox-build`
-   composes only that scenario, discipline, task packs, and their required
-   dependencies; unrelated enterprise packs remain inactive.
-7. Restoring `default` returns exactly to the ordered 24-pack baseline with
-   zero conflicts while all 11 enterprise packs remain selected but inactive.
-8. Documentation clearly distinguishes presence, selection, activation,
-   effective composition, observable markers, actual model execution, and
-   proof limitations.
-9. Existing built-in pack definitions remain unchanged.
+1. A release-equivalent host binary identifies CLI and bundled-runtime
+   provenance outside a repository and distinguishes CLI, bundled, and
+   repository runtime layers inside one.
+2. Isolated fresh install, adoption, v0.4.3 upgrade, profile, enterprise,
+   harness, map, reconcile, and version scenarios produce the documented
+   results without silently rewriting protected or user-owned state.
+3. The v1 compatibility policy accurately separates stable public contracts,
+   compatible evolution rules, and non-byte-stable implementation/presentation
+   details.
+4. Repository validation, release configuration, retry logic, workflow YAML,
+   canonical/embedded parity, adapter routing, and generated-map consistency
+   are either proven or recorded with an exact honest limitation.
+5. Release notes and release-facing documentation agree with current
+   behaviour, support tiers, distribution paths, upgrade steps, and evidence
+   limitations.
 
-## Validation plan
+## Validation requirements
 
-- Evaluate and persist the `main` effective-set IDs/order as the parity
-  baseline.
-- Compare the post-change default IDs/order byte-for-byte or element-for-
-  element against that baseline.
-- Validate the fixture schema, every profile, every role/task reference, and
-  all custom pack metadata.
-- Exercise and record the isolated transition from clean state, to
-  bootstrap-first adoption, to 35-pack selection, to full-catalogue adoption, to
-  `brindleforge-process-pilot / implementer / sandbox-build`, and back to
-  `default`.
-- At each state, record selected, active, and effective totals and enterprise
-  subsets; compare every baseline state against the original ordered 24 IDs.
-- Validate `pack profile list` and `show` for all seven profiles, plus `pack
-  list`, `pack effective`, and `trace` diagnostics.
-- Restore and recheck the repository default, then remove temporary
-  `packs.json` and `profiles.json`.
-- Run `go test ./...`, `go vet ./...`, `go build ./cmd/carl`, and
-  `git diff --check`.
-- Confirm no built-in instruction pack changed and only intended PR files are
-  staged.
-
-## cARL/docs update expectation
-
-Expected. Update the contract, plan, operator documentation, inactive fixture,
-and PR description. Do not update durable memory because evaluator behaviour
-and the repository's durable default remain unchanged.
+- Build an RC binary with the exact host equivalent of GoReleaser metadata.
+- Execute and preserve results for every lifecycle scenario in the linked plan.
+- Run `gofmt` verification, `go test -count=1 ./...`, `go vet ./...`,
+  `go build ./cmd/carl`, `git diff --check`, GoReleaser config validation,
+  release retry-script syntax/tests, workflow YAML parsing, parity/routing/map
+  checks, and stale-claim searches.
+- Run `go test -race ./...` when supported; otherwise record the exact reason.
+- Validate the full tag-to-release flow statically without publishing.
+- Re-run relevant validation after every release-blocking correction.
 
 ## Stop conditions
 
-Stop if exact `main` parity requires a schema/evaluator change, modifying a
-built-in or embedded asset, weakening governance, retaining active fictional
-state, or including unrelated local files.
+Stop and report if:
+
+- exact v0.4.3 state cannot be obtained or executed;
+- a required fix needs a new feature, unsupported schema break, weakened
+  validation, or user-owned-state rewrite;
+- release evidence would require creating a tag or publishing externally;
+- a requested support-tier claim lacks native-harness evidence;
+- unrelated working-tree changes overlap required files;
+- a required remote mutation other than the requested branch push/draft PR is
+  needed.
 
 ## Escalation triggers
 
-Escalate if ordinary selection/profile semantics cannot validate all examples
-while preserving exact default parity, or if remote branch/PR state diverges
-from the local branch.
+- Any demonstrated blocker requiring release-workflow, GoReleaser,
+  trust-boundary, schema, embedded-runtime, or public CLI-contract changes.
+- Any ambiguity about whether a file is runtime-owned or user-owned.
+- Any need to clean up a partially published external release.
+- Authentication or permission failure that prevents the requested branch
+  push or draft PR.
+
+## cARL/docs update expectation
+
+Required. Establish the compatibility contract, active plan, evidence report,
+release notes, reconciled release documentation, durable memory update, and
+generated map. Mark this contract complete only after validation and draft PR
+creation, or leave it active with the exact delivery blocker recorded.
 
 ## Context reset notes
 
-Enterprise definitions and fixtures are present examples, not selected or
-active policy. Future adoption must copy the bootstrap first, select the
-enterprise packs second, copy the full catalogue third, activate a scenario
-explicitly, and then restore the repository default.
+This contract governs only `v1.0.0-rc.1` readiness. Findings must be classified
+as BLOCKER, RC EXIT CRITERION, FOLLOW-UP, or NON-ISSUE. Do not carry transient
+host-only evidence forward as a cross-platform guarantee.
 
-## Completion checklist
+## Completion evidence
 
-- [x] Implementation stayed inside approved scope.
-- [x] Every safe-adoption transition preserved the asserted state.
-- [x] All example references and the representative context were validated.
-- [x] Temporary user-owned policy state was removed.
-- [x] Built-in packs remained unchanged.
-- [x] Full tests, vet, build, and diff checks passed.
-- [x] Documentation and PR metadata were reconciled.
-- [x] This contract was marked complete.
+Completed on 2026-07-26. The compatibility policy, lifecycle and upgrade
+matrix, release-equivalent build evidence, pipeline corrections, documentation
+reconciliation, release notes, generated map, and validation record are
+captured in `RELEASE_READINESS.md`. The work is published on
+`agent/prepare-v1.0.0-rc.1` in draft PR #45. No tag or release was created and
+no package-manager publication was triggered.

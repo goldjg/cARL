@@ -1,4 +1,4 @@
-<!-- version: 1.9.0 -->
+<!-- version: 1.10.0 -->
 # cARL CLI Reference
 
 The `carl` CLI installs and manages the cARL governance runtime inside a repository.
@@ -13,30 +13,31 @@ are embedded at build time.
 
 Pre-built binaries for Linux, macOS, and Windows are attached to every
 [GitHub Release](https://github.com/goldjg/cARL/releases/latest).
-Replace `v1.0.0` in the commands below with the desired release tag.
+The RC archives use `v1.0.0-rc.1`:
 
 **Linux (amd64)**
 ```sh
-curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl-v1.0.0-linux-amd64 \
-  -o carl && chmod +x carl && sudo mv carl /usr/local/bin/carl
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0-rc.1/carl_1.0.0-rc.1_linux_amd64.tar.gz \
+  | tar xz && sudo mv carl /usr/local/bin/carl
 ```
 
 **macOS (Apple Silicon)**
 ```sh
-curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl-v1.0.0-darwin-arm64 \
-  -o carl && chmod +x carl && sudo mv carl /usr/local/bin/carl
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0-rc.1/carl_1.0.0-rc.1_darwin_arm64.tar.gz \
+  | tar xz && sudo mv carl /usr/local/bin/carl
 ```
 
 **macOS (Intel)**
 ```sh
-curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl-v1.0.0-darwin-amd64 \
-  -o carl && chmod +x carl && sudo mv carl /usr/local/bin/carl
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0-rc.1/carl_1.0.0-rc.1_darwin_amd64.tar.gz \
+  | tar xz && sudo mv carl /usr/local/bin/carl
 ```
 
 **Windows (amd64)**
 
-Download `carl-v1.0.0-windows-amd64.exe` from the
-[releases page](https://github.com/goldjg/cARL/releases/latest) and add it to your `PATH`.
+Download `carl_1.0.0-rc.1_windows_amd64.zip` from the
+[`v1.0.0-rc.1` prerelease](https://github.com/goldjg/cARL/releases/tag/v1.0.0-rc.1),
+extract `carl.exe`, and add it to your `PATH`.
 
 ### Build from source
 
@@ -88,7 +89,7 @@ invoke `carl repair` separately if canonical repairable content is wanted.
 cARL runtime installed successfully.
   Runtime version:  1.0.0
   Source:           goldjg/cARL @ v1.0.0
-  Artefacts:        32 files installed
+  Artefacts:        38 files installed
 ```
 
 **Errors**
@@ -214,6 +215,8 @@ INFO    production harnesses: copilot, claude, codex
 | `INFO` | Neutral observation; no action required |
 
 ---
+
+### `carl status`
 
 Reports whether the installed cARL runtime is healthy, missing, or drifted.
 
@@ -516,6 +519,16 @@ carl pack effective [--json]
   IDs, invalid versions, unknown schema versions, missing or cyclic
   dependencies, invalid owned-artefact paths, and contradictory states are
   reported as errors.
+
+Pack state is deliberately layered:
+
+| State | Meaning |
+|---|---|
+| Present | Discoverable from a bundled, repository-local, or verified registry-installed source |
+| Selected | Eligible repository policy recorded in `packs.json`, or the compatibility fallback |
+| Active | Seeded by defaults/profile/role/task, or selected-as-active when profiles are absent |
+| Effective | Active or required as a dependency after validated composition |
+| Overridden | Retained in effective provenance but not applied due to an authorised explicit override |
 
 **Output**
 
@@ -1399,18 +1412,18 @@ Aliases: `carl --version`, `carl -v`
 
 ```
 cARL CLI:
-  Version:          1.2.0
+  Version:          1.0.0-rc.1
 Bundled Runtime:
-  Version:          1.1.0
+  Version:          1.0.0-rc.1
   Source:           goldjg/cARL
-  Tag:              v1.2.0
-  Commit:           98f680b3...
+  Tag:              v1.0.0-rc.1
+  Commit:           5f24ebc7...
 Repository Runtime:
   Not installed in the current repository.
 Harness Shims:
   Harness       Support      File                                Version
-  copilot       production   .github/copilot-instructions.md     2.1.1
-  claude        production   CLAUDE.md                           unknown
+  copilot       production   .github/copilot-instructions.md     not installed
+  claude        production   CLAUDE.md                           not installed
   codex         production   AGENTS.md                           not installed
   cursor        theoretical  .cursor/rules/carl.mdc              not installed
   antigravity   theoretical  .agents/rules/carl.md               not installed
@@ -1420,27 +1433,27 @@ Harness Shims:
 
 ```
 cARL CLI:
-  Version:          1.2.0
+  Version:          1.0.0-rc.1
 Bundled Runtime:
-  Version:          1.1.0
+  Version:          1.0.0-rc.1
   Source:           goldjg/cARL
-  Tag:              v1.2.0
-  Commit:           98f680b3...
+  Tag:              v1.0.0-rc.1
+  Commit:           5f24ebc7...
 Repository Runtime:
-  Version:          1.0.0
+  Version:          0.4.3
   Source:           goldjg/cARL
-  Tag:              v1.0.0
-  Commit:           742ac661...
+  Tag:              v0.4.3
+  Commit:           3f879dce...
   Status:           Upgrade available
 
 Installed Packs:
   cloud/azure                       1.0.1
-  core/baseline                     1.1.0
-  core/carl                         2.0.0
+  core/baseline                     1.2.0
+  core/carl                         1.5.0
 
 Harness Shims:
   Harness       Support      File                                Version
-  copilot       production   .github/copilot-instructions.md     2.1.1
+  copilot       production   .github/copilot-instructions.md     2.3.0
   claude        production   CLAUDE.md                           1.0.0
   codex         production   AGENTS.md                           unknown
   cursor        theoretical  .cursor/rules/carl.mdc              not installed
@@ -1496,8 +1509,10 @@ Run `carl` with no arguments to print usage.
 
 ## Runtime manifest
 
-`carl init` writes `.github/carl/runtime.json` — a JSON file that is the
-authoritative source of truth for the installed runtime state.
+`carl init` writes `.github/carl/runtime.json` — the installation manifest and
+legacy selection fallback for the installed runtime. User-owned selection,
+profiles, registries, and installed-pack provenance remain separate
+schema-versioned artefacts.
 
 ```json
 {
@@ -1515,3 +1530,51 @@ authoritative source of truth for the installed runtime state.
 ```
 
 This file must not be edited manually and is never overwritten by `carl repair`.
+
+---
+
+## Upgrade from v0.4.3
+
+Use the new binary to inspect the existing installation before changing it:
+
+```sh
+carl version
+carl status
+carl doctor
+```
+
+Back up and move `.github/carl/runtime.json` outside the managed runtime path,
+then adopt the existing files:
+
+```sh
+carl init --adopt
+carl doctor
+carl repair
+carl status
+carl harness status
+carl pack list
+carl pack effective
+carl map
+carl reconcile
+```
+
+Adoption preserves every existing file, installs only missing bundled assets,
+and creates the new manifest last. Repair remains a separate explicit action
+and modifies only declared repairable runtime-owned assets. Retain the old
+manifest backup until the new status, effective policy, and repository diff
+have been reviewed.
+
+---
+
+## Troubleshooting
+
+| Symptom | Safe response |
+|---|---|
+| Apple Gatekeeper rejects `carl` | Verify the archive with `checksums.txt`, run `spctl --assess --type execute --verbose /path/to/carl`, and re-download from the official release if validation fails |
+| Runtime drift | Run `carl doctor`, inspect every path, then use `carl repair` only for runtime-owned repairable assets |
+| Existing artefacts but no runtime manifest | Use `carl init --adopt`; do not delete repository memory or user-owned policy to force `init` |
+| Malformed or unselected profile reference | Run `carl pack profile list --json` and `carl pack effective --json`, then repair the user-owned `profiles.json` reference |
+| Dependency or override conflict | Run `carl trace --json` and correct explicit metadata or selection; do not work around validation with load order |
+
+The public `1.x` interface and ownership promise is defined in
+[COMPATIBILITY.md](COMPATIBILITY.md).

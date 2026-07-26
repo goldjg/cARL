@@ -1,4 +1,4 @@
-<!-- version: 1.11.0 -->
+<!-- version: 1.12.0 -->
 # cARL — Roadmap
 
 This roadmap describes the strategic direction and future evolution of cARL. None of the items marked as not started are implemented in the current codebase. Items are recorded here to preserve intent and prevent rediscovery.
@@ -164,7 +164,7 @@ When adding support for a new harness, the first question is: **how does this ha
 **Status:** Delivered (PR #2)
 **Commands:** `carl init`, `carl repair`, `carl version`
 **Description:** Self-contained Go binary that manages repository-local cARL runtime
-installations. All 37 current runtime artefacts are embedded in the binary (no
+installations. All 38 current runtime artefacts are embedded in the binary (no
 network required). `runtime.json` is the installation manifest and legacy pack-
 selection fallback; user-owned pack selection, profiles, registries, and installed
 provenance live in their separate schema-versioned artefacts. `memory.md` and
@@ -197,10 +197,11 @@ darwin binaries with a Developer ID Application certificate and hardened
 runtime, notarises them through App Store Connect API credentials, then
 archives, checksums, and publishes in one `goreleaser release --clean` flow.
 The workflow invokes that flow through `scripts/release-with-retry.sh`, which
-allows one bounded retry for Apple 429 rate limits, and asserts the expected
-release assets before downstream WinGet publication. Five Apple repository
-secrets are required: the certificate and password plus the notarisation
-issuer ID, key ID, and key (see DISTRIBUTION.md).
+allows one bounded retry only for Apple-context 429 rate limits, preserves
+release notes while replacing same-name assets on a safe same-tag rerun, and
+asserts the expected release assets before downstream WinGet publication.
+Required Apple and Homebrew credentials are checked before publication (see
+DISTRIBUTION.md).
 
 ### `carl status` Command
 **Status:** Delivered (PR #4)

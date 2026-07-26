@@ -1,4 +1,4 @@
-<!-- version: 1.6.0 -->
+<!-- version: 1.7.0 -->
 
 ![](cARL.png)
 
@@ -25,6 +25,31 @@
 cARL (Cognitive Agent Runtime Layer) is a version-controlled governance and instruction layer that sits inside your repository and shapes how AI coding agents behave — every session, every task, without re-prompting.
 
 It is not a framework. It is not a library. It is a set of committed files that give your agent persistent memory, engineering discipline, and bounded execution contracts.
+
+---
+
+## Start here
+
+Install the CLI from
+[GitHub Releases](https://github.com/goldjg/cARL/releases),
+[Homebrew](#homebrew-macos--linux), or [WinGet](#winget-windows), then run:
+
+```sh
+cd /path/to/your-repository
+carl init
+carl doctor
+carl status
+```
+
+If cARL files already exist but `.github/carl/runtime.json` does not, use
+`carl init --adopt`; ordinary `init` stops rather than overwrite them. See the
+[detailed quick start](#quick-start-cli), the
+[v1 compatibility promise](COMPATIBILITY.md), and the
+[`v1.0.0-rc.1` readiness evidence](RELEASE_READINESS.md).
+
+The three production-validated harnesses are GitHub Copilot, Claude Code, and
+Codex. Cursor and Antigravity adapters can be generated and synchronised, but
+remain theoretical until native-harness validation exists.
 
 ---
 
@@ -103,25 +128,6 @@ end-to-end in their native harnesses.
 
 ---
 
-## How cARL Evolved from AADLC
-
-cARL is the productised form of AADLC (Autonomous Agent Development Lifecycle), an internal governance model developed through practitioner experience with GitHub Copilot coding agents.
-
-AADLC established the core concepts:
-- Phase separation (shaping → planning → execution → validation → reset)
-- Durable memory caches
-- PR contracts
-- Tool permission tiers
-- Prompt-as-code
-
-cARL takes these concepts, renames them for clarity, organises them into a coherent product, and adds the documentation and positioning needed for broader adoption.
-
-The runtime semantics are unchanged. This is a rename and productisation, not a redesign. The `aadlc.instructions.md` file is now `carl.instructions.md`. The `.github/aadlc/` directory is now `.github/carl/`. All governance behaviour is preserved.
-
-Repositories already running AADLC can migrate their accumulated durable knowledge (invariants, lessons, and governance rules) into canonical cARL artefacts with `carl convert aadlc` — see the [Quick Start](#6-migrate-from-aadlc-existing-repositories).
-
----
-
 ## Repository Structure
 
 ```
@@ -156,6 +162,7 @@ Repositories already running AADLC can migrate their accumulated durable knowled
     │   ├── memory-cache.instructions.md
     │   └── pr-contract.instructions.md
     ├── languages/
+    │   ├── go.instructions.md
     │   ├── python.instructions.md
     │   ├── typescript.instructions.md
     │   ├── javascript.instructions.md
@@ -215,23 +222,25 @@ It is a single self-contained binary — no dependencies, no network required af
 
 Download the latest archive for your platform from the
 [releases page](https://github.com/goldjg/cARL/releases/latest).
-Replace `v1.0.0` and `1.0.0` in the commands below with the desired release tag:
+For the release candidate, use the prerelease page rather than
+`releases/latest`:
 
 ```sh
 # Linux (amd64)
-curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_linux_amd64.tar.gz \
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0-rc.1/carl_1.0.0-rc.1_linux_amd64.tar.gz \
   | tar xz && sudo mv carl /usr/local/bin/carl
 
 # macOS (Apple Silicon)
-curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_darwin_arm64.tar.gz \
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0-rc.1/carl_1.0.0-rc.1_darwin_arm64.tar.gz \
   | tar xz && sudo mv carl /usr/local/bin/carl
 
 # macOS (Intel)
-curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_darwin_amd64.tar.gz \
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0-rc.1/carl_1.0.0-rc.1_darwin_amd64.tar.gz \
   | tar xz && sudo mv carl /usr/local/bin/carl
 ```
 
-Windows users: download `carl_1.0.0_windows_amd64.zip` from the releases page,
+Windows users: download `carl_1.0.0-rc.1_windows_amd64.zip` from the
+[`v1.0.0-rc.1` prerelease](https://github.com/goldjg/cARL/releases/tag/v1.0.0-rc.1),
 extract `carl.exe`, and add it to your `PATH`.
 
 #### WinGet (Windows)
@@ -247,9 +256,9 @@ See [DISTRIBUTION.md](DISTRIBUTION.md) for install commands.
 
 #### Homebrew (macOS / Linux)
 
-macOS release artefacts are configured to be Developer ID codesigned from v0.4.2
-onward (hardened runtime). Full notarisation is enabled from v0.4.3 onward; see
-[DISTRIBUTION.md](DISTRIBUTION.md) for more details.
+macOS release artefacts are configured for Developer ID signing, hardened
+runtime, and App Store Connect notarisation; see
+[DISTRIBUTION.md](DISTRIBUTION.md).
 
 ```sh
 brew tap goldjg/carl
@@ -300,18 +309,18 @@ carl version
 Expected output:
 ```
 cARL CLI:
-  Version:          1.2.0
+  Version:          1.0.0-rc.1
 Bundled Runtime:
-  Version:          1.1.0
+  Version:          1.0.0-rc.1
   Source:           goldjg/cARL
-  Tag:              v1.2.0
-  Commit:           98f680b3...
+  Tag:              v1.0.0-rc.1
+  Commit:           5f24ebc7...
 Repository Runtime:
-  Version:          1.0.0
+  Version:          1.0.0-rc.1
   Source:           goldjg/cARL
-  Tag:              v1.0.0
-  Commit:           742ac661...
-  Status:           Upgrade available
+  Tag:              v1.0.0-rc.1
+  Commit:           5f24ebc7...
+  Status:           Current
 ```
 
 Version semantics:
@@ -391,7 +400,8 @@ registry-managed packs. SHA-256 verifies integrity against the configured
 index; it does not authenticate publisher identity. Installation does not
 select or activate a pack and never writes `.github/carl/runtime.json`.
 
-All subcommands support `--json` for machine-readable output; `list`, `show`,
+All `carl pack` subcommands support `--json` for machine-readable output;
+`list`, `show`,
 `profile list`, and `effective` work outside an initialised repository
 (bundled packs only).
 Ordering is deterministic (sorted by pack ID; effective output in precedence
@@ -409,6 +419,21 @@ inactive `default` profile that explicitly names the complete shipped pack
 set. Copy it to `.github/carl/profiles.json` to adopt and customise the
 baseline. The example does not select or activate anything merely by being
 installed, and every copied profile reference must already be selected.
+
+Pack state is deliberately explicit:
+
+| State | Meaning |
+|---|---|
+| Present | A bundled, repository-local, or registry-managed definition is discoverable |
+| Selected | Repository selection authority includes the pack |
+| Active | A profile/default/role/task seed includes it, or profile-absent compatibility treats selection as active |
+| Effective | The active seed or required dependency survived validation and composition |
+| Overridden | The pack remains visible for provenance but its definition is not applied |
+
+For the opt-in enterprise examples, follow the fail-safe order: copy the
+default-only bootstrap, select the 11 enterprise packs, copy the full
+catalogue, and then activate a profile explicitly. See
+[the enterprise adoption guide](.github/carl/enterprise-profiles.md).
 
 Agents do not need the `carl` binary to hydrate governance. The shared loader
 in `.github/copilot-instructions.md` derives selection from `packs.json` or
@@ -462,6 +487,62 @@ graph—to determine which instruction packs are active.
 
 ---
 
+## Upgrade from v0.4.3
+
+First inspect the version layers with the new binary:
+
+```sh
+carl version
+carl status
+carl doctor
+```
+
+Back up and move `.github/carl/runtime.json` outside the managed runtime path,
+then run:
+
+```sh
+carl init --adopt
+carl doctor
+carl repair
+carl status
+carl harness status
+carl pack effective
+carl map
+carl reconcile
+```
+
+`init --adopt` preserves existing files, installs missing bundled artefacts,
+and creates the new manifest last. `repair` is a separate explicit choice that
+updates only declared repairable runtime-owned assets; memory and user-owned
+policy/provenance remain protected. Keep the old manifest backup until the
+upgrade is reviewed.
+
+---
+
+## Troubleshooting
+
+- **Apple Gatekeeper:** verify the archive against `checksums.txt`, then inspect
+  the installed binary with
+  `spctl --assess --type execute --verbose /path/to/carl`. Re-download from the
+  official release if validation fails; do not bypass Gatekeeper for an
+  unverified binary.
+- **Runtime drift:** run `carl doctor`, review every finding, and use
+  `carl repair` only for runtime-owned assets you intend to restore.
+- **Adoption deadlock:** if ordinary `init` reports existing artefacts and no
+  runtime manifest exists, use `carl init --adopt`; do not delete
+  repository-specific memory or user policy to force installation.
+- **Malformed profile selection:** run `carl pack profile list --json` and
+  `carl pack effective --json`, then fix the reported
+  `.github/carl/profiles.json` reference or restore a reviewed valid copy.
+- **Composition conflicts:** use `carl trace --json`; resolve the reported
+  dependency or explicit override metadata instead of changing load order or
+  disabling validation.
+
+See [CLI.md](CLI.md) for command details and
+[DISTRIBUTION.md](DISTRIBUTION.md) for package and signing diagnostics.
+
+---
+
 ## Usage
 
 ### Using this repository directly
@@ -500,7 +581,7 @@ Each file carries a `<!-- version: X.Y.Z -->` comment. Increment using Semantic 
 | `pr-contract` | Scoped implementation contract lifecycle |
 
 ### Language Packs
-Python · TypeScript · JavaScript · Terraform · PowerShell · HTML
+Go · Python · TypeScript · JavaScript · Terraform · PowerShell · HTML
 
 ### Platform Packs
 CI/CD · Docker · Kubernetes
@@ -523,6 +604,11 @@ Azure · Microsoft Entra ID · Microsoft Graph · Google Cloud Platform · Netli
 ## Roadmap
 
 See [ROADMAP.md](ROADMAP.md) for planned evolution.
+
+The stable `1.x` contract is in [COMPATIBILITY.md](COMPATIBILITY.md).
+Release-candidate evidence and limitations are in
+[RELEASE_READINESS.md](RELEASE_READINESS.md), and the prepared prerelease notes
+are in [RELEASE_NOTES_v1.0.0-rc.1.md](RELEASE_NOTES_v1.0.0-rc.1.md).
 
 ---
 
