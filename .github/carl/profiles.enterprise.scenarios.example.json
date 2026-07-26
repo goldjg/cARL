@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 1,
+  "defaults": {
+    "organization": [],
+    "repository": []
+  },
+  "profiles": [
+    {
+      "id": "default",
+      "description": "Full enterprise scenario catalogue with a safe default matching the 24-pack repository baseline.",
+      "packs": [
+        "cloud/azure",
+        "cloud/entra",
+        "cloud/gcp",
+        "cloud/microsoft-graph",
+        "cloud/netlify",
+        "core/baseline",
+        "core/carl",
+        "core/cognition-governance",
+        "core/dependency",
+        "core/identity",
+        "core/memory-cache",
+        "core/pr-contract",
+        "core/security",
+        "core/tool-permission-tiers",
+        "languages/go",
+        "languages/html",
+        "languages/javascript",
+        "languages/powershell",
+        "languages/python",
+        "languages/terraform",
+        "languages/typescript",
+        "platform/cicd",
+        "platform/docker",
+        "platform/kubernetes"
+      ]
+    },
+    {
+      "id": "argentum-innovation-lab",
+      "description": "Argentum Financial Group bounded-lightweight synthetic-data product discovery and disposable sandbox delivery.",
+      "packs": [
+        "enterprise/argentum-innovation-lab"
+      ],
+      "roles": {
+        "architect": [
+          "enterprise/discipline-architecture"
+        ],
+        "coder": [
+          "enterprise/discipline-code"
+        ],
+        "designer": [
+          "enterprise/discipline-design"
+        ],
+        "implementer": [
+          "enterprise/discipline-implementation"
+        ],
+        "reviewer": [
+          "enterprise/discipline-review"
+        ]
+      },
+      "tasks": {
+        "experiment-design": [
+          "languages/html",
+          "languages/typescript"
+        ],
+        "promotion-review": [
+          "core/baseline",
+          "core/dependency",
+          "core/security"
+        ],
+        "sandbox-build": [
+          "languages/javascript",
+          "languages/typescript",
+          "platform/docker"
+        ]
+      }
+    },
+    {
+      "id": "argentum-regulated-payments",
+      "description": "Argentum Financial Group strict payment, ledger, fraud, identity, and regulated-data delivery.",
+      "packs": [
+        "enterprise/argentum-regulated-payments"
+      ],
+      "roles": {
+        "architect": [
+          "enterprise/discipline-architecture"
+        ],
+        "coder": [
+          "enterprise/discipline-code"
+        ],
+        "designer": [
+          "enterprise/discipline-design"
+        ],
+        "implementer": [
+          "enterprise/discipline-implementation"
+        ],
+        "reviewer": [
+          "enterprise/discipline-review"
+        ]
+      },
+      "tasks": {
+        "payment-api": [
+          "languages/go",
+          "languages/typescript"
+        ],
+        "production-change": [
+          "cloud/azure",
+          "languages/terraform",
+          "platform/cicd"
+        ],
+        "security-assessment": [
+          "cloud/entra",
+          "cloud/microsoft-graph",
+          "core/identity",
+          "core/security"
+        ]
+      }
+    },
+    {
+      "id": "brindleforge-connected-factory",
+      "description": "Brindleforge Manufacturing strict OT, robotics, industrial-control, and plant deployment delivery.",
+      "packs": [
+        "enterprise/brindleforge-connected-factory"
+      ],
+      "roles": {
+        "architect": [
+          "enterprise/discipline-architecture"
+        ],
+        "coder": [
+          "enterprise/discipline-code"
+        ],
+        "designer": [
+          "enterprise/discipline-design"
+        ],
+        "implementer": [
+          "enterprise/discipline-implementation"
+        ],
+        "reviewer": [
+          "enterprise/discipline-review"
+        ]
+      },
+      "tasks": {
+        "control-service": [
+          "languages/go",
+          "languages/powershell"
+        ],
+        "ot-security-assessment": [
+          "cloud/azure",
+          "core/identity",
+          "core/security"
+        ],
+        "plant-deployment": [
+          "cloud/azure",
+          "languages/terraform",
+          "platform/cicd",
+          "platform/docker",
+          "platform/kubernetes"
+        ]
+      }
+    },
+    {
+      "id": "brindleforge-process-pilot",
+      "description": "Brindleforge Manufacturing bounded-lightweight simulation, synthetic analytics, and offline process pilot.",
+      "packs": [
+        "enterprise/brindleforge-process-pilot"
+      ],
+      "roles": {
+        "architect": [
+          "enterprise/discipline-architecture"
+        ],
+        "coder": [
+          "enterprise/discipline-code"
+        ],
+        "designer": [
+          "enterprise/discipline-design"
+        ],
+        "implementer": [
+          "enterprise/discipline-implementation"
+        ],
+        "reviewer": [
+          "enterprise/discipline-review"
+        ]
+      },
+      "tasks": {
+        "promotion-review": [
+          "core/baseline",
+          "core/dependency",
+          "core/security"
+        ],
+        "sandbox-build": [
+          "languages/go",
+          "languages/python",
+          "platform/docker"
+        ],
+        "simulation-design": [
+          "languages/python"
+        ]
+      }
+    },
+    {
+      "id": "willowmere-clinical-records",
+      "description": "Willowmere Health Network strict clinical-record, patient-identity, care-workflow, and safety-sensitive delivery.",
+      "packs": [
+        "enterprise/willowmere-clinical-records"
+      ],
+      "roles": {
+        "architect": [
+          "enterprise/discipline-architecture"
+        ],
+        "coder": [
+          "enterprise/discipline-code"
+        ],
+        "designer": [
+          "enterprise/discipline-design"
+        ],
+        "implementer": [
+          "enterprise/discipline-implementation"
+        ],
+        "reviewer": [
+          "enterprise/discipline-review"
+        ]
+      },
+      "tasks": {
+        "clinical-api": [
+          "cloud/gcp",
+          "languages/python",
+          "languages/typescript"
+        ],
+        "clinical-safety-assessment": [
+          "core/identity",
+          "core/security"
+        ],
+        "production-change": [
+          "cloud/gcp",
+          "languages/terraform",
+          "platform/cicd",
+          "platform/kubernetes"
+        ]
+      }
+    },
+    {
+      "id": "willowmere-service-design",
+      "description": "Willowmere Health Network balanced accessibility, workflow research, content design, and synthetic experience prototyping.",
+      "packs": [
+        "enterprise/willowmere-service-design"
+      ],
+      "roles": {
+        "architect": [
+          "enterprise/discipline-architecture"
+        ],
+        "coder": [
+          "enterprise/discipline-code"
+        ],
+        "designer": [
+          "enterprise/discipline-design"
+        ],
+        "implementer": [
+          "enterprise/discipline-implementation"
+        ],
+        "reviewer": [
+          "enterprise/discipline-review"
+        ]
+      },
+      "tasks": {
+        "accessibility-research": [
+          "languages/html",
+          "languages/typescript"
+        ],
+        "privacy-review": [
+          "core/identity",
+          "core/security"
+        ],
+        "prototype-build": [
+          "cloud/netlify",
+          "languages/javascript",
+          "languages/typescript"
+        ]
+      }
+    }
+  ],
+  "active": {
+    "profile": "default"
+  }
+}

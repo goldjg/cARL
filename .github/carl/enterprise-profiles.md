@@ -2,10 +2,11 @@
 
 > **Invariant: “Installing or merging these examples does not change agent behaviour until a user explicitly activates or adopts one.”**
 
-The files under `.github/instructions/enterprise/` and
-`.github/carl/profiles.enterprise.example.json` are fictional engineering
-fixtures. They demonstrate cARL pack/profile composition without changing this
-repository's default policy state.
+The files under `.github/instructions/enterprise/`,
+`.github/carl/profiles.enterprise.example.json`, and
+`.github/carl/profiles.enterprise.scenarios.example.json` are fictional
+engineering fixtures. They demonstrate cARL pack/profile composition without
+changing this repository's default policy state.
 
 They are not legal, regulatory, medical, security, cybersecurity, privacy, or
 functional-safety certifications.
@@ -23,10 +24,20 @@ The repository therefore keeps the same compatibility behavior as `main`:
 - the enterprise pack definitions are present and discoverable but inactive;
 - no fictional profile, role, or task affects an agent by default.
 
-The dedicated fixture filename
-`.github/carl/profiles.enterprise.example.json` has no evaluator semantics. It
-is ordinary schema-version 1 data that is read only after a user deliberately
-copies it to `.github/carl/profiles.json`.
+The dedicated fixture filenames have no evaluator semantics. Both are
+ordinary schema-version 1 data that are read only after a user deliberately
+copies one to `.github/carl/profiles.json`:
+
+- `.github/carl/profiles.enterprise.example.json` is the safe bootstrap. It
+  contains only `default`, which lists the existing 24-pack baseline.
+- `.github/carl/profiles.enterprise.scenarios.example.json` is the full
+  catalogue. It contains the same `default` plus all six fictional profiles,
+  their roles, and their tasks.
+
+The split is necessary because cARL validates every profile reference, not
+only the active profile. Copying the full catalogue before enterprise
+selection would correctly fail validation because its enterprise pack
+references were not yet selected.
 
 ## Pack state model
 
@@ -54,9 +65,9 @@ When a copied profile fixture is active, cARL composes policy additively:
 5. the active task overlay;
 6. every transitive required dependency.
 
-The enterprise fixture leaves organisation and repository defaults empty so
-the active `default` profile is the complete, explicit baseline. The default
-profile lists the same 24 built-in packs, in the same order, as the repository
+Both fixtures leave organisation and repository defaults empty so the active
+`default` profile is the complete, explicit baseline. The default profile
+lists the same 24 built-in packs, in the same order, as the repository
 compatibility baseline.
 
 The fictional profiles each contribute one company/scenario pack. Their role
@@ -113,9 +124,31 @@ requires stopping and activating the corresponding strict profile.
 
 ## Adopt the fixture safely
 
-The fixture references all 24 built-ins and all 11 enterprise packs. Select
-the enterprise packs first; `carl pack select` retains the 24 packs selected
-through the existing compatibility baseline and adds these 11:
+> **Adoption invariant: “During safe adoption, the effective set remains the existing 24-pack repository baseline at every step.”**
+
+Order matters. Without `.github/carl/profiles.json`, cARL's compatibility
+behaviour treats every selected pack as an active seed. Selecting the
+enterprise packs first would therefore make all 11 fictional company and
+discipline packs active together until a profile file was copied.
+
+### 1. Establish the safe default profile
+
+Copy the bootstrap first:
+
+```powershell
+Copy-Item `
+  .github/carl/profiles.enterprise.example.json `
+  .github/carl/profiles.json
+```
+
+The copied bootstrap contains only the active `default` profile. At this
+point the selected and effective sets remain the same ordered 24 built-in
+packs, and no enterprise pack is selected, active, or effective.
+
+### 2. Select the enterprise packs
+
+With `default` already constraining the active seeds, add the 11 enterprise
+packs to the existing 24-pack selection:
 
 ```powershell
 go run ./cmd/carl pack select `
@@ -132,17 +165,36 @@ go run ./cmd/carl pack select `
   enterprise/willowmere-service-design
 ```
 
-Then deliberately adopt the ordinary profile data:
+There are now 35 selected packs. The active profile remains `default`, the
+effective set remains the ordered 24-pack baseline, and all 11 enterprise
+packs are selected but inactive and ineffective.
+
+To inspect selected enterprise packs in PowerShell, selection is nested under
+`state`:
+
+```powershell
+(go run ./cmd/carl pack list --json | ConvertFrom-Json).packs |
+  Where-Object { $_.state.selected -and $_.id -like 'enterprise/*' } |
+  Select-Object -ExpandProperty id |
+  Sort-Object
+```
+
+### 3. Install the full scenario catalogue
+
+Now that every reference is selected, replace the bootstrap with the full
+ordinary schema-version 1 catalogue:
 
 ```powershell
 Copy-Item `
-  .github/carl/profiles.enterprise.example.json `
-  .github/carl/profiles.json
+  .github/carl/profiles.enterprise.scenarios.example.json `
+  .github/carl/profiles.json `
+  -Force
 ```
 
-The copied fixture initially activates `default`, so adoption retains the
-24-pack repository effective baseline until an enterprise profile is
-explicitly activated.
+The catalogue also activates `default`, so this step still leaves exactly the
+ordered 24-pack baseline effective. All six fictional profiles are now
+available, but no fictional profile, role, or task becomes effective until
+one is explicitly activated.
 
 ## Activate an example
 
@@ -224,7 +276,7 @@ execute a model across every scenario.
 
 ## Ownership
 
-The enterprise instruction files and example profile document are
+The enterprise instruction files and both example profile documents are
 repository-local examples. They are not cARL built-ins and are not embedded
 runtime assets.
 
