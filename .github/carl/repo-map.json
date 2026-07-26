@@ -2,7 +2,7 @@
   "schema_version": 1,
   "_note": "Repository map derived by `carl map`. Re-run to update after structural changes.",
   "generated_by": "carl map",
-  "last_updated": "2026-07-25",
+  "last_updated": "2026-07-26",
   "languages": [
     "Go",
     "Shell"
@@ -80,12 +80,18 @@
       "purpose": "Durable architectural truth cache"
     },
     {
+      "path": ".github/carl/profiles.example.json"
+    },
+    {
       "path": ".github/carl/repo-map.example.json",
       "purpose": "Repo map template example"
     },
     {
       "path": ".github/carl/repo-map.json",
       "purpose": "Generated cognitive repository map"
+    },
+    {
+      "path": ".github/carl/runtime.json"
     },
     {
       "path": ".github/carl/tool-policy.yml",
@@ -302,7 +308,8 @@
         "policy_attachment_point": true,
         "agent_context": "Provides access to the cARL runtime assets bundled into the CLI binary.",
         "change_impact": [
-          "component:cmd/carl"
+          "component:cmd/carl",
+          "component:internal/pack"
         ]
       },
       {
@@ -392,6 +399,7 @@
         "agent_context": "Implements the `carl init` command.",
         "change_impact": [
           "component:cmd/carl",
+          "component:embedded",
           "component:internal/repair"
         ]
       },
@@ -405,6 +413,7 @@
         "policy_attachment_point": true,
         "agent_context": "Manages the cARL runtime manifest (.github/carl/runtime.json).",
         "change_impact": [
+          "component:embedded",
           "component:internal/doctor",
           "component:internal/install",
           "component:internal/pack",
@@ -465,6 +474,7 @@
           "component:cmd/carl",
           "component:internal/doctor",
           "component:internal/harness",
+          "component:internal/install",
           "component:internal/status"
         ]
       },
@@ -676,6 +686,15 @@
         "agent_context": "Durable architectural truth cache"
       },
       {
+        "id": "governance:.github/carl/profiles.example.json",
+        "kind": "governance",
+        "path": ".github/carl/profiles.example.json",
+        "criticality": "high",
+        "trust_boundary": "governance",
+        "policy_attachment_point": false,
+        "agent_context": "governance artefact at .github/carl/profiles.example.json."
+      },
+      {
         "id": "governance:.github/carl/repo-map.example.json",
         "kind": "governance",
         "path": ".github/carl/repo-map.example.json",
@@ -694,6 +713,15 @@
         "trust_boundary": "governance",
         "policy_attachment_point": false,
         "agent_context": "Generated cognitive repository map"
+      },
+      {
+        "id": "governance:.github/carl/runtime.json",
+        "kind": "governance",
+        "path": ".github/carl/runtime.json",
+        "criticality": "high",
+        "trust_boundary": "governance",
+        "policy_attachment_point": false,
+        "agent_context": "governance artefact at .github/carl/runtime.json."
       },
       {
         "id": "governance:.github/carl/tool-policy.yml",
@@ -1077,6 +1105,14 @@
       },
       {
         "from": "component:.github/carl",
+        "to": "governance:.github/carl/profiles.example.json",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/profiles.example.json"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
         "to": "governance:.github/carl/repo-map.example.json",
         "type": "contains",
         "evidence": [
@@ -1089,6 +1125,14 @@
         "type": "contains",
         "evidence": [
           ".github/carl/repo-map.json"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
+        "to": "governance:.github/carl/runtime.json",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/runtime.json"
         ]
       },
       {
@@ -1724,6 +1768,22 @@
         ]
       },
       {
+        "from": "component:embedded",
+        "to": "component:internal/install",
+        "type": "depends_on",
+        "evidence": [
+          "embedded/embedded_test.go"
+        ]
+      },
+      {
+        "from": "component:embedded",
+        "to": "component:internal/manifest",
+        "type": "depends_on",
+        "evidence": [
+          "embedded/embedded_test.go"
+        ]
+      },
+      {
         "from": "component:internal/doctor",
         "to": "component:internal/harness",
         "type": "depends_on",
@@ -1767,6 +1827,22 @@
         ]
       },
       {
+        "from": "component:internal/install",
+        "to": "component:internal/repair",
+        "type": "depends_on",
+        "evidence": [
+          "internal/install/install_test.go"
+        ]
+      },
+      {
+        "from": "component:internal/pack",
+        "to": "component:embedded",
+        "type": "depends_on",
+        "evidence": [
+          "internal/pack/profile_test.go"
+        ]
+      },
+      {
         "from": "component:internal/pack",
         "to": "component:internal/cmdutil",
         "type": "depends_on",
@@ -1787,7 +1863,8 @@
         "evidence": [
           "internal/pack/explain.go",
           "internal/pack/pack.go",
-          "internal/pack/pack_test.go"
+          "internal/pack/pack_test.go",
+          "internal/pack/profile_test.go"
         ]
       },
       {
