@@ -1,4 +1,4 @@
-<!-- version: 1.0.0 -->
+<!-- version: 1.0.1 -->
 # Current PR Contract
 
 ## Contract status
@@ -196,4 +196,8 @@ matrix, release-equivalent build evidence, pipeline corrections, documentation
 reconciliation, release notes, generated map, and validation record are
 captured in `RELEASE_READINESS.md`. The work is published on
 `agent/prepare-v1.0.0-rc.1` in draft PR #45. No tag or release was created and
-no package-manager publication was triggered.
+no package-manager publication was triggered. Post-merge native Ubuntu Linux
+amd64 validation against the exact tagged commit
+`4f6e30bbf3fd4de230ee60524d266a9533e6a224` completed the race gate:
+`go test -race -count=1 ./...` exited zero with Go 1.24.0, GCC 13.3.0,
+`CGO_ENABLED=1`, and no data races reported.

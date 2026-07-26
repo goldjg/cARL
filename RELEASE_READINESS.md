@@ -1,4 +1,4 @@
-<!-- version: 1.0.0 -->
+<!-- version: 1.0.1 -->
 # v1.0.0-rc.1 Release Readiness
 
 ## Decision
@@ -122,7 +122,7 @@ snapshot and the second was a no-op.
 | `go test -count=1 ./...` with Go 1.24.0 | PASS |
 | `go vet ./...` with Go 1.24.0 | PASS |
 | `go build ./cmd/carl` with Go 1.24.0 | PASS |
-| `go test -race -count=1 ./...` | LIMITED — attempted, but Windows has no `gcc`; `runtime/cgo` reported `C compiler "gcc" not found` |
+| `go test -race -count=1 ./...` | PASS — native Ubuntu Linux amd64, Go 1.24.0, GCC 13.3.0, `CGO_ENABLED=1` |
 | `git diff --check` | PASS |
 | GoReleaser v2.17.0 `check` | PASS |
 | GoReleaser v2.17.0 snapshot with Go 1.24.0 | PASS |
@@ -131,6 +131,12 @@ snapshot and the second was a no-op.
 | Canonical/embedded byte parity | PASS — 38/38, zero drift |
 | Harness shim routing | PASS |
 | Generated-map consistency | PASS — map refreshed, reconcile updated once, second reconcile was a no-op |
+
+The race suite was completed after merge on a dedicated native Ubuntu Linux
+amd64 VM against the exact tagged commit
+`4f6e30bbf3fd4de230ee60524d266a9533e6a224`. The official Go 1.24.0 archive
+was verified against its published SHA-256 before use. The command exited zero;
+all packages passed and the race detector reported no data races.
 
 The GoReleaser snapshot cross-built Linux amd64/arm64, macOS amd64/arm64, and
 Windows amd64; created five archives, six native Linux packages, checksums,
@@ -193,8 +199,6 @@ packages, and checksum file.
   GitHub prerelease publication, Homebrew, and WinGet.
 - Execute smoke tests on Linux and macOS release archives before final
   `v1.0.0`.
-- Run the race suite in an environment with a supported C compiler before
-  final `v1.0.0`.
 
 ### FOLLOW-UP
 
