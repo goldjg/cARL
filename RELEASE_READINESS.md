@@ -21,6 +21,18 @@ Windows amd64.
 - Authoritative upgrade source: annotated tag `v0.4.3` at
   `3f879dceb6b3d43dab86f77ae71485e1dabfcdc2`.
 
+## Compatibility promise
+
+The `1.x` line keeps documented command names, semantics, and exits;
+schema-versioned JSON and repository formats; pack metadata, selection,
+activation, dependency, precedence, override, and conflict semantics;
+runtime/user ownership boundaries; and documented lifecycle behaviour stable.
+Additive JSON fields remain compatible, while removal or meaning changes
+require a schema transition. Intentional breaks to these public contracts
+require a major version. Human formatting, prose, compatible bundled policy
+revisions, internals, and theoretical harness behaviour are not byte-for-byte
+promises. The durable contract is [COMPATIBILITY.md](COMPATIBILITY.md).
+
 ## Release-equivalent host binary
 
 The Windows amd64 RC binary was built with `CGO_ENABLED=0`, `-s -w`, and the
@@ -199,6 +211,29 @@ packages, and checksum file.
 - Human-readable formatting remains intentionally non-byte-stable; JSON is the
   automation contract.
 - Local adapter sync does not promote a harness support tier.
+
+## Documentation changes
+
+- `COMPATIBILITY.md` defines the durable `1.x` public boundary.
+- `RELEASE_NOTES_v1.0.0-rc.1.md` provides capability-oriented GitHub
+  prerelease notes.
+- README and CLI now lead with current install/adopt/upgrade usage, the pack
+  state model, profile and enterprise adoption, support tiers, evidence
+  limitations, and release troubleshooting.
+- Architecture, distribution, and roadmap now agree on current runtime
+  inventory, compatibility, release targets, credential gates, Apple-only
+  retry behaviour, and same-tag recovery.
+- The active contract, implementation plan, durable memory, embedded memory,
+  and generated repository map were reconciled.
+
+## Delivery
+
+- Branch: `agent/prepare-v1.0.0-rc.1`
+- Initial readiness commit: `95c5575`
+- Draft PR: [#45](https://github.com/goldjg/cARL/pull/45)
+
+No tag or release was created. No Homebrew or WinGet publication was
+triggered.
 
 ## Commands
 

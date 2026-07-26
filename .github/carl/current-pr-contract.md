@@ -3,7 +3,7 @@
 
 ## Contract status
 
-Active
+Complete
 
 ## Goal
 
@@ -188,3 +188,12 @@ creation, or leave it active with the exact delivery blocker recorded.
 This contract governs only `v1.0.0-rc.1` readiness. Findings must be classified
 as BLOCKER, RC EXIT CRITERION, FOLLOW-UP, or NON-ISSUE. Do not carry transient
 host-only evidence forward as a cross-platform guarantee.
+
+## Completion evidence
+
+Completed on 2026-07-26. The compatibility policy, lifecycle and upgrade
+matrix, release-equivalent build evidence, pipeline corrections, documentation
+reconciliation, release notes, generated map, and validation record are
+captured in `RELEASE_READINESS.md`. The work is published on
+`agent/prepare-v1.0.0-rc.1` in draft PR #45. No tag or release was created and
+no package-manager publication was triggered.
