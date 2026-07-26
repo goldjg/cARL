@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "defaults": {
+    "organization": [],
+    "repository": []
+  },
+  "profiles": [
+    {
+      "id": "default",
+      "description": "Safe adoption bootstrap matching the 24-pack repository baseline before enterprise packs are selected.",
+      "packs": [
+        "cloud/azure",
+        "cloud/entra",
+        "cloud/gcp",
+        "cloud/microsoft-graph",
+        "cloud/netlify",
+        "core/baseline",
+        "core/carl",
+        "core/cognition-governance",
+        "core/dependency",
+        "core/identity",
+        "core/memory-cache",
+        "core/pr-contract",
+        "core/security",
+        "core/tool-permission-tiers",
+        "languages/go",
+        "languages/html",
+        "languages/javascript",
+        "languages/powershell",
+        "languages/python",
+        "languages/terraform",
+        "languages/typescript",
+        "platform/cicd",
+        "platform/docker",
+        "platform/kubernetes"
+      ]
+    }
+  ],
+  "active": {
+    "profile": "default"
+  }
+}
