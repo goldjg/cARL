@@ -8,11 +8,15 @@ Fictional company: Willowmere Health Network, a healthcare provider. Use this
 strict scenario for clinical records, care workflows, patient identity,
 clinical integrations, or systems whose failure could affect patient safety.
 
-## Adherence signal
+## Observable marker fixture
 
-At the first substantive response, include
+When this pack is active, include
 `Enterprise scenario: Willowmere Health Network / clinical records / strict`.
 In the final response, include `Willowmere clinical evidence`.
+
+These markers are observable hooks for an actual agent-execution test. Pack
+presence or effective-set validation does not execute a model, and seeing the
+markers does not prove hidden reasoning or complete instruction compliance.
 
 ## Cross-discipline controls
 

@@ -8,11 +8,15 @@ Fictional company: Argentum Financial Group, a financial-services provider.
 Use this strict scenario for payment, account, ledger, fraud, identity, or
 regulated customer-data systems.
 
-## Adherence signal
+## Observable marker fixture
 
-At the first substantive response, include
+When this pack is active, include
 `Enterprise scenario: Argentum Financial Group / regulated payments / strict`.
 In the final response, include `Argentum control evidence`.
+
+These markers are observable hooks for an actual agent-execution test. Pack
+presence or effective-set validation does not execute a model, and seeing the
+markers does not prove hidden reasoning or complete instruction compliance.
 
 ## Cross-discipline controls
 

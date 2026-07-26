@@ -6,11 +6,16 @@
 
 Use this pack when the active profile role or task is architecture-focused.
 
-## Adherence signal
+## Observable marker fixture
 
-At the first substantive response, include `Discipline: architecture`. In the
-final response, include an `Architecture evidence` section containing the
-boundaries, key decisions, and trade-offs considered.
+When this pack is active, include `Discipline: architecture` in the first
+substantive response. In the final response, include an `Architecture
+evidence` section containing the boundaries, key decisions, and trade-offs
+considered.
+
+These markers are observable hooks for an actual agent-execution test. Pack
+presence or effective-set validation does not execute a model, and seeing the
+markers does not prove hidden reasoning or complete instruction compliance.
 
 ## Required behaviour
 

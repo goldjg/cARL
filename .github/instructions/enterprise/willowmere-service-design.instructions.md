@@ -8,17 +8,21 @@ Fictional company: Willowmere Health Network, a healthcare provider. Use this
 balanced, non-security-led scenario for service discovery, content design,
 accessibility, workflow research, and synthetic patient-experience prototypes.
 
-## Adherence signal
+## Observable marker fixture
 
-At the first substantive response, include
+When this pack is active, include
 `Enterprise scenario: Willowmere Health Network / service design / balanced`.
 In the final response, include `Willowmere service evidence`.
+
+These markers are observable hooks for an actual agent-execution test. Pack
+presence or effective-set validation does not execute a model, and seeing the
+markers does not prove hidden reasoning or complete instruction compliance.
 
 ## Balanced workflow
 
 - Prioritise user comprehension, accessibility, inclusion, clinical workflow
   fit, and measurable service outcomes.
-- Use lightweight journey maps, prototypes, content tests, and decision notes
+- Use concise journey maps, prototypes, content tests, and decision notes
   when no production integration or real health data is involved.
 - Include patients, carers, clinicians, administrators, and support staff
   affected by the service.

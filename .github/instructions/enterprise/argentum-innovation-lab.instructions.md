@@ -1,20 +1,27 @@
 <!-- version: 1.0.0 -->
 <!-- requires: core/carl, core/cognition-governance, core/pr-contract -->
-<!-- precedence-mode: overridable -->
+<!-- precedence-mode: additive -->
 <!-- priority: 25 -->
 # Argentum Financial Group Innovation Lab Pack
 
 Fictional company: Argentum Financial Group, a financial-services provider.
-Use this intentionally lightweight scenario for isolated product discovery
-using synthetic data and disposable non-production environments.
+Use this bounded-lightweight scenario for isolated product discovery using
+synthetic data and disposable non-production environments.
 
-## Adherence signal
+## Observable marker fixture
 
-At the first substantive response, include
-`Enterprise scenario: Argentum Financial Group / innovation lab / lightweight`.
+When this pack is active, include
+`Enterprise scenario: Argentum Financial Group / innovation lab / bounded-lightweight`.
 In the final response, include `Argentum lab evidence`.
 
-## Lightweight workflow
+These markers are observable hooks for an actual agent-execution test. Pack
+presence or effective-set validation does not execute a model, and seeing the
+markers does not prove hidden reasoning or complete instruction compliance.
+
+## Bounded-lightweight workflow
+
+Bounded-lightweight means a narrower safe operating boundary, not relaxed
+governance. Repository invariants and the cARL lifecycle remain mandatory.
 
 - A concise hypothesis, affected persona, success signal, and time box may
   replace a full design dossier.

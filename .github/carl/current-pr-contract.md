@@ -1,121 +1,158 @@
-<!-- version: 1.0.0 -->
+<!-- version: 1.1.1 -->
 # Current PR Contract
 
 ## Contract status
 
-Complete
+Completed
 
 ## Goal
 
-Create fictional enterprise policy profiles and custom instruction packs that
-exercise agent adherence across security and non-security design,
-architecture, code, implementation, and review scenarios.
+Add opt-in enterprise pack and profile examples while preserving the existing
+repository default.
+
+## Intentional amendment
+
+PR #44 originally committed active `packs.json` and `profiles.json` state,
+which changed the repository's effective pack set from the pre-PR baseline.
+This revision makes the fictional enterprise material present but inactive,
+removes active selection/profile state from the PR, and proves exact default
+effective-set parity with `main`.
 
 ## Non-goals
 
-- No change to the cARL profile, selection, pack, or composition schemas.
-- No CLI behaviour change.
-- No registry, network, dependency, CI/CD, release, or generated-map change.
-- No claim that instruction availability proves model adherence.
+- No profile, selection, pack, composition, or trace schema change.
+- No CLI or evaluator behaviour change.
+- No hidden special case for enterprise examples.
+- No registry, network-runtime, dependency, source-code, test-code, CI/CD,
+  release, embedded-runtime, or generated-map change.
+- No claim that fixture composition proves model execution, hidden reasoning,
+  or complete instruction compliance.
 
 ## Approved scope
 
-- `.github/carl/packs.json`
-- `.github/carl/profiles.json`
+- `.github/carl/current-pr-contract.md`
 - `.github/carl/enterprise-profiles.md`
-- `.github/instructions/enterprise/*.instructions.md`
+- `.github/carl/profiles.enterprise.example.json`
 - `.github/carl/plans/enterprise-profile-adherence-scenarios.md`
-- This contract
+- `.github/instructions/enterprise/*.instructions.md`
+- Removal of PR-added `.github/carl/packs.json`
+- Removal of PR-added `.github/carl/profiles.json`
+- PR #44 title and description
 
 ## Forbidden scope
 
-- Do not alter any existing built-in pack under `.github/instructions/cloud/`,
+- Do not modify `.github/carl/runtime.json` or the shipped
+  `.github/carl/profiles.example.json`.
+- Do not modify existing built-in packs under `.github/instructions/cloud/`,
   `.github/instructions/core/`, `.github/instructions/languages/`, or
   `.github/instructions/platform/`.
-- Do not modify embedded built-in assets, `runtime.json`, registries,
-  dependencies, source code, tests, harness adapters, CI/CD, release files, or
-  generated repository maps.
-- Do not use custom overrides to weaken a built-in pack.
+- Do not modify embedded assets, source code, tests, dependencies, harness
+  adapters, CI/CD, release files, registries, or generated repository maps.
+- Do not add active profile/selection state to the merged repository.
+- Do not use overrides to weaken built-in controls.
+- Do not include the unrelated local session record in PR #44.
 
 ## Architectural constraints
 
-- `packs.json` remains explicit user-owned selection authority.
-- `profiles.json` uses only schema-version 1 defaults, profiles, roles, tasks,
-  and active-context fields.
-- Organisation/repository defaults, profile packs, roles, tasks, and required
-  dependencies compose additively.
-- Custom pack IDs and files use the canonical
-  `.github/instructions/enterprise/<name>.instructions.md` convention.
-- Lightweight scenarios are bounded to synthetic, isolated, non-production
-  work and escalate to a stricter profile if that boundary is crossed.
+- `main` is the default-behaviour authority for parity validation.
+- With no PR-added `packs.json`, selection continues to use the existing
+  `runtime.json` compatibility derivation.
+- With no PR-added `profiles.json`, selected packs continue to be active under
+  the existing compatibility behaviour.
+- Enterprise pack definitions may be present/discoverable but are not selected
+  merely because their files exist.
+- The enterprise profile fixture uses ordinary schema-version 1 data in
+  `.github/carl/profiles.enterprise.example.json`.
+- The fixture includes an active `default` profile that explicitly reproduces
+  the 24-pack `main` baseline, so deliberate copying is safe before an
+  enterprise profile is activated.
+- Users must explicitly select the enterprise packs and copy/adopt the fixture
+  before activating a fictional profile.
+- Dependencies, priority, and overrides retain ordinary evaluator semantics.
 
 ## Security constraints
 
-- No secrets, credentials, personal data, payment data, clinical data, or
-  production endpoints may appear in profiles, packs, examples, or tests.
-- Strict sector packs strengthen rather than override built-in security rules.
-- Lightweight packs must not waive repository invariants or cARL lifecycle
-  controls.
+- No secrets, credentials, personal data, payment data, clinical data, live OT
+  data, or production endpoints may appear in examples or validation.
+- Strict examples strengthen built-in controls additively.
+- Bounded-lightweight examples narrow the permitted operating boundary; they
+  do not relax repository governance or override built-in controls.
+- The documentation must state that fixtures are not certifications.
 
 ## Expected files
 
 - `.github/carl/current-pr-contract.md`
-- `.github/carl/plans/enterprise-profile-adherence-scenarios.md`
-- `.github/carl/packs.json`
-- `.github/carl/profiles.json`
 - `.github/carl/enterprise-profiles.md`
-- Eleven new `.github/instructions/enterprise/*.instructions.md` files
+- `.github/carl/profiles.enterprise.example.json`
+- `.github/carl/plans/enterprise-profile-adherence-scenarios.md`
+- Eleven `.github/instructions/enterprise/*.instructions.md` files
+- No `.github/carl/packs.json`
+- No `.github/carl/profiles.json`
 
 ## Contract assertions
 
-1. Six fictional-company profiles cover financial services, health, and
-   manufacturing, with strict and non-security lightweight/balanced variants.
-2. Every profile offers designer, architect, coder, implementer, and reviewer
-   overlays plus task-specific activation, and every reference is selected.
-3. Eleven custom packs are discoverable and compose without conflicts; strict
-   packs add controls, while lightweight packs are explicitly restricted to
-   isolated non-production work.
-4. The committed active context resolves deterministically and exposes a
-   visible adherence marker, while representative profile switches validate.
-5. Existing built-in pack files remain byte-for-byte untouched by this task.
+1. The effective pack IDs and order after this revision are exactly equal to
+   `main`: the same 24 packs, in the same order, with zero conflicts.
+2. Merely merging the enterprise pack files and inactive fixture selects or
+   activates none of them; no fictional profile, role, or task is active.
+3. The ordinary schema-version 1 fixture contains the safe `default` profile,
+   all six fictional scenarios, five roles per scenario, three tasks per
+   scenario, and only discoverable pack references.
+4. Representative strict, balanced, and bounded-lightweight contexts compose
+   without conflicts after explicit temporary adoption and selection, and the
+   repository default is restored afterward.
+5. Documentation clearly distinguishes presence, selection, activation,
+   effective composition, observable markers, actual model execution, and
+   proof limitations.
+6. Existing built-in pack definitions remain unchanged.
 
 ## Validation plan
 
-- Validate pack discovery, profile listing/showing, selection references, and
-  effective-set composition through the local cARL CLI.
-- Exercise representative strict, balanced, and lightweight active contexts,
-  then restore the committed active context.
+- Evaluate and persist the `main` effective-set IDs/order as the parity
+  baseline.
+- Compare the post-change default IDs/order byte-for-byte or element-for-
+  element against that baseline.
+- Validate the fixture schema, every profile, every role/task reference, and
+  all custom pack metadata.
+- Exercise representative strict financial review, balanced health design,
+  and bounded-lightweight manufacturing implementation contexts in an
+  isolated copy with explicit selection/adoption.
+- Restore and recheck the repository default.
 - Run `go test ./...`, `go vet ./...`, `go build ./cmd/carl`, and
   `git diff --check`.
-- Confirm `git diff` reports no modification to built-in instruction packs.
+- Confirm no built-in instruction pack changed and only intended PR files are
+  staged.
 
 ## cARL/docs update expectation
 
-Expected. Add activation and adherence guidance in a dedicated document.
-Do not duplicate mutable active profile state into memory.
+Expected. Update the contract, plan, operator documentation, inactive fixture,
+and PR description. Do not update durable memory because evaluator behaviour
+and the repository's durable default remain unchanged.
 
 ## Stop conditions
 
-Stop if the requested scenarios require a schema change, a built-in pack
-modification, a weakening override, secret or regulated data, a network
-authority, or changes outside approved scope.
+Stop if exact `main` parity requires a schema/evaluator change, modifying a
+built-in or embedded asset, weakening governance, retaining active fictional
+state, or including unrelated local files.
 
 ## Escalation triggers
 
-Escalate if valid profile composition cannot express the scenarios without
-changing evaluator semantics or weakening repository invariants.
+Escalate if ordinary selection/profile semantics cannot validate all examples
+while preserving exact default parity, or if remote branch/PR state diverges
+from the local branch.
 
 ## Context reset notes
 
-These profiles are test policy contexts, not claims about real companies or
-legal compliance. Future work should activate the scenario, role, and task
-needed for the adherence test and restore the documented default afterward.
+Enterprise definitions and fixtures are present examples, not selected or
+active policy. Future tests must explicitly select, adopt, and activate a
+scenario, then restore the repository default.
 
 ## Completion checklist
 
 - [x] Implementation stayed inside approved scope.
-- [x] All contract assertions were validated.
+- [x] Exact `main` default parity was proved.
+- [x] All example references and representative contexts were validated.
 - [x] Built-in packs remained unchanged.
-- [x] Full tests, vet, build, and diff checks ran.
-- [x] Durable cARL/docs were reconciled.
+- [x] Full tests, vet, build, and diff checks passed.
+- [x] Documentation and PR metadata were reconciled.
 - [x] This contract was marked complete.

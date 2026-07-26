@@ -1,19 +1,43 @@
 {
   "schemaVersion": 1,
   "defaults": {
-    "organization": [
-      "core/carl",
-      "core/cognition-governance"
-    ],
-    "repository": [
-      "core/pr-contract",
-      "core/tool-permission-tiers"
-    ]
+    "organization": [],
+    "repository": []
   },
   "profiles": [
     {
+      "id": "default",
+      "description": "Safe adoption baseline matching the 24-pack repository default before the enterprise examples are activated.",
+      "packs": [
+        "cloud/azure",
+        "cloud/entra",
+        "cloud/gcp",
+        "cloud/microsoft-graph",
+        "cloud/netlify",
+        "core/baseline",
+        "core/carl",
+        "core/cognition-governance",
+        "core/dependency",
+        "core/identity",
+        "core/memory-cache",
+        "core/pr-contract",
+        "core/security",
+        "core/tool-permission-tiers",
+        "languages/go",
+        "languages/html",
+        "languages/javascript",
+        "languages/powershell",
+        "languages/python",
+        "languages/terraform",
+        "languages/typescript",
+        "platform/cicd",
+        "platform/docker",
+        "platform/kubernetes"
+      ]
+    },
+    {
       "id": "argentum-innovation-lab",
-      "description": "Argentum Financial Group lightweight synthetic-data product discovery and disposable sandbox delivery.",
+      "description": "Argentum Financial Group bounded-lightweight synthetic-data product discovery and disposable sandbox delivery.",
       "packs": [
         "enterprise/argentum-innovation-lab"
       ],
@@ -136,7 +160,7 @@
     },
     {
       "id": "brindleforge-process-pilot",
-      "description": "Brindleforge Manufacturing lightweight simulation, synthetic analytics, and offline process pilot.",
+      "description": "Brindleforge Manufacturing bounded-lightweight simulation, synthetic analytics, and offline process pilot.",
       "packs": [
         "enterprise/brindleforge-process-pilot"
       ],
@@ -255,8 +279,6 @@
     }
   ],
   "active": {
-    "profile": "brindleforge-process-pilot",
-    "role": "implementer",
-    "task": "sandbox-build"
+    "profile": "default"
   }
 }

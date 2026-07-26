@@ -6,11 +6,16 @@
 
 Use this pack when the active profile role or task is review-focused.
 
-## Adherence signal
+## Observable marker fixture
 
-At the first substantive response, include `Discipline: review`. Lead the
-final response with findings ordered by severity and include a `Review
-evidence` section naming the contract, tests, and boundaries checked.
+When this pack is active, include `Discipline: review` in the first substantive
+response. Lead the final response with findings ordered by severity and
+include a `Review evidence` section naming the contract, tests, and boundaries
+checked.
+
+These markers are observable hooks for an actual agent-execution test. Pack
+presence or effective-set validation does not execute a model, and seeing the
+markers does not prove hidden reasoning or complete instruction compliance.
 
 ## Required behaviour
 

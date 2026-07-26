@@ -8,11 +8,15 @@ Fictional company: Brindleforge Manufacturing, an industrial manufacturer.
 Use this strict scenario for operational technology, industrial control,
 robotics, safety interlocks, plant connectivity, or production scheduling.
 
-## Adherence signal
+## Observable marker fixture
 
-At the first substantive response, include
+When this pack is active, include
 `Enterprise scenario: Brindleforge Manufacturing / connected factory / strict`.
 In the final response, include `Brindleforge factory evidence`.
+
+These markers are observable hooks for an actual agent-execution test. Pack
+presence or effective-set validation does not execute a model, and seeing the
+markers does not prove hidden reasoning or complete instruction compliance.
 
 ## Cross-discipline controls
 

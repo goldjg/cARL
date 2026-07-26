@@ -6,11 +6,15 @@
 
 Use this pack when the active profile role or task is code-focused.
 
-## Adherence signal
+## Observable marker fixture
 
-At the first substantive response, include `Discipline: code`. In the final
-response, include a `Code evidence` section containing changed behaviour,
-tests, and any deliberately avoided dependency or refactor.
+When this pack is active, include `Discipline: code` in the first substantive
+response. In the final response, include a `Code evidence` section containing
+changed behaviour, tests, and any deliberately avoided dependency or refactor.
+
+These markers are observable hooks for an actual agent-execution test. Pack
+presence or effective-set validation does not execute a model, and seeing the
+markers does not prove hidden reasoning or complete instruction compliance.
 
 ## Required behaviour
 

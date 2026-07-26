@@ -1,20 +1,27 @@
 <!-- version: 1.0.0 -->
 <!-- requires: core/carl, core/cognition-governance, core/pr-contract -->
-<!-- precedence-mode: overridable -->
+<!-- precedence-mode: additive -->
 <!-- priority: 25 -->
 # Brindleforge Manufacturing Process Pilot Pack
 
 Fictional company: Brindleforge Manufacturing, an industrial manufacturer.
-Use this intentionally lightweight scenario for synthetic analytics,
-simulation, offline process studies, and disposable non-production pilots.
+Use this bounded-lightweight scenario for synthetic analytics, simulation,
+offline process studies, and disposable non-production pilots.
 
-## Adherence signal
+## Observable marker fixture
 
-At the first substantive response, include
-`Enterprise scenario: Brindleforge Manufacturing / process pilot / lightweight`.
+When this pack is active, include
+`Enterprise scenario: Brindleforge Manufacturing / process pilot / bounded-lightweight`.
 In the final response, include `Brindleforge pilot evidence`.
 
-## Lightweight workflow
+These markers are observable hooks for an actual agent-execution test. Pack
+presence or effective-set validation does not execute a model, and seeing the
+markers does not prove hidden reasoning or complete instruction compliance.
+
+## Bounded-lightweight workflow
+
+Bounded-lightweight means a narrower safe operating boundary, not relaxed
+governance. Repository invariants and the cARL lifecycle remain mandatory.
 
 - A concise improvement hypothesis, metric, simulation boundary, and time box
   may replace a full production change package.
