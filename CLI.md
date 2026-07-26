@@ -1,4 +1,4 @@
-<!-- version: 1.7.0 -->
+<!-- version: 1.9.0 -->
 # cARL CLI Reference
 
 The `carl` CLI installs and manages the cARL governance runtime inside a repository.
@@ -695,6 +695,15 @@ edited as policy-as-code; the CLI validates and activates them:
 }
 ```
 
+`carl init` installs `.github/carl/profiles.example.json` as an inactive,
+cloneable reference baseline. Its `default` profile explicitly names the
+complete pack set shipped with cARL and leaves the optional role/task context
+unset, matching the existing role-neutral compatibility context. To adopt it,
+copy it to `.github/carl/profiles.json`, ensure every referenced pack is
+selected, and then edit the ordinary schema-version 1 data as required. The
+example filename is never read as active profile state and has no special
+evaluation semantics.
+
 Profile, role, and task IDs use lower-case kebab-case. Defaults and overlays
 compose additively; they never remove a selected pack or imply override
 authority. `carl pack profile activate` and `clear` write only
@@ -713,7 +722,8 @@ profile IDs, malformed fields, and references to unselected packs are errors.
 3. Apply explicit override declarations: an override is honoured only when
    the overriding pack declares it in metadata **and** the target pack
    declares `precedence-mode: overridable`. Overridden packs remain in the
-   set, flagged with `overriddenBy` — no pack silently disables another.
+   evaluation, flagged with `overriddenBy` for provenance, but their
+   instruction definitions are not applied.
 4. Order by precedence: priority descending, ties broken by pack ID — never
    filesystem or load order.
 
@@ -752,6 +762,7 @@ overrides) are reported and cause a non-zero exit. With `--json`:
 | `unknown pack "<id>"` | The pack ID does not match any discoverable pack | Run `carl pack list` to see valid IDs |
 | `pack validation failed: ...` | Discovered pack set contains invalid metadata | Fix the reported pack file or manifest entry |
 | `parse .github/carl/packs.json: ...` | Selection artefact is malformed | Fix or delete `.github/carl/packs.json` |
+| `read legacy pack selection from .github/carl/runtime.json: ...` | `packs.json` is absent and the legacy manifest is malformed | Repair the manifest or create an explicit valid `packs.json`; do not infer selection from directory contents |
 | `.github/carl/profiles.json validation failed: ...` | Profile schema, context, or references are invalid | Fix the reported profile/default/overlay entry |
 | `unknown profile "<id>"` | The requested profile is not configured | Run `carl pack profile list` |
 | `.github/carl/registries.json does not configure any registries` | Registry search/install was requested without an explicit source | Define a trusted HTTPS or repository-local registry |
@@ -781,8 +792,9 @@ non-zero exit code:
   relax another pack's rules). All three are modelled: selection lives in
   `packs.json`, priority and override authority come only from explicit pack
   metadata headers — never from load order.
-- Composition is conservative: packs add constraints, overridden packs are
-  flagged but never removed, and no pack silently disables another.
+- Composition is conservative: non-overridden effective packs add
+  constraints; overridden packs remain visible for provenance but are not
+  applied, and no override authority is inferred.
 - Registry integrity and policy activation are separate: installing a verified
   artifact records provenance but does not select or activate it.
 
@@ -803,7 +815,8 @@ carl trace [--json]
 `carl explain` works for every discoverable pack, including an inactive one.
 It reports:
 
-- whether the pack is applied, effective, overridden, or inactive;
+- whether the pack is applied, effective, overridden, or inactive; overridden
+  entries report `applied: false` and `addsConstraints: false`;
 - its version, source, and repository-relative canonical definition;
 - registry provenance when it is registry-managed;
 - whether it is selected or an active seed;
@@ -814,12 +827,14 @@ It reports:
 - whether it adds constraints, declares or resolves overrides, or is
   overridden by another effective pack.
 
-`carl trace` reports the complete effective policy set in the same precedence
-order as `carl pack effective`, followed by structured decisions:
+`carl trace` reports the complete effective policy evaluation in the same
+precedence order as `carl pack effective`, including overridden entries for
+provenance, followed by structured decisions:
 
 - active seed and dependency inclusion;
 - precedence ordering (priority descending, then pack-ID tie-break);
 - conservative pack-level constraint strengthening;
+- explicit non-application of overridden definitions;
 - permitted overrides, including why they resolve (explicit declaration plus
   an `overridable` target);
 - unresolved composition conflicts.
@@ -872,7 +887,8 @@ JSON output uses schema version 1. A shortened
 Every human and JSON response includes an explicit boundary notice:
 explanation is limited to pack-level policy provenance. The commands do not
 interpret individual natural-language rules and do not expose prompts, hidden
-model reasoning, or chain-of-thought.
+model reasoning, or chain-of-thought. Instruction availability or loading does
+not prove model adherence.
 
 With `--json`, unknown packs use the existing `pack_not_found` structured
 error. Invalid repository policy inputs use `policy_evaluation_failed`.

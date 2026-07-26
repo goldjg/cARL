@@ -464,7 +464,7 @@ func (c *Command) RunEffectiveInDir(rootDir string, jsonOut bool) error {
 	fmt.Println("Effective Pack Set (precedence order):")
 	fmt.Println()
 	if len(set.Packs) == 0 {
-		fmt.Println("  none (no packs selected)")
+		fmt.Println("  none (no active pack seeds)")
 	} else {
 		fmt.Println("  ID                                Version   Priority  Mode               Reasons")
 		for _, p := range set.Packs {
@@ -904,7 +904,7 @@ func discoverSelected(rootDir string) (map[string]bool, error) {
 	}
 	rt, err := manifest.Read(rootDir)
 	if err != nil {
-		return selected, nil
+		return nil, fmt.Errorf("read legacy pack selection from %s: %w", manifest.FileName, err)
 	}
 	for _, m := range rt.ManagedArtifacts {
 		id, _, ok := parsePackPath(m)

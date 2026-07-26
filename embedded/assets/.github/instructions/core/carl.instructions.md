@@ -1,4 +1,4 @@
-<!-- version: 1.3.1 -->
+<!-- version: 1.5.0 -->
 # cARLv2 Cognition Governance Pack
 
 Defines the cARLv2 governance model that coordinates shaping, planning, execution, validation, reconciliation, and context reset.
@@ -13,11 +13,43 @@ If prompt/session memory conflicts with cARL artefacts, trust cARL and report th
 
 If `.github/carl/memory.md` conflicts with current repository state, current repository state wins and memory should be updated.
 
+## Pack/profile hydration
+
+The shared loader at `.github/copilot-instructions.md` is the normative agent
+procedure for consuming canonical pack/profile state. Follow its **Effective
+instruction-pack hydration** section before planning or implementation.
+
+In particular:
+
+- directory presence, installation, or discovery does not select a pack;
+- `.github/carl/packs.json` is the selection authority when present, otherwise
+  selection uses the documented `.github/carl/runtime.json`
+  `managedArtifacts` compatibility derivation;
+- `.github/carl/profiles.json`, when present, makes organisation/repository
+  defaults plus the configured active profile and role/task overlays the
+  additive active seed set; without it, selected packs are active
+  compatibility seeds;
+- `.github/carl/profiles.example.json` is an inactive, cloneable reference
+  baseline using the same profile schema; its presence selects or activates
+  nothing, and only an adopted `.github/carl/profiles.json` participates in
+  evaluation;
+- transitive `requires:` dependencies, explicit precedence metadata, priority
+  descending with pack-ID tie-breaking, and valid explicit overrides determine
+  the composed set;
+- only effective, non-overridden pack definitions are hydrated and applied;
+- invalid, contradictory, cyclic, conflicting, or ambiguous policy state
+  requires stopping and reporting rather than guessing or loading all packs.
+
+The cARL CLI may validate or explain this repository-local evaluation when
+available, but it is not a runtime dependency for hydration. Effective,
+explain, and trace output is derived diagnostic evidence, not canonical policy
+state or proof that a model adhered to loaded instructions.
+
 ## Lifecycle
 
 - **Delegated cognition is a governed resource.** Treat agent cognition as accountable project capacity, not ambient background activity.
 - **Separate work phases deliberately.** Keep shaping, planning, execution, validation, reconciliation, and context reset distinct to reduce hidden branching.
-- **Hydrate before planning or implementation.** Read the active PR contract, durable memory, invariants, trust boundaries, tool policy, relevant plans, and relevant instruction packs before making changes.
+- **Hydrate before planning or implementation.** Read the active PR contract, durable memory, invariants, trust boundaries, tool policy, runtime/selection/profile state, relevant plans, and only the effective instruction packs before making changes.
 - **Constrain execution with a PR contract.** Use `.github/carl/current-pr-contract.md` to define approved scope, constraints, non-goals, stop conditions, and escalation triggers.
 - **Preserve invariants.** Preserve `.github/carl/invariants.yml` unless the user explicitly approves a governance amendment.
 - **Use the minimum sufficient reasoning depth.** Increase depth only when uncertainty, novelty, or risk warrants the additional cost.

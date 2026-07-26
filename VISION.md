@@ -1,4 +1,4 @@
-<!-- version: 1.1.0 -->
+<!-- version: 1.2.0 -->
 # cARL — Project Vision
 
 ---
@@ -55,7 +55,7 @@ Architectural decisions, invariants, and field-test lessons should persist in th
 If it matters, it should be in git. Engineering conventions, security rules, and planning contracts should be diffable, reviewable, and auditable.
 
 **4. Packs should be modular and composable.**
-No single monolithic instruction file. Focused packs per concern, composed at the root operating model, reusable across repositories. Packs are addressable, versioned units of policy — identified by stable IDs and versioned metadata, composed conservatively (packs add constraints; none silently disables another), never by filesystem load order.
+No single monolithic instruction file. Focused packs per concern, composed through the shared loader, reusable across repositories. Packs are addressable, versioned units of policy — identified by stable IDs and versioned metadata, composed deterministically so non-overridden effective packs add constraints and only explicit valid overrides prevent a target from applying, never by filesystem load order.
 
 **5. The agent should do less, not more, when uncertain.**
 Minimum sufficient reasoning depth. Escalate when risk warrants. Default to plan-first. Pause before destructive actions.

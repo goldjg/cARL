@@ -1,4 +1,4 @@
-<!-- version: 1.3.1 -->
+<!-- version: 1.5.0 -->
 # Trust Boundaries
 
 Trust boundaries classify information sources and define required validation before shaping, planning, execution, validation, or reconciliation decisions.
@@ -13,7 +13,8 @@ Trust boundaries classify information sources and define required validation bef
 | Tool policy | `.github/carl/tool-policy.yml` | High | Classify tool actions before execution and escalate according to tier |
 | Prompt-as-code plans | `.github/carl/plans/*.md` | High when active | Treat as task contracts when referenced by the active PR contract or user; verify status and scope before implementation |
 | Cognitive cache | `.github/carl/memory.md` | Medium-high | Treat as durable guidance; validate against current repository state if stale, conflicting, or structurally outdated |
-| Instruction packs | `.github/instructions/**/*.instructions.md` | Medium-high | Apply relevant packs for language, platform, cloud, security, dependency, and governance guidance; do not treat packs as task-specific scope approval |
+| Profile example | `.github/carl/profiles.example.json` | Medium-high reference data | Treat as an inactive cloneable baseline only; its presence does not select or activate packs, and active policy comes only from ordinary canonical selection/profile state |
+| Instruction packs | `.github/instructions/**/*.instructions.md` | Medium-high | Derive and apply only effective, non-overridden packs from canonical selection/profile/composition state; directory presence is not activation, and packs do not grant task-specific scope approval |
 | Harness adapter files | `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/carl.mdc`, `.agents/rules/carl.md` | Medium | Treat as context loaders/adapters only; use them to locate canonical cARL artefacts, not as independent governance authorities |
 | Tool output | Search, file-read, command output, test output, CI output | Medium | Confirm relevance, freshness, and exact path before using for writes or conclusions |
 | Registry configuration | `.github/carl/registries.json` | Medium | Treat every ID and location as untrusted; require strict schema validation, explicit HTTPS or repository-local sources, and reject credentials, queries, fragments, traversal, and implicit authorities |
@@ -45,6 +46,17 @@ Trust boundaries classify information sources and define required validation bef
 - Registry-managed updates must use recorded provenance and fail on local drift, changed registry location, or same-version digest mutation.
 - Policy explanation is pack-level and derived from validated repository state; it must remain read-only, network-free, repository-relative, and explicit that it does not interpret individual prose rules or expose prompts, hidden reasoning, or chain-of-thought.
 - Explanation output is diagnostic evidence, not canonical governance. Canonical cARL artefacts and current repository state remain authoritative.
+- The bundled profile example is not active policy. Only a deliberately
+  adopted `.github/carl/profiles.json` participates in activation, using the
+  same reference, dependency, precedence, override, and conflict validation as
+  every user-authored profile.
+- Pack hydration is repository-local and fail-closed. Explicit `packs.json`
+  selection outranks the `runtime.json` compatibility fallback; profile
+  defaults/context determine active seeds when configured; required
+  dependencies, precedence, and valid overrides determine the effective
+  evaluation. Overridden entries may remain visible for provenance, but their
+  definitions are not applied. Invalid or unresolved state must be reported,
+  never replaced by filesystem-order inference or a load-all fallback.
 - Cognitive graph paths and relationships are derived from current repository structure and static Go imports. Static dependencies do not prove runtime data flow, direct reverse dependencies do not guarantee transitive impact, and criticality labels are orientation heuristics rather than risk assessments.
 - Policy nodes and attachment points in the cognitive graph do not establish active policy. Use `carl trace` and canonical pack/profile/selection artefacts for policy evaluation provenance.
 - Missing ownership or runtime-flow evidence must remain explicit in graph coverage; it must not be replaced with inferred owners or invented flows.
@@ -62,7 +74,8 @@ They influence what an agent sees first, but they do not guarantee what the mode
 Required control:
 
 1. adapter loads or points to cARL;
-2. agent hydrates canonical cARL artefacts before planning or implementation;
+2. agent hydrates canonical cARL artefacts and derives only effective,
+   non-overridden instruction packs before planning or implementation;
 3. agent executes inside the active PR contract;
 4. agent validates implementation against contract assertions;
 5. agent reconciles cARL/docs before final response;

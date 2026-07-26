@@ -1,4 +1,4 @@
-<!-- version: 1.6.0 -->
+<!-- version: 1.8.0 -->
 # cARL — Glossary
 
 This glossary defines the terms used in cARL documentation, instruction packs, and governance artefacts.
@@ -61,10 +61,16 @@ See: Memory cache.
 ## E
 
 ### Effective pack set
-The composed policy surface computed by `carl pack effective`: explicitly selected packs plus transitively expanded required dependencies, each entry carrying explicit reasons, ordered by precedence (priority descending, pack-ID tie-break). Composition is conservative: overridden packs remain in the set flagged `overriddenBy`; an override is honoured only when explicitly declared and the target pack declares mode `overridable`; conflicts fail with a non-zero exit.
+The composed policy evaluation computed by `carl pack effective`: active profile/default/overlay seeds (or selected-as-active compatibility seeds) plus transitively expanded required dependencies, each entry carrying explicit reasons, ordered by precedence (priority descending, pack-ID tie-break). Overridden packs remain visible in the evaluation flagged `overriddenBy` for provenance but their instruction definitions are not applied; an override is honoured only when explicitly declared and the target pack declares mode `overridable`; conflicts fail with a non-zero exit.
 
 ### Escalation trigger
 A condition defined in the PR contract or plan that requires the agent to stop and seek user confirmation before proceeding. Examples: ambiguous scope, trust boundary change, out-of-contract action.
+
+### Example profile
+The inactive `.github/carl/profiles.example.json` reference installed by
+`carl init`. It uses the ordinary `profiles.json` schema and explicitly names
+the complete shipped pack baseline, but it has no activation semantics until a
+user deliberately adopts it as `.github/carl/profiles.json`.
 
 ---
 
@@ -142,7 +148,7 @@ A high-impact unresolved question persisted in the memory cache so future tasks 
 See: Instruction pack.
 
 ### Pack state
-The lifecycle facts recorded in pack metadata: **bundled** (shipped inside the `carl` binary), **installed** (present as a file in the repository), **selected** (recorded in `.github/carl/packs.json` by `carl pack select`, falling back to the legacy `.github/carl/runtime.json` derivation when absent), and **active** (an explicit seed from organisation/repository defaults or the active profile/role/task context in `.github/carl/profiles.json`). When no profile artefact exists, active falls back to selected for compatibility. Selection is distinct from activation, priority (ordering), and override authority (whether one pack may relax another's rules).
+The lifecycle facts recorded in pack metadata: **bundled** (shipped inside the `carl` binary), **installed/present** (available as a file in the repository), **selected** (recorded in `.github/carl/packs.json` by `carl pack select`, falling back to the legacy `.github/carl/runtime.json` derivation when absent), **active** (an explicit seed from organisation/repository defaults or the active profile/role/task context in `.github/carl/profiles.json`), **effective** (an active seed or transitively required dependency that survived validation/composition), and **overridden** (visible for evaluation provenance but not applied). When no profile artefact exists, active falls back to selected for compatibility. Presence, selection, activation, precedence, and override authority are distinct.
 
 ### Pack selection
 The explicit, committed record of which packs are in play for a repository, stored in `.github/carl/packs.json` (schema version 1) and managed by `carl pack select` / `carl pack unselect`. Selection is deterministic (deduplicated, sorted by pack ID) and user-owned; pack commands never write `runtime.json`.
@@ -163,7 +169,7 @@ A named, committed policy context in `.github/carl/profiles.json` (schema versio
 A deterministic, read-only account produced by `carl explain <pack-id>` of one instruction pack's source, canonical definition, activation/dependency provenance, precedence, and override state. The explained policy unit is a pack, not an individual natural-language rule. Explanation output is diagnostic evidence rather than a canonical governance source and does not expose hidden model reasoning or chain-of-thought.
 
 ### Policy trace
-The schema-versioned output of `carl trace`: the complete effective pack set in precedence order plus structured activation, dependency, ordering, constraint, override, and unresolved-conflict decisions. It reuses the existing effective-pack evaluator and performs no network access or repository writes.
+The schema-versioned output of `carl trace`: the complete effective pack evaluation in precedence order plus structured activation, dependency, ordering, constraint, override/non-application, and unresolved-conflict decisions. It retains overridden entries for provenance while marking them not applied, reuses the existing effective-pack evaluator, and performs no network access or repository writes.
 
 ### Profile activation
 The explicit profile, role, and task context stored under `active` in `.github/carl/profiles.json`. `carl pack profile activate` changes that context and `clear` removes it while retaining organisation/repository defaults. Profile activation determines `state.active`; it does not change selection, precedence, or override authority.

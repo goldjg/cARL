@@ -1,4 +1,4 @@
-<!-- version: 2.1.1 -->
+<!-- version: 2.3.0 -->
 # Shared cARL Adapter Loader
 
 This repository uses **cARL** as its authoritative agent governance system.
@@ -21,13 +21,98 @@ Canonical governance lives in:
 4. `.github/carl/trust-boundaries.md`
 5. `.github/carl/tool-policy.yml`
 6. `.github/carl/plans/`
-7. `.github/instructions/`
+7. `.github/carl/runtime.json`
+8. `.github/carl/packs.json`, when present
+9. `.github/carl/profiles.json`, when present
+10. `.github/instructions/`
 
 Harness-specific files such as `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/carl.mdc`, and `.agents/rules/carl.md` are adapters. They may load, summarise, or route to cARL, but they are not the canonical governance authority.
 
 If prompt/session memory conflicts with cARL artefacts, trust cARL and report the conflict.
 
 If `.github/carl/memory.md` conflicts with current repository state, current repository state wins and memory should be updated.
+
+---
+
+## Effective instruction-pack hydration
+
+Directory presence is not policy activation. Before planning or
+implementation, determine the effective instruction-pack definitions from the
+canonical repository files. Do not load every file under
+`.github/instructions/` as a conservative fallback: inactive or conflicting
+packs may weaken rather than strengthen governance.
+
+Use these state distinctions:
+
+- **present/installed/discovered** means a pack definition is available in the
+  repository or bundled runtime; it does not mean the pack is selected;
+- **selected** means the pack is in the repository selection authority;
+- **active** means a selected pack is an explicit profile/default/overlay seed,
+  or is selected under the no-profile compatibility behaviour;
+- **effective** means an active seed or one of its transitive required
+  dependencies survived validation and composition;
+- **overridden** means the pack remains visible in effective-set diagnostics
+  for provenance but its instruction definition must not be hydrated or
+  applied.
+
+`.github/carl/profiles.example.json` is the shipped reference baseline. It
+names the `default` profile and explicitly lists the complete pack set shipped
+with cARL so users can copy it to `.github/carl/profiles.json` and modify it.
+The example is ordinary schema-version 1 profile data and has no special
+evaluation semantics. Its presence does not activate it, select its pack
+references, or replace the compatibility behaviour below; only
+`.github/carl/profiles.json` is active profile state.
+
+Derive the states in this order:
+
+1. Read `.github/carl/runtime.json`, inspect `.github/carl/packs.json` and
+   `.github/carl/profiles.json` when present, and inspect pack metadata and the
+   definitions needed by the evaluation under `.github/instructions/`.
+2. Determine selection:
+   - when `.github/carl/packs.json` exists, its `selected` pack IDs are the
+     explicit user-owned selection authority, including when the array is
+     empty;
+   - otherwise derive the legacy selection from instruction-pack paths in
+     `.github/carl/runtime.json` `managedArtifacts`;
+   - if neither selection source exists, the selected set is empty;
+   - never infer selection from directory contents, installation, discovery,
+     or repository presence.
+3. Determine active seeds:
+   - when `.github/carl/profiles.json` exists, require every default, profile,
+     role, and task reference to be selected, then compose organisation
+     defaults, repository defaults, the configured active profile, and its
+     configured role/task overlays additively;
+   - when it does not exist, treat the selected set as active for compatibility;
+   - selected-but-inactive packs are not applied merely because they are
+     present or selected.
+4. Validate and compose:
+   - validate referenced packs and explicit metadata; stop on malformed or
+     contradictory state, missing references or required dependencies,
+     dependency cycles, invalid overrides, or unresolved conflicts;
+   - start with the active seed set and add transitive `requires:`
+     dependencies;
+   - use explicit `precedence-mode:`, `priority:`, and `overrides:` metadata
+     only; absent metadata means additive mode, priority `0`, and no overrides;
+   - order by priority descending, breaking ties by pack ID
+     lexicographically; filesystem or discovery order is never policy order;
+   - honour an explicit override only when both packs are in the composed set
+     and the target declares `precedence-mode: overridable`;
+   - keep overridden entries visible for provenance, but do not hydrate or
+     apply their instruction definitions.
+5. Hydrate and apply only the ordered, effective, non-overridden pack
+   definitions. If policy state is invalid, ambiguous, or conflicting, stop
+   and report the repository-relative source and problem instead of guessing,
+   silently failing open, or loading all packs.
+
+Installed, discovered, or repository-present does not mean selected. Selected
+does not always mean active. Active does not bypass dependency, precedence,
+override, or validation semantics.
+
+The cARL CLI is not required for this hydration. When available,
+`carl pack effective`, `carl explain`, and `carl trace` may validate the
+interpretation. Their output is derived diagnostic evidence, not a new
+canonical authority, and neither loader availability nor diagnostic output
+proves that a model followed the instructions.
 
 ---
 
@@ -44,8 +129,11 @@ Before planning, editing, or writing files, read the relevant cARL artefacts:
 - `.github/carl/invariants.yml`
 - `.github/carl/trust-boundaries.md`
 - `.github/carl/tool-policy.yml`
+- `.github/carl/runtime.json`
+- `.github/carl/packs.json`, when present
+- `.github/carl/profiles.json`, when present
 - any relevant files in `.github/carl/plans/`
-- any relevant instruction packs in `.github/instructions/`
+- the effective instruction packs determined by the hydration procedure above
 
 At minimum, identify:
 

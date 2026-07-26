@@ -66,6 +66,21 @@ func TestReadSelectionMalformed(t *testing.T) {
 	}
 }
 
+func TestLegacySelectionRejectsMalformedRuntime(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, filepath.FromSlash(".github/carl/runtime.json"))
+	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte(`{not json`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := discoverSelected(dir); err == nil {
+		t.Fatal("malformed legacy runtime selection must fail closed")
+	}
+}
+
 // Contract assertion 1: select/unselect commands validate pack existence and
 // persist selection; the selection artefact is authoritative for discovery.
 func TestPackSelectUnselectCommands(t *testing.T) {

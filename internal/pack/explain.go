@@ -12,7 +12,7 @@ import (
 
 // PolicyExplanationNotice states the intentional epistemic boundary of the
 // Phase 5 explanation surface.
-const PolicyExplanationNotice = "Pack-level policy provenance only. This output does not interpret individual natural-language rules or expose prompts, hidden model reasoning, or chain-of-thought."
+const PolicyExplanationNotice = "Pack-level policy provenance only. This output does not interpret individual natural-language rules or expose prompts, hidden model reasoning, or chain-of-thought. Instruction availability or loading does not prove model adherence."
 
 // PolicyContext identifies the repository artefact and optional profile
 // context that supplied active pack seeds.
@@ -36,8 +36,9 @@ type PolicyActivation struct {
 	Task        string `json:"task,omitempty"`
 }
 
-// PolicyEffect describes conservative pack-level composition effects. Packs
-// add constraints; resolved overrides and overridden packs remain explicit.
+// PolicyEffect describes conservative pack-level composition effects.
+// Non-overridden effective packs add constraints; resolved overrides and
+// overridden packs remain explicit for provenance.
 type PolicyEffect struct {
 	AddsConstraints   bool     `json:"addsConstraints"`
 	DeclaredOverrides []string `json:"declaredOverrides"`
@@ -182,14 +183,15 @@ func buildPolicyEvaluation(packs []PackMetadata, context PolicyContext) (*policy
 		}
 		explanation := explanations[effective.ID]
 		order := i + 1
-		explanation.Applied = true
+		overridden := len(effective.OverriddenBy) > 0
+		explanation.Applied = !overridden
 		explanation.Status = "effective"
 		explanation.Order = &order
 		explanation.Priority = effective.Priority
 		explanation.Mode = effective.Mode
 		explanation.Activation = activationsFromReasons(effective.Reasons, context)
 		explanation.RequiredBy = relatedPacks(explanation.Activation)
-		explanation.Effect.AddsConstraints = true
+		explanation.Effect.AddsConstraints = !overridden
 		explanation.Effect.ResolvedOverrides = append(
 			[]string(nil),
 			resolvedOverrides[effective.ID]...,
@@ -198,7 +200,7 @@ func buildPolicyEvaluation(packs []PackMetadata, context PolicyContext) (*policy
 			[]string(nil),
 			effective.OverriddenBy...,
 		)
-		if len(effective.OverriddenBy) > 0 {
+		if overridden {
 			explanation.Status = "overridden"
 		}
 		explanations[effective.ID] = explanation
@@ -229,13 +231,23 @@ func buildPolicyEvaluation(packs []PackMetadata, context PolicyContext) (*policy
 				effective.Priority,
 			),
 		})
-		decisions = append(decisions, PolicyDecision{
-			Kind:    "constraint",
-			Outcome: "strengthens",
-			Subject: effective.ID,
-			Source:  expectedPackPath(effective.ID),
-			Reason:  "the effective pack adds constraints at pack level; individual prose rules are not interpreted",
-		})
+		if overridden {
+			decisions = append(decisions, PolicyDecision{
+				Kind:    "constraint",
+				Outcome: "not-applied",
+				Subject: effective.ID,
+				Source:  expectedPackPath(effective.ID),
+				Reason:  "the pack remains visible for provenance but its instruction definition is overridden and not applied",
+			})
+		} else {
+			decisions = append(decisions, PolicyDecision{
+				Kind:    "constraint",
+				Outcome: "strengthens",
+				Subject: effective.ID,
+				Source:  expectedPackPath(effective.ID),
+				Reason:  "the effective pack adds constraints at pack level; individual prose rules are not interpreted",
+			})
+		}
 	}
 
 	for _, policy := range policies {
