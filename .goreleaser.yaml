@@ -98,6 +98,10 @@ release:
   github:
     owner: goldjg
     name: cARL
+  # Preserve operator-authored notes on an existing tag while allowing a
+  # failed/partial release run to replace same-name assets safely.
+  mode: keep-existing
+  replace_existing_artifacts: true
   # draft: false — release is published immediately on tag push.
   draft: false
   # prerelease: auto — versions such as v1.0.0-rc.1 are marked pre-release.

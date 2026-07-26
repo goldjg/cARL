@@ -20,7 +20,17 @@ run_release_attempt() {
 
 is_apple_rate_limit_error() {
   local log_file="$1"
-  grep -Eq '429 Too Many Requests|RATE_LIMIT|Exceeded hourly limit' "${log_file}"
+
+  # Apple's hourly-limit message is specific to the notarisation service.
+  if grep -Eq 'Exceeded hourly limit' "${log_file}"; then
+    return 0
+  fi
+
+  # Generic 429/RATE_LIMIT text can also come from GitHub or Homebrew. Require
+  # Apple/notarisation context on the same log line before retrying.
+  grep -Eiq \
+    '(apple|app[[:space:]]+store[[:space:]]+connect|notari[sz](e|ed|ing|ation)?|notary).*(429([[:space:]]+Too[[:space:]]+Many[[:space:]]+Requests)?|RATE_LIMIT)|(429([[:space:]]+Too[[:space:]]+Many[[:space:]]+Requests)?|RATE_LIMIT).*(apple|app[[:space:]]+store[[:space:]]+connect|notari[sz](e|ed|ing|ation)?|notary)' \
+    "${log_file}"
 }
 
 set +e

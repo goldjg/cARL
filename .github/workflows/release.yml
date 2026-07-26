@@ -8,6 +8,8 @@
 #
 # Secrets:
 #   GITHUB_TOKEN - automatically provided; used for the release.
+#   HOMEBREW_TAP_GITHUB_TOKEN - required; publishes the cask to
+#     `goldjg/homebrew-carl`.
 #   WINGETCREATE_TOKEN - optional; when set, used to submit/update the
 #   `goldjg.cARL` package in microsoft/winget-pkgs.
 #
@@ -115,13 +117,14 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Check required Apple signing/notarisation secrets
+      - name: Check required release secrets
         env:
           CERT_P12:  ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
           CERT_PASS: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
           NOTARIZE_ISSUER_ID: ${{ secrets.NOTARIZE_ISSUER_ID }}
           NOTARIZE_KEY_ID: ${{ secrets.NOTARIZE_KEY_ID }}
           NOTARIZE_KEY: ${{ secrets.NOTARIZE_KEY }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
         run: |
           missing=""
           [ -z "$CERT_P12" ]  && missing="$missing MACOS_CERTIFICATE_P12_BASE64"
@@ -129,12 +132,13 @@ jobs:
           [ -z "$NOTARIZE_ISSUER_ID" ] && missing="$missing NOTARIZE_ISSUER_ID"
           [ -z "$NOTARIZE_KEY_ID" ] && missing="$missing NOTARIZE_KEY_ID"
           [ -z "$NOTARIZE_KEY" ] && missing="$missing NOTARIZE_KEY"
+          [ -z "$HOMEBREW_TAP_TOKEN" ] && missing="$missing HOMEBREW_TAP_GITHUB_TOKEN"
           if [ -n "$missing" ]; then
-            echo "::error::Required Apple signing/notarisation secrets are not configured:$missing"
+            echo "::error::Required release secrets are not configured:$missing"
             echo "See DISTRIBUTION.md for setup instructions."
             exit 1
           fi
-          echo "All required Apple signing/notarisation secrets are present."
+          echo "All required release secrets are present."
 
       - name: Install GoReleaser
         # goreleaser-action is third-party; pin to a full commit SHA.

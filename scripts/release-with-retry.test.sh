@@ -137,10 +137,34 @@ main() {
     "unused"
 
   run_case \
+    "github-429-is-not-apple" \
+    23 1 0 \
+    23 \
+    "github release upload failed: 429 Too Many Requests" \
+    0 \
+    "unused"
+
+  run_case \
+    "homebrew-rate-limit-is-not-apple" \
+    24 1 0 \
+    24 \
+    "homebrew tap publish failed: RATE_LIMIT" \
+    0 \
+    "unused"
+
+  run_case \
     "apple-then-success" \
     0 2 1 \
     1 \
-    $'HTTP 429 Too Many Requests\nRATE_LIMIT\nExceeded hourly limit of requests' \
+    "notarize.macos: HTTP 429 Too Many Requests" \
+    0 \
+    "release ok"
+
+  run_case \
+    "app-store-rate-code-then-success" \
+    0 2 1 \
+    1 \
+    "App Store Connect notarization failed: RATE_LIMIT" \
     0 \
     "release ok"
 
@@ -148,15 +172,15 @@ main() {
     "apple-then-apple" \
     9 2 1 \
     9 \
-    $'HTTP 429 Too Many Requests\nRATE_LIMIT\nExceeded hourly limit of requests' \
+    "Exceeded hourly limit of requests" \
     9 \
-    $'HTTP 429 Too Many Requests\nRATE_LIMIT\nExceeded hourly limit of requests'
+    "Exceeded hourly limit of requests"
 
   run_case \
     "apple-then-different-failure" \
     17 2 1 \
     1 \
-    $'HTTP 429 Too Many Requests\nRATE_LIMIT\nExceeded hourly limit of requests' \
+    "Apple notarization failed: 429 Too Many Requests" \
     17 \
     "homebrew publish failed"
 

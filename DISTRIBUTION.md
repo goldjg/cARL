@@ -1,3 +1,4 @@
+<!-- version: 1.1.0 -->
 # cARL Distribution Guide
 
 This document describes how the cARL CLI is packaged and distributed, and how
@@ -69,10 +70,10 @@ The release workflow runs `goreleaser release --clean` via
 `scripts/release-with-retry.sh`.
 
 - Attempt 1 runs normally.
-- If attempt 1 fails and logs include one of:
-  - `429 Too Many Requests`
-  - `RATE_LIMIT`
-  - `Exceeded hourly limit`
+- If attempt 1 fails and logs include either:
+  - Apple's standalone `Exceeded hourly limit` signature, or
+  - `429 Too Many Requests` / `RATE_LIMIT` on a line that also identifies
+    Apple, App Store Connect, notarisation, or the notary service,
   then the workflow emits a warning and sleeps **1 hour**.
 - After the cooldown, it performs exactly **one** retry.
 - If the second attempt fails, the workflow fails.
@@ -95,17 +96,17 @@ No outer retry is performed for non-Apple-rate-limit failures, including:
 
 The pipeline intentionally remains a single all-in-one
 `goreleaser release --clean` flow (build/sign/notarize/archive/publish).
-If a run fails after some publication steps succeeded (for example, GitHub
-Release assets uploaded or Homebrew cask push partially completed), rerunning
-the workflow for the same tag may still fail due to already-published state.
+GoReleaser preserves existing release notes and replaces same-name GitHub
+Release assets on a same-tag rerun. That makes the GitHub Release portion
+recoverable without deleting the tag or release.
 
 After a successful wrapper run, the release job asserts the expected GitHub
 Release assets exist for the resolved tag before the job is marked successful.
 Downstream jobs such as WinGet only run when the release job succeeds.
 
-The workflow does **not** automatically delete/recreate tags, releases, assets,
-or Homebrew artifacts. Manual recovery may require operator intervention in
-GitHub Releases and/or the Homebrew tap before rerun.
+The workflow does **not** delete/recreate tags or releases. A partial external
+publication, such as a Homebrew tap push that cannot be repeated safely, can
+still require operator inspection before rerun.
 
 ---
 
@@ -115,22 +116,22 @@ GitHub Releases and/or the Homebrew tap before rerun.
 
 ```sh
 # Linux (amd64)
-curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_linux_amd64.tar.gz \
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0-rc.1/carl_1.0.0-rc.1_linux_amd64.tar.gz \
   | tar xz && sudo mv carl /usr/local/bin/carl
 
 # macOS (Apple Silicon)
-curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_darwin_arm64.tar.gz \
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0-rc.1/carl_1.0.0-rc.1_darwin_arm64.tar.gz \
   | tar xz && sudo mv carl /usr/local/bin/carl
 
 # macOS (Intel)
-curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_darwin_amd64.tar.gz \
+curl -L https://github.com/goldjg/cARL/releases/download/v1.0.0-rc.1/carl_1.0.0-rc.1_darwin_amd64.tar.gz \
   | tar xz && sudo mv carl /usr/local/bin/carl
 ```
 
 Verify the download against `checksums.txt` before installing:
 
 ```sh
-curl -LO https://github.com/goldjg/cARL/releases/download/v1.0.0/checksums.txt
+curl -LO https://github.com/goldjg/cARL/releases/download/v1.0.0-rc.1/checksums.txt
 sha256sum --check --ignore-missing checksums.txt
 ```
 
@@ -139,8 +140,8 @@ sha256sum --check --ignore-missing checksums.txt
 Download and install the `.deb` package directly:
 
 ```sh
-curl -LO https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_linux_amd64.deb
-sudo dpkg -i carl_1.0.0_linux_amd64.deb
+curl -LO https://github.com/goldjg/cARL/releases/download/v1.0.0-rc.1/carl_1.0.0-rc.1_linux_amd64.deb
+sudo dpkg -i carl_1.0.0-rc.1_linux_amd64.deb
 ```
 
 > **Future:** A signed apt repository is a planned distribution channel.
@@ -149,8 +150,8 @@ sudo dpkg -i carl_1.0.0_linux_amd64.deb
 ### Red Hat / Fedora / SUSE (rpm)
 
 ```sh
-curl -LO https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_linux_amd64.rpm
-sudo rpm -i carl_1.0.0_linux_amd64.rpm
+curl -LO https://github.com/goldjg/cARL/releases/download/v1.0.0-rc.1/carl_1.0.0-rc.1_linux_amd64.rpm
+sudo rpm -i carl_1.0.0-rc.1_linux_amd64.rpm
 ```
 
 > **Future:** A signed yum/dnf repository is a planned distribution channel.
@@ -159,8 +160,8 @@ sudo rpm -i carl_1.0.0_linux_amd64.rpm
 ### Alpine Linux (apk)
 
 ```sh
-curl -LO https://github.com/goldjg/cARL/releases/download/v1.0.0/carl_1.0.0_linux_amd64.apk
-sudo apk add --allow-untrusted carl_1.0.0_linux_amd64.apk
+curl -LO https://github.com/goldjg/cARL/releases/download/v1.0.0-rc.1/carl_1.0.0-rc.1_linux_amd64.apk
+sudo apk add --allow-untrusted carl_1.0.0-rc.1_linux_amd64.apk
 ```
 
 > **Future:** A signed Alpine package repository is a planned distribution channel.
@@ -204,8 +205,9 @@ in the `goldjg/cARL` repository before tagging a release.
 | `NOTARIZE_KEY_ID` | Key ID from App Store Connect API key |
 | `NOTARIZE_KEY` | Base64-encoded contents of the App Store Connect `.p8` API key file |
 
-The release workflow validates that all five secrets are present and fails with
-a clear error message if any are missing.
+The release workflow validates that all five Apple secrets and the required
+`HOMEBREW_TAP_GITHUB_TOKEN` are present before any publication begins, and
+fails with a clear error message if any are missing.
 
 ### WinGet (Windows)
 

@@ -28,6 +28,7 @@
     ".github/instructions": "Copilot instruction packs",
     ".github/instructions/cloud": "Cloud guidance packs",
     ".github/instructions/core": "Core governance packs",
+    ".github/instructions/enterprise": "",
     ".github/instructions/languages": "Language-specific guidance packs",
     ".github/instructions/platform": "Platform guidance packs",
     ".github/scripts": "",
@@ -50,7 +51,8 @@
     "internal/repomap": "Implements the `carl map` command.",
     "internal/status": "Implements the `carl status` command.",
     "internal/version": "Implements the `carl version` command.",
-    "scripts": "Build and automation scripts"
+    "scripts": "Build and automation scripts",
+    "session-records": ""
   },
   "workflows": [
     {
@@ -72,12 +74,21 @@
       "purpose": "PR contract template"
     },
     {
+      "path": ".github/carl/enterprise-profiles.md"
+    },
+    {
       "path": ".github/carl/invariants.yml",
       "purpose": "Runtime invariants enforced by all implementation PRs"
     },
     {
       "path": ".github/carl/memory.md",
       "purpose": "Durable architectural truth cache"
+    },
+    {
+      "path": ".github/carl/profiles.enterprise.example.json"
+    },
+    {
+      "path": ".github/carl/profiles.enterprise.scenarios.example.json"
     },
     {
       "path": ".github/carl/profiles.example.json"
@@ -118,6 +129,9 @@
       "purpose": "CLI command reference"
     },
     {
+      "path": "COMPATIBILITY.md"
+    },
+    {
       "path": "DISTRIBUTION.md"
     },
     {
@@ -131,6 +145,12 @@
     {
       "path": "README.md",
       "purpose": "Repository overview and pack catalogue"
+    },
+    {
+      "path": "RELEASE_NOTES_v1.0.0-rc.1.md"
+    },
+    {
+      "path": "RELEASE_READINESS.md"
     },
     {
       "path": "ROADMAP.md",
@@ -238,6 +258,15 @@
         "trust_boundary": "repository",
         "policy_attachment_point": true,
         "agent_context": "Core governance packs"
+      },
+      {
+        "id": "component:.github/instructions/enterprise",
+        "kind": "component",
+        "path": ".github/instructions/enterprise",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Repository component at .github/instructions/enterprise."
       },
       {
         "id": "component:.github/instructions/languages",
@@ -529,6 +558,15 @@
         "agent_context": "Build and automation scripts"
       },
       {
+        "id": "component:session-records",
+        "kind": "component",
+        "path": "session-records",
+        "criticality": "medium",
+        "trust_boundary": "repository",
+        "policy_attachment_point": true,
+        "agent_context": "Repository component at session-records."
+      },
+      {
         "id": "documentation:AGENTS.md",
         "kind": "documentation",
         "path": "AGENTS.md",
@@ -565,6 +603,15 @@
         "trust_boundary": "repository",
         "policy_attachment_point": false,
         "agent_context": "CLI command reference"
+      },
+      {
+        "id": "documentation:COMPATIBILITY.md",
+        "kind": "documentation",
+        "path": "COMPATIBILITY.md",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "documentation artefact at COMPATIBILITY.md."
       },
       {
         "id": "documentation:DISTRIBUTION.md",
@@ -604,6 +651,24 @@
         "trust_boundary": "repository",
         "policy_attachment_point": false,
         "agent_context": "Repository overview and pack catalogue"
+      },
+      {
+        "id": "documentation:RELEASE_NOTES_v1.0.0-rc.1.md",
+        "kind": "documentation",
+        "path": "RELEASE_NOTES_v1.0.0-rc.1.md",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "documentation artefact at RELEASE_NOTES_v1.0.0-rc.1.md."
+      },
+      {
+        "id": "documentation:RELEASE_READINESS.md",
+        "kind": "documentation",
+        "path": "RELEASE_READINESS.md",
+        "criticality": "low",
+        "trust_boundary": "repository",
+        "policy_attachment_point": false,
+        "agent_context": "documentation artefact at RELEASE_READINESS.md."
       },
       {
         "id": "documentation:ROADMAP.md",
@@ -666,6 +731,15 @@
         "agent_context": "PR contract template"
       },
       {
+        "id": "governance:.github/carl/enterprise-profiles.md",
+        "kind": "governance",
+        "path": ".github/carl/enterprise-profiles.md",
+        "criticality": "high",
+        "trust_boundary": "governance",
+        "policy_attachment_point": false,
+        "agent_context": "governance artefact at .github/carl/enterprise-profiles.md."
+      },
+      {
         "id": "governance:.github/carl/invariants.yml",
         "kind": "governance",
         "path": ".github/carl/invariants.yml",
@@ -684,6 +758,24 @@
         "trust_boundary": "governance",
         "policy_attachment_point": false,
         "agent_context": "Durable architectural truth cache"
+      },
+      {
+        "id": "governance:.github/carl/profiles.enterprise.example.json",
+        "kind": "governance",
+        "path": ".github/carl/profiles.enterprise.example.json",
+        "criticality": "high",
+        "trust_boundary": "governance",
+        "policy_attachment_point": false,
+        "agent_context": "governance artefact at .github/carl/profiles.enterprise.example.json."
+      },
+      {
+        "id": "governance:.github/carl/profiles.enterprise.scenarios.example.json",
+        "kind": "governance",
+        "path": ".github/carl/profiles.enterprise.scenarios.example.json",
+        "criticality": "high",
+        "trust_boundary": "governance",
+        "policy_attachment_point": false,
+        "agent_context": "governance artefact at .github/carl/profiles.enterprise.scenarios.example.json."
       },
       {
         "id": "governance:.github/carl/profiles.example.json",
@@ -878,6 +970,116 @@
         "kind": "policy",
         "path": ".github/instructions/core/tool-permission-tiers.instructions.md",
         "purpose": "Instruction pack core/tool-permission-tiers",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:enterprise/argentum-innovation-lab",
+        "kind": "policy",
+        "path": ".github/instructions/enterprise/argentum-innovation-lab.instructions.md",
+        "purpose": "Instruction pack enterprise/argentum-innovation-lab",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:enterprise/argentum-regulated-payments",
+        "kind": "policy",
+        "path": ".github/instructions/enterprise/argentum-regulated-payments.instructions.md",
+        "purpose": "Instruction pack enterprise/argentum-regulated-payments",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:enterprise/brindleforge-connected-factory",
+        "kind": "policy",
+        "path": ".github/instructions/enterprise/brindleforge-connected-factory.instructions.md",
+        "purpose": "Instruction pack enterprise/brindleforge-connected-factory",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:enterprise/brindleforge-process-pilot",
+        "kind": "policy",
+        "path": ".github/instructions/enterprise/brindleforge-process-pilot.instructions.md",
+        "purpose": "Instruction pack enterprise/brindleforge-process-pilot",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:enterprise/discipline-architecture",
+        "kind": "policy",
+        "path": ".github/instructions/enterprise/discipline-architecture.instructions.md",
+        "purpose": "Instruction pack enterprise/discipline-architecture",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:enterprise/discipline-code",
+        "kind": "policy",
+        "path": ".github/instructions/enterprise/discipline-code.instructions.md",
+        "purpose": "Instruction pack enterprise/discipline-code",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:enterprise/discipline-design",
+        "kind": "policy",
+        "path": ".github/instructions/enterprise/discipline-design.instructions.md",
+        "purpose": "Instruction pack enterprise/discipline-design",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:enterprise/discipline-implementation",
+        "kind": "policy",
+        "path": ".github/instructions/enterprise/discipline-implementation.instructions.md",
+        "purpose": "Instruction pack enterprise/discipline-implementation",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:enterprise/discipline-review",
+        "kind": "policy",
+        "path": ".github/instructions/enterprise/discipline-review.instructions.md",
+        "purpose": "Instruction pack enterprise/discipline-review",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:enterprise/willowmere-clinical-records",
+        "kind": "policy",
+        "path": ".github/instructions/enterprise/willowmere-clinical-records.instructions.md",
+        "purpose": "Instruction pack enterprise/willowmere-clinical-records",
+        "criticality": "high",
+        "trust_boundary": "policy",
+        "policy_attachment_point": false,
+        "agent_context": "Policy definition only; verify active policy evaluation with `carl trace`."
+      },
+      {
+        "id": "policy:enterprise/willowmere-service-design",
+        "kind": "policy",
+        "path": ".github/instructions/enterprise/willowmere-service-design.instructions.md",
+        "purpose": "Instruction pack enterprise/willowmere-service-design",
         "criticality": "high",
         "trust_boundary": "policy",
         "policy_attachment_point": false,
@@ -1089,6 +1291,14 @@
       },
       {
         "from": "component:.github/carl",
+        "to": "governance:.github/carl/enterprise-profiles.md",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/enterprise-profiles.md"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
         "to": "governance:.github/carl/invariants.yml",
         "type": "contains",
         "evidence": [
@@ -1101,6 +1311,22 @@
         "type": "contains",
         "evidence": [
           ".github/carl/memory.md"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
+        "to": "governance:.github/carl/profiles.enterprise.example.json",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/profiles.enterprise.example.json"
+        ]
+      },
+      {
+        "from": "component:.github/carl",
+        "to": "governance:.github/carl/profiles.enterprise.scenarios.example.json",
+        "type": "contains",
+        "evidence": [
+          ".github/carl/profiles.enterprise.scenarios.example.json"
         ]
       },
       {
@@ -1165,6 +1391,14 @@
         "type": "contains",
         "evidence": [
           ".github/instructions/core"
+        ]
+      },
+      {
+        "from": "component:.github/instructions",
+        "to": "component:.github/instructions/enterprise",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/enterprise"
         ]
       },
       {
@@ -1293,6 +1527,94 @@
         "type": "contains",
         "evidence": [
           ".github/instructions/core/tool-permission-tiers.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/enterprise",
+        "to": "policy:enterprise/argentum-innovation-lab",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/enterprise/argentum-innovation-lab.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/enterprise",
+        "to": "policy:enterprise/argentum-regulated-payments",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/enterprise/argentum-regulated-payments.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/enterprise",
+        "to": "policy:enterprise/brindleforge-connected-factory",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/enterprise/brindleforge-connected-factory.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/enterprise",
+        "to": "policy:enterprise/brindleforge-process-pilot",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/enterprise/brindleforge-process-pilot.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/enterprise",
+        "to": "policy:enterprise/discipline-architecture",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/enterprise/discipline-architecture.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/enterprise",
+        "to": "policy:enterprise/discipline-code",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/enterprise/discipline-code.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/enterprise",
+        "to": "policy:enterprise/discipline-design",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/enterprise/discipline-design.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/enterprise",
+        "to": "policy:enterprise/discipline-implementation",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/enterprise/discipline-implementation.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/enterprise",
+        "to": "policy:enterprise/discipline-review",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/enterprise/discipline-review.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/enterprise",
+        "to": "policy:enterprise/willowmere-clinical-records",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/enterprise/willowmere-clinical-records.instructions.md"
+        ]
+      },
+      {
+        "from": "component:.github/instructions/enterprise",
+        "to": "policy:enterprise/willowmere-service-design",
+        "type": "contains",
+        "evidence": [
+          ".github/instructions/enterprise/willowmere-service-design.instructions.md"
         ]
       },
       {
@@ -1577,6 +1899,14 @@
       },
       {
         "from": "repository:.",
+        "to": "component:session-records",
+        "type": "contains",
+        "evidence": [
+          "session-records"
+        ]
+      },
+      {
+        "from": "repository:.",
         "to": "documentation:AGENTS.md",
         "type": "contains",
         "evidence": [
@@ -1609,6 +1939,14 @@
       },
       {
         "from": "repository:.",
+        "to": "documentation:COMPATIBILITY.md",
+        "type": "contains",
+        "evidence": [
+          "COMPATIBILITY.md"
+        ]
+      },
+      {
+        "from": "repository:.",
         "to": "documentation:DISTRIBUTION.md",
         "type": "contains",
         "evidence": [
@@ -1637,6 +1975,22 @@
         "type": "contains",
         "evidence": [
           "README.md"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "documentation:RELEASE_NOTES_v1.0.0-rc.1.md",
+        "type": "contains",
+        "evidence": [
+          "RELEASE_NOTES_v1.0.0-rc.1.md"
+        ]
+      },
+      {
+        "from": "repository:.",
+        "to": "documentation:RELEASE_READINESS.md",
+        "type": "contains",
+        "evidence": [
+          "RELEASE_READINESS.md"
         ]
       },
       {
