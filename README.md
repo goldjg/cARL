@@ -70,6 +70,7 @@ cARL solves this by providing:
 | Agent over-reasons or under-reasons | Cognition governance: minimum sufficient depth |
 | Session is lost, work is lost | Prompt-as-code plans in `.github/carl/plans/` |
 | Team cannot tell why policy is active | Local policy provenance via `carl explain` and `carl trace` |
+| Team wants model-independent review signals | Optional bounded semantic review via `carl review` |
 
 ---
 
@@ -204,10 +205,40 @@ CLI.md
    artefacts, repository-local Go dependencies, direct change impact,
    trust-boundary classifications, policy attachment points, and evidence
    coverage. It does not guess owners, runtime data flows, or active policy.
+6. `carl review` can optionally collect a bounded Git diff and cARL context,
+   send typed semantic questions to a configured evaluator backend, and let
+   cARL map provider-independent signals into review findings. TypeSafe AI
+   JEV is the first backend; it is optional and never becomes the policy
+   authority.
 
 `carl harness status` can prove only that an adapter entrypoint is present and
 that its managed files match embedded canonical sources. That local evidence
 does not prove that a native harness loaded or obeyed governance.
+
+### Optional semantic review
+
+`carl review` is designed for local and CI/CD code review. It inspects a Git
+diff, changed-file metadata, bounded cARL governance context, and optional
+task/PR description text. It does not send whole repositories or environment
+variables, and it redacts obvious secret-bearing content.
+
+Semantic review is disabled unless `.github/carl/config.yml` explicitly
+enables it:
+
+```yaml
+semantic_evaluation:
+  enabled: true
+  provider: jev
+  fail_mode: open
+  jev:
+    api_key_env: TYPESAFE_API_KEY
+    endpoint: https://example.typesafe.invalid/jev/evaluate
+```
+
+Store the API key only in the named environment variable, never in repository
+configuration. Use `carl review --dry-run --format json` to inspect the
+questions and payload categories before any external call. See
+[CLI.md](CLI.md#carl-review) for output formats, exit codes, and a CI example.
 
 ---
 

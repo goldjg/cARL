@@ -21,6 +21,9 @@ Trust boundaries classify information sources and define required validation bef
 | Registry index | Explicit configured HTTPS or repository-local index | Low-medium | Enforce schema/version/duplicate validation, bounded reads, canonical IDs and semantic versions, relative artifacts, and SHA-256 declarations before resolution |
 | Registry pack artifact | Bytes referenced by a validated registry index | Low | Keep fetches same-origin or repository-local, bound size, verify SHA-256 and pack-declared metadata, resolve dependencies, and validate the full operation before writes; never execute artifact content |
 | Installed-pack provenance | `.github/carl/installed-packs.json` | Medium | Validate schema and paths, require the local artifact version and digest to match, use the recorded registry for updates, and reject local drift or same-version registry mutation |
+| Semantic evaluation configuration | `.github/carl/config.yml` or `.github/carl/config.yaml` | Medium | Treat provider, endpoint, model, fail mode, and API-key environment-variable name as untrusted repository configuration; never accept or persist API-key values |
+| Semantic evaluation payload | Bounded state built by `carl review` | Low-medium | Inspect with `--dry-run`, verify data categories, redact obvious secrets, omit secret-bearing file contents, and keep payloads bounded before any external submission |
+| Semantic evaluator response | TypeSafe JEV or future external semantic evaluator | Low | Normalize into cARL-owned semantic signals only; never let the provider directly decide cARL policy, authorization, approval, or CI enforcement |
 | Policy explanation output | `carl explain` / `carl trace` human or JSON output | Medium | Treat as deterministic derived diagnostic evidence; verify against current canonical pack/profile/selection/provenance artefacts and never treat it as a new governance authority or model reasoning record |
 | Cognitive repository graph | `.github/carl/repo-map.json` `graph` | Medium | Treat as deterministic derived orientation evidence; validate repository-relative paths and cited static-import evidence, observe coverage limitations, and never treat heuristic criticality, attachment points, or direct impact as authoritative ownership, runtime flow, risk, or active policy |
 | Prompt/session memory | Conversation history, model memory, stale prompt context | Low-medium | Use as hints only; verify against current repository state and canonical cARL artefacts before relying on it |
@@ -44,6 +47,16 @@ Trust boundaries classify information sources and define required validation bef
 - SHA-256 binds artifact bytes to the explicitly configured index but does not authenticate publisher identity or establish a signing trust root.
 - All requested registry artifacts and dependencies must pass digest, metadata, ownership, path, and complete-pack-set validation before the first write.
 - Registry-managed updates must use recorded provenance and fail on local drift, changed registry location, or same-version digest mutation.
+- Semantic evaluation is opt-in. Missing, disabled, or unconfigured semantic
+  evaluation must not change existing cARL behaviour.
+- Semantic evaluators are external hosted services. cARL must keep a clear
+  boundary between local state collection, inspectable/redacted outbound
+  payloads, provider responses, and cARL-owned policy decisions.
+- API keys for semantic evaluators may be read only from the configured
+  environment variable at runtime. They must not be written to repository
+  configuration, dry-run output, diagnostics, exceptions, logs, or tests.
+- TypeSafe JEV and future providers return semantic signals only. cARL maps
+  those signals to findings, decisions, and exit codes.
 - Policy explanation is pack-level and derived from validated repository state; it must remain read-only, network-free, repository-relative, and explicit that it does not interpret individual prose rules or expose prompts, hidden reasoning, or chain-of-thought.
 - Explanation output is diagnostic evidence, not canonical governance. Canonical cARL artefacts and current repository state remain authoritative.
 - The bundled profile example is not active policy. Only a deliberately

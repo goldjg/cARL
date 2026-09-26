@@ -18,6 +18,7 @@
 //	repair     Restore modified managed cARL artefacts to their canonical state
 //	status     Report whether the installed cARL runtime is healthy, missing, or drifted
 //	trace      Trace the effective pack-level policy evaluation
+//	review     Run bounded semantic review over a git diff
 //	version    Show CLI, bundled runtime, and repository runtime version information
 package main
 
@@ -40,6 +41,7 @@ import (
 	"github.com/goldjg/carl/internal/reconcile"
 	"github.com/goldjg/carl/internal/repair"
 	"github.com/goldjg/carl/internal/repomap"
+	"github.com/goldjg/carl/internal/review"
 	"github.com/goldjg/carl/internal/status"
 	"github.com/goldjg/carl/internal/version"
 )
@@ -88,6 +90,7 @@ func main() {
 		plan.New(),
 		reconcile.New(),
 		repair.New(embedded.Assets),
+		review.New(),
 		status.New(cliVersion, embedded.Assets),
 		pack.NewTrace(embedded.Assets),
 		version.New(
