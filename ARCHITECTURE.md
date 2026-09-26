@@ -259,6 +259,54 @@ behaviour are not byte-for-byte compatibility contracts.
 `carl pack update` uses the recorded source, rejects local drift and
 same-version registry mutation, and never downgrades.
 
+---
+
+## Optional Semantic Evaluation
+
+Semantic evaluation is an optional signal path for commands that need
+model-independent review context. It is not part of pack hydration and does
+not alter cARL policy authority.
+
+```
+developer / agent / CI
+        │
+        ▼
+     cARL CLI
+        │  collect bounded state
+        ▼
+ SemanticEvaluator
+        │  provider adapter
+        ▼
+  TypeSafe JEV or future provider
+        │  normalized signals
+        ▼
+  cARL review policy
+        │
+        ▼
+ pass / warn / review_required / fail
+```
+
+The generic seam is `internal/semantic.Evaluator`, which evaluates a bounded
+`EvaluationState` and typed `Question` set and returns provider-independent
+`Signal` values. The interface and state model are not named after JEV.
+`internal/semantic.TypeSafeJevEvaluator` is the first adapter. It translates
+cARL-owned question primitives to the configured JEV HTTP endpoint and
+normalizes provider responses back into cARL-owned signal structures.
+
+`internal/review` owns `carl review`: Git diff collection, cARL context
+selection, dry-run payload inspection, output formatting, exit-code mapping,
+and policy mapping from signals to findings. This preserves the distinction:
+
+- JEV answers, "what does this change appear to represent?"
+- cARL answers, "what should happen because of that signal?"
+
+The context builder is deliberately bounded and auditable. It includes
+changed-file metadata, a redacted diff for non-secret-bearing files, sanitized
+repository metadata, bounded governance context, and optional task/PR text. It
+does not execute tests, send full repositories, or include environment
+variables. API keys are loaded only from the configured environment variable
+and are never serialized into payloads, diagnostics, or dry-run output.
+
 SHA-256 establishes artifact integrity relative to the configured index. It
 does not authenticate a publisher, establish a signing-key trust root, or
 provide a signing trust chain.

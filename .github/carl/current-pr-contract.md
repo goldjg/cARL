@@ -7,197 +7,164 @@ Complete
 
 ## Goal
 
-Establish whether the current `main` branch is genuinely ready for the
-`v1.0.0-rc.1` release candidate, close only demonstrated release-blocking
-gaps, and leave auditable compatibility, lifecycle, distribution, and
-release-pipeline evidence without creating a tag or publishing a release.
-
-## Previous contract status
-
-The enterprise-example adoption contract was completed by PR #44. It is
-historical evidence, not active authority, and is superseded for this task.
-Its durable opt-in and fail-safe adoption semantics remain binding through
-memory, documentation, tests, and current repository behaviour.
+Implement an initial optional semantic evaluation capability in the cARL CLI,
+using a provider-neutral `SemanticEvaluator` abstraction and TypeSafe JEV as
+the first supported backend, with `carl review` as the initial vertical slice
+for bounded local or CI code review.
 
 ## Non-goals
 
-- No new product capability, command, TUI, policy IR, Pack Phase 7 publishing
-  model, marketplace, or schema redesign.
-- No support-tier promotion without native-harness execution evidence.
-- No tag, GitHub Release, Homebrew publication, or WinGet submission.
-- No change to release secrets or weakening of validation.
-- No byte-for-byte stability promise for human-readable output or prose.
-- No claim that cARL exposes hidden model reasoning or proves perfect
-  instruction compliance.
+- Do not make JEV or any hosted provider mandatory.
+- Do not make cARL a model router, generic agent framework, or generic
+  evaluator marketplace.
+- Do not let JEV or any provider decide cARL policy outcomes directly.
+- Do not replace deterministic cARL rules, pack composition, or governance
+  artefacts.
+- Do not send whole repositories, environment variables, secrets, credentials,
+  private keys, or obvious secret-bearing file contents to external providers.
+- Do not add multiple providers beyond the first JEV adapter.
+- Do not add SARIF or GitHub Checks output in this PR.
+- Do not modify release workflows, publishing automation, or unrelated
+  harness adapter behaviour.
 
 ## Approved scope
 
-- Release-readiness governance and prompt-as-code artefacts under
-  `.github/carl/`.
-- A durable v1 compatibility policy.
-- Release-readiness evidence and `v1.0.0-rc.1` prerelease notes.
-- Release-facing documentation: `README.md`, `CLI.md`, `ARCHITECTURE.md`,
-  `DISTRIBUTION.md`, `ROADMAP.md`, and directly related documentation.
-- Tests, scripts, embedded assets, build metadata, GoReleaser configuration,
-  and release workflows only when a demonstrated release blocker requires a
-  narrowly scoped correction.
-- Generated repository map and reconciled durable memory after final file
-  changes.
-- Branch, commit, push, and draft pull-request metadata for this readiness
-  change.
+- New provider-neutral semantic evaluation models, interfaces, context/state
+  builder, review policy mapping, output formatting, and failure handling.
+- A TypeSafe JEV evaluator adapter that normalizes provider responses into
+  cARL-owned semantic signal types.
+- `carl review` with bounded git diff collection, optional task/PR text input,
+  dry-run payload inspection, text/JSON/Markdown output, and deterministic
+  exit codes.
+- Optional repository configuration for semantic evaluation under a cARL-owned
+  config file, including API-key environment-variable lookup only.
+- Unit and integration-style tests that mock provider behaviour and avoid live
+  network/API-key requirements.
+- Documentation updates describing configuration, privacy/trust boundary,
+  dry-run, CI usage, and the distinction between semantic signals and cARL
+  policy decisions.
+- Durable cARL memory/trust-boundary updates when needed to record the new
+  external semantic-evaluation boundary.
 
 ## Forbidden scope
 
-- Do not add major commands, a TUI, Pack Phase 7, a marketplace, or a new
-  policy intermediate representation.
-- Do not change a schema unless an observed release blocker cannot be fixed
-  compatibly.
-- Do not weaken validation, path safety, provenance, conflict handling,
-  runtime ownership boundaries, or release failure behaviour.
-- Do not alter secret values or expose secret material.
-- Do not promote Cursor or Antigravity beyond theoretical support without
-  native-harness evidence.
-- Do not rewrite user-owned policy, provenance, memory, or profile state.
-- Do not modify unrelated local files.
-- Do not create or move a tag, publish a GitHub Release, update Homebrew, or
-  submit WinGet manifests.
-
-## Compatibility constraints
-
-- Stable v1 contracts must cover documented commands and semantics, documented
-  exits, schema-versioned JSON, runtime/pack/profile/registry/provenance state,
-  repository-map schema, pack metadata, policy composition, ownership
-  boundaries, and the documented lifecycle commands.
-- Additive JSON fields are compatible unless an individual contract forbids
-  them. Removing a field or changing its meaning requires a schema-version
-  transition.
-- User-owned policy files are never silently replaced. Repair remains limited
-  to declared repairable runtime-owned assets.
-- Intentional breaking changes to stable public contracts require a new major
-  version.
-- Human-readable formatting, undeclared wording/order, documentation prose,
-  compatible bundled pack revisions, implementation details, and explicitly
-  experimental/theoretical behaviour are not byte-for-byte stable.
+- Do not persist API keys or accept API keys directly in repository
+  configuration.
+- Do not log, print, serialize, or include secrets/API keys in diagnostics,
+  exceptions, dry-run payloads, JSON output, telemetry, or files.
+- Do not hard-code TypeSafe or JEV concepts into provider-independent cARL
+  policy models.
+- Do not execute tests or repository commands as part of review state
+  collection unless explicitly supplied or already available.
+- Do not perform remote mutations, create releases, alter CI permissions, or
+  publish artifacts.
+- Do not modify unrelated local files or overwrite user-owned policy state
+  outside this contract.
 
 ## Architectural constraints
 
-- Use release-equivalent host binaries built with the repository's actual
-  GoReleaser ldflags and `v1.0.0-rc.1` provenance model.
-- Run destructive lifecycle scenarios only in isolated temporary
-  repositories, never in the source repository.
-- Obtain or build the v0.4.3 state from the authoritative tag or release
-  asset; do not simulate upgrade evidence.
-- Preserve exact profile-absent/default-profile parity and the documented
-  fail-safe enterprise adoption sequence.
-- Harness adapters remain thin routes to the shared loader. Local
-  detection/sync evidence is distinct from native-harness production evidence.
-- Repository-map and reconcile output remain deterministic and
-  evidence-scoped.
-- Release-pipeline claims must be classified as statically validated,
-  previously production-proven, or requiring `v1.0.0-rc.1` execution evidence.
+- JEV is an optional semantic signal provider; cARL remains the policy
+  authority.
+- The generic evaluator interface, state, question, signal, finding, and
+  result models must not be named after JEV.
+- The JEV adapter may translate between cARL-owned bounded question primitives
+  and provider-specific API shapes, but must not encode cARL policy decisions.
+- Context collection and external-provider payload construction must remain
+  clearly separated and inspectable.
+- Review context must be bounded, deterministic where practical, and auditable
+  by category; avoid blindly reading or sending the full repository.
+- Use existing Go standard-library-first patterns and repository command
+  conventions; add dependencies only with explicit justification.
 
 ## Security constraints
 
-- Use no live customer, tenant, production, or secret data in fixtures.
-- Do not print, inspect, modify, or infer release secret values.
-- Registry checksum claims remain limited to integrity against the configured
-  index, not publisher identity or a signing trust root.
-- Adoption, repair, pack installation, map, reconcile, and harness tests must
-  preserve repository path and symlink trust boundaries.
-- Release automation must fail closed when required Apple credentials are
-  absent and must not report partial publication as complete success.
+- Treat semantic evaluator providers as external hosted services.
+- Redact obvious secrets from collected diff/context and dry-run payloads.
+- Fail open by default when semantic evaluation is unavailable or unconfigured,
+  producing warnings/diagnostics without breaking existing cARL behaviour.
+- Handle missing/invalid API key, network failures, timeouts, malformed
+  responses, unsupported model, rate limiting, and provider outage without
+  exposing secrets or confusing stack traces in normal output.
+- Ensure tests never require real network access or a live TypeSafe API key.
 
 ## Expected files
 
-- `.github/carl/current-pr-contract.md`
-- `.github/carl/plans/v1.0.0-rc.1-release-readiness.md`
-- `COMPATIBILITY.md`
-- `RELEASE_READINESS.md`
-- `RELEASE_NOTES_v1.0.0-rc.1.md`
-- `README.md`
+- `cmd/carl/main.go`
+- `internal/semantic/**`
+- `internal/review/**`
+- `internal/cmdutil/**` if exit-code support requires small shared helpers
 - `CLI.md`
+- `README.md`
 - `ARCHITECTURE.md`
-- `DISTRIBUTION.md`
-- `ROADMAP.md`
-- `.github/carl/memory.md`
-- `.github/carl/repo-map.json`
-- Additional implementation, test, embedded, or release files only when
-  required by a demonstrated blocker and recorded in the readiness evidence.
+- `.github/carl/current-pr-contract.md`
+- `.github/carl/memory.md` and/or `.github/carl/trust-boundaries.md` if
+  durable semantic-evaluation boundary documentation is needed
+- Focused `*_test.go` files for new behaviour
 
 ## Contract assertions
 
-1. A release-equivalent host binary identifies CLI and bundled-runtime
-   provenance outside a repository and distinguishes CLI, bundled, and
-   repository runtime layers inside one.
-2. Isolated fresh install, adoption, v0.4.3 upgrade, profile, enterprise,
-   harness, map, reconcile, and version scenarios produce the documented
-   results without silently rewriting protected or user-owned state.
-3. The v1 compatibility policy accurately separates stable public contracts,
-   compatible evolution rules, and non-byte-stable implementation/presentation
-   details.
-4. Repository validation, release configuration, retry logic, workflow YAML,
-   canonical/embedded parity, adapter routing, and generated-map consistency
-   are either proven or recorded with an exact honest limitation.
-5. Release notes and release-facing documentation agree with current
-   behaviour, support tiers, distribution paths, upgrade steps, and evidence
-   limitations.
+1. When semantic evaluation is disabled or unconfigured, existing cARL
+   behaviour remains unchanged and `carl review` fails open with clear
+   diagnostics rather than requiring JEV.
+2. `carl review --dry-run` reports the semantic questions and data categories
+   that would be sent without calling the provider and without exposing
+   secrets.
+3. JEV responses normalize into provider-independent semantic signals; cARL
+   review policy maps those signals to findings and a decision.
+4. Text, JSON, and Markdown outputs represent the same normalized review
+   result, and JSON includes complete normalized signals/findings/decision for
+   CI consumption.
+5. Exit codes distinguish pass, warn/review-required/fail, and
+   execution/configuration failure without requiring human-readable parsing.
 
 ## Validation requirements
 
-- Build an RC binary with the exact host equivalent of GoReleaser metadata.
-- Execute and preserve results for every lifecycle scenario in the linked plan.
-- Run `gofmt` verification, `go test -count=1 ./...`, `go vet ./...`,
-  `go build ./cmd/carl`, `git diff --check`, GoReleaser config validation,
-  release retry-script syntax/tests, workflow YAML parsing, parity/routing/map
-  checks, and stale-claim searches.
-- Run `go test -race ./...` when supported; otherwise record the exact reason.
-- Validate the full tag-to-release flow statically without publishing.
-- Re-run relevant validation after every release-blocking correction.
+- Run focused tests for semantic evaluator, JEV normalization, review policy,
+  redaction, dry-run, output formats, and exit codes.
+- Run `go test ./...` after implementation when feasible.
+- Run `go build ./cmd/carl` and `git diff --check`.
+- Confirm no real network/API key is required by tests.
 
 ## Stop conditions
 
 Stop and report if:
 
-- exact v0.4.3 state cannot be obtained or executed;
-- a required fix needs a new feature, unsupported schema break, weakened
-  validation, or user-owned-state rewrite;
-- release evidence would require creating a tag or publishing externally;
-- a requested support-tier claim lacks native-harness evidence;
-- unrelated working-tree changes overlap required files;
-- a required remote mutation other than the requested branch push/draft PR is
-  needed.
+- the provider API contract cannot be represented without embedding cARL
+  policy inside the JEV adapter;
+- implementing the feature requires storing secrets in repository files;
+- bounded context collection cannot avoid sending obvious secret-bearing
+  content;
+- a required change would alter release automation, publish artifacts, or
+  rewrite unrelated governance/harness state;
+- validation requires live TypeSafe credentials or external network access.
 
 ## Escalation triggers
 
-- Any demonstrated blocker requiring release-workflow, GoReleaser,
-  trust-boundary, schema, embedded-runtime, or public CLI-contract changes.
-- Any ambiguity about whether a file is runtime-owned or user-owned.
-- Any need to clean up a partially published external release.
-- Authentication or permission failure that prevents the requested branch
-  push or draft PR.
+- Any need for a new dependency.
+- Any ambiguity in the TypeSafe JEV API that would materially affect external
+  request shape beyond a documented initial adapter assumption.
+- Any proposed fail-closed CI behaviour before repository policy explicitly
+  requires semantic evaluation.
+- Any trust-boundary change beyond optional outbound semantic evaluation.
 
 ## cARL/docs update expectation
 
-Required. Establish the compatibility contract, active plan, evidence report,
-release notes, reconciled release documentation, durable memory update, and
-generated map. Mark this contract complete only after validation and draft PR
-creation, or leave it active with the exact delivery blocker recorded.
+Required. This PR adds a new optional command, external provider trust
+boundary, and durable architectural behaviour, so CLI/docs and durable cARL
+memory/trust-boundary documentation must be reconciled before final response.
 
 ## Context reset notes
 
-This contract governs only `v1.0.0-rc.1` readiness. Findings must be classified
-as BLOCKER, RC EXIT CRITERION, FOLLOW-UP, or NON-ISSUE. Do not carry transient
-host-only evidence forward as a cross-platform guarantee.
+After this PR completes, reset the contract or mark it complete so future
+tasks do not inherit semantic-evaluation implementation scope.
 
 ## Completion evidence
 
-Completed on 2026-07-26. The compatibility policy, lifecycle and upgrade
-matrix, release-equivalent build evidence, pipeline corrections, documentation
-reconciliation, release notes, generated map, and validation record are
-captured in `RELEASE_READINESS.md`. The readiness change was originally
-published in draft PR #45 without creating a tag, release, or package-manager
-publication. After PR #45 merged, native Ubuntu Linux amd64 validation against
-the exact `v1.0.0-rc.1` tagged commit
-`4f6e30bbf3fd4de230ee60524d266a9533e6a224` completed the race gate:
-`go test -race -count=1 ./...` exited zero with Go 1.24.0, GCC 13.3.0,
-`CGO_ENABLED=1`, and no data races reported.
+Completed on 2026-09-26 in the `feature/semantic-evaluation-jev` worktree.
+The implementation adds provider-neutral semantic evaluation models,
+bounded review state collection, the optional TypeSafe JEV adapter, `carl
+review`, dry-run payload inspection, text/JSON/Markdown output, fail-open
+diagnostics, deterministic decision exit codes, tests, and documentation for
+the new external semantic-evaluation trust boundary. Validation completed with
+`go test ./...`, `go vet ./...`, `go build -buildvcs=false ./cmd/carl`, and
+`git diff --check`.

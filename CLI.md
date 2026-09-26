@@ -308,6 +308,153 @@ No cARL runtime installed.
 
 ---
 
+### `carl review`
+
+Runs an optional bounded semantic review over a Git diff. The initial
+evaluator backend is TypeSafe AI JEV, but the cARL CLI talks to it through a
+provider-neutral `SemanticEvaluator` abstraction. JEV supplies semantic
+signals; cARL remains the policy authority that maps those signals to
+findings and a decision.
+
+**Usage**
+
+```
+carl review
+carl review --base origin/main
+carl review --base HEAD~1 --head HEAD
+carl review --format text
+carl review --format json
+carl review --format markdown
+carl review --dry-run
+carl review --task-file pr-description.md
+```
+
+**Configuration**
+
+Semantic evaluation is disabled unless explicitly configured in
+`.github/carl/config.yml` or `.github/carl/config.yaml`:
+
+```yaml
+semantic_evaluation:
+  enabled: true
+  provider: jev
+  fail_mode: open
+  jev:
+    api_key_env: TYPESAFE_API_KEY
+    endpoint: https://example.typesafe.invalid/jev/evaluate
+    model: jev-review
+```
+
+`api_key_env` names an environment variable. The API key itself must never be
+stored in repository configuration. If `api_key_env` is omitted, cARL uses
+`TYPESAFE_API_KEY`. The initial adapter requires an explicit endpoint so the
+repository controls which hosted JEV API is used.
+
+**What it collects**
+
+`carl review` builds a bounded review state:
+
+- the Git diff for changed non-secret-bearing files;
+- changed file paths and addition/deletion counts;
+- repository metadata, branch, base, head, and sanitized remote origin;
+- bounded cARL governance context (`current-pr-contract.md`,
+  `invariants.yml`, `trust-boundaries.md`, and `tool-policy.yml`);
+- optional task or PR text supplied by `--task` or `--task-file`.
+
+It does not run tests, execute repository commands beyond read-only Git
+inspection, read environment variables except the configured API-key variable,
+or send whole repositories. Obvious secret-bearing file contents such as
+`.env`, private keys, tokens, credentials, and password-bearing lines are
+redacted or omitted from the evaluator payload.
+
+**Dry run**
+
+`carl review --dry-run` prints the semantic questions and data categories that
+would be included in the evaluator payload without calling JEV:
+
+```sh
+carl review --base origin/main --dry-run --format markdown
+```
+
+Use dry run when reviewing trust-boundary impact or CI configuration before
+enabling external evaluation.
+
+**Questions and policy**
+
+Initial cARL-owned semantic questions cover:
+
+- `security_sensitive`
+- `scope_expansion`
+- `architectural_change`
+- `authentication_or_authorisation_change`
+- `trust_boundary_change`
+- `security_control_reduction`
+- `breaking_change`
+- `new_external_dependency`
+- `human_review_warranted`
+
+The provider returns normalized semantic signals such as:
+
+```json
+{
+  "id": "security_sensitive",
+  "value": true,
+  "confidence": 0.93,
+  "source": "typesafe-jev"
+}
+```
+
+cARL then maps those signals to review findings and one decision:
+
+| Decision | Meaning |
+|---|---|
+| `pass` | No policy-relevant semantic findings |
+| `warn` | Advisory findings should be reviewed |
+| `review_required` | Human review is warranted before relying on the change |
+| `fail` | Reserved for enforceable cARL policy failures |
+
+JEV never decides whether a change is allowed.
+
+**Exit codes**
+
+| Exit code | Meaning |
+|---|---|
+| `0` | `pass`, dry-run success, or fail-open evaluator unavailability |
+| `2` | Semantic decision is `warn`, `review_required`, or `fail` |
+| `1` | CLI execution/configuration failure, or fail-closed evaluator unavailability |
+
+With `fail_mode: open`, missing API keys, provider outages, rate limits,
+timeouts, malformed responses, unsupported requests, and invalid credentials
+produce diagnostics but do not fail existing cARL operation.
+
+**CI example**
+
+```yaml
+permissions:
+  contents: read
+
+steps:
+  - uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
+  - name: Build cARL
+    run: go build -o carl ./cmd/carl
+  - name: Semantic review
+    env:
+      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+    run: ./carl review --base origin/main --head HEAD --format json
+```
+
+For rollout, start with:
+
+```sh
+carl review --base origin/main --head HEAD --dry-run --format json
+```
+
+and inspect the payload categories before enabling the API key in CI.
+
+---
+
 ### `carl map`
 
 Generates and updates `.github/carl/repo-map.json` by deriving the repository

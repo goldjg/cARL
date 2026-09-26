@@ -71,6 +71,16 @@ last. Ordinary `carl init` retains collision-safe failure. Adoption establishes
 future repair ownership, but repair continues to protect `memory.md` and
 `runtime.json`.
 
+`carl review` is the initial optional semantic evaluation vertical slice. It
+collects bounded Git diff/repository/cARL context, asks cARL-owned typed
+questions through a provider-neutral evaluator interface, and maps normalized
+semantic signals to cARL review findings. TypeSafe AI JEV is the first
+supported provider, but it is only an external signal source; cARL remains the
+policy authority. Semantic evaluation is disabled unless configured in
+`.github/carl/config.yml` or `.github/carl/config.yaml`, reads API keys only
+from an environment variable, redacts obvious secrets, and supports dry-run
+payload inspection.
+
 ## Release infrastructure
 
 The cARL CLI release pipeline uses **GoReleaser** (`.goreleaser.yaml`) as the canonical packaging layer. Releases are tag-triggered (`v*`). GoReleaser produces:
