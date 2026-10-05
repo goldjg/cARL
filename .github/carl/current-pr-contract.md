@@ -36,7 +36,7 @@ tests, and documentation consistent.
 
 ## Forbidden scope
 
-- Do not rewrite or transform `.github/carl/**` artefacts beyond this active
+- Do not rewrite or transform `.github/carl/**` artefacts beyond this Complete
   contract and the durable memory correction.
 - Do not change JFrog Boost configuration outside documentation examples.
 - Do not alter cARL's canonical governance authority or harness adapter
@@ -113,5 +113,4 @@ optional interoperability boundary, not a cARL policy or runtime change.
 ## Context reset notes
 
 This contract covers the JFrog Boost compatibility documentation and
-Antigravity production support change. Close it after validation and PR
-creation.
+Antigravity production support change. PR #48 was opened after validation.
