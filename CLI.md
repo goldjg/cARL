@@ -189,7 +189,7 @@ ERROR   missing runtime manifest (.github/carl/runtime.json)
 
 ```
 INFO    runtime is healthy — all managed artefacts are present and canonical
-INFO    production harnesses: copilot, claude, codex
+INFO    production harnesses: copilot, claude, codex, antigravity
 ```
 
 **Output (missing and drifted artefacts)**
@@ -201,7 +201,7 @@ WARNING .github/copilot-instructions.md — artefact has drifted from its canoni
         Action: run `carl repair`
 WARNING claude (CLAUDE.md) — harness adapter file has drifted from its canonical version
         Action: run `carl harness sync`
-INFO    production harnesses: copilot, claude, codex
+INFO    production harnesses: copilot, claude, codex, antigravity
 
 1 error(s), 2 warning(s), 1 info(s) found.
 ```
@@ -1220,9 +1220,9 @@ Harness Adapters:
   claude        Claude Code          production
   codex         Codex                production
   cursor        Cursor               theoretical
-  antigravity   Antigravity          theoretical
+  antigravity   Antigravity          production
 
-3 production, 0 experimental, 2 theoretical (5 total).
+4 production, 0 experimental, 1 theoretical (5 total).
 ```
 
 **Support status values**
@@ -1234,9 +1234,10 @@ Harness Adapters:
 | `theoretical` | Adapter is implemented; not yet validated end-to-end in the native harness |
 
 > **Note:** Content generation and sync are available for all five adapters.
-> Copilot, Claude Code, and Codex are proven production harnesses. Cursor and
-> Antigravity have implemented shims but have not yet been tested in their
-> native harnesses.
+> Copilot, Claude Code, Codex, and Antigravity are proven production harnesses.
+> Antigravity required no adapter implementation changes — the existing adapter
+> was successfully validated natively. Cursor has an implemented shim but has
+> not yet been tested in its native harness.
 
 ---
 
@@ -1266,7 +1267,7 @@ Harness Adapter Status:
   claude        Claude Code          production    Missing  Missing
   codex         Codex                production    Missing  Missing
   cursor        Cursor               theoretical   Missing  Missing
-  antigravity   Antigravity          theoretical   Missing  Missing
+  antigravity   Antigravity          production    Missing  Missing
 
 1 detected, 4 missing, 0 drifted, 1 healthy.
 ```
@@ -1280,7 +1281,7 @@ Harness Adapter Status:
   claude        Claude Code          production    Present  Drifted
   codex         Codex                production    Missing  Missing
   cursor        Cursor               theoretical   Missing  Missing
-  antigravity   Antigravity          theoretical   Missing  Missing
+  antigravity   Antigravity          production    Missing  Missing
 
 2 detected, 3 missing, 1 drifted, 1 healthy.
 ```
@@ -1426,7 +1427,7 @@ Harness Shims:
   claude        production   CLAUDE.md                           not installed
   codex         production   AGENTS.md                           not installed
   cursor        theoretical  .cursor/rules/carl.mdc              not installed
-  antigravity   theoretical  .agents/rules/carl.md               not installed
+  antigravity   production   .agents/rules/carl.md               not installed
 ```
 
 **Output (runtime installed)**
@@ -1457,7 +1458,7 @@ Harness Shims:
   claude        production   CLAUDE.md                           1.0.0
   codex         production   AGENTS.md                           unknown
   cursor        theoretical  .cursor/rules/carl.mdc              not installed
-  antigravity   theoretical  .agents/rules/carl.md               not installed
+  antigravity   production   .agents/rules/carl.md               not installed
 ```
 
 **`--components` output**

@@ -166,6 +166,7 @@ func TestVersion_InstalledRuntimeAndStatusCurrent(t *testing.T) {
 		"  copilot       production   .github/copilot-instructions.md",
 		"  claude        production   CLAUDE.md",
 		"  codex         production   AGENTS.md",
+		"  antigravity   production   .agents/rules/carl.md",
 	} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("missing %q in output:\n%s", want, output)

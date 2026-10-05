@@ -127,7 +127,8 @@ func TestHarness_List_SupportStatus(t *testing.T) {
 		"copilot       GitHub Copilot       production",
 		"claude        Claude Code          production",
 		"codex         Codex                production",
-		"3 production, 0 experimental, 2 theoretical (5 total).",
+		"antigravity   Antigravity          production",
+		"4 production, 0 experimental, 1 theoretical (5 total).",
 	} {
 		if !strings.Contains(output, want) {
 			t.Errorf("expected %q in list output; got:\n%s", want, output)
@@ -305,13 +306,14 @@ func TestHarness_Run_Status(t *testing.T) {
 }
 
 // TestHarness_Adapters_Production verifies the exported production registry.
+// Copilot, Claude Code, Codex, and Antigravity are all production-validated.
 func TestHarness_Adapters_Production(t *testing.T) {
 	adapters := harness.Adapters()
 	index := make(map[string]harness.Adapter, len(adapters))
 	for _, adapter := range adapters {
 		index[adapter.ID] = adapter
 	}
-	for _, id := range []string{"copilot", "claude", "codex"} {
+	for _, id := range []string{"copilot", "claude", "codex", "antigravity"} {
 		adapter, ok := index[id]
 		if !ok {
 			t.Errorf("adapter %q not found in registry", id)
@@ -324,16 +326,17 @@ func TestHarness_Adapters_Production(t *testing.T) {
 			t.Errorf("%s.DetectionFile must not be empty", id)
 		}
 	}
-	wantProduction := []string{"copilot", "claude", "codex"}
+	wantProduction := []string{"copilot", "claude", "codex", "antigravity"}
 	gotProduction := harness.ProductionAdapterIDs()
 	if !reflect.DeepEqual(gotProduction, wantProduction) {
 		t.Errorf("ProductionAdapterIDs() = %v; want %v", gotProduction, wantProduction)
 	}
 }
 
-// TestHarness_Adapters_TheoreticalAdapters verifies Cursor and Antigravity.
+// TestHarness_Adapters_TheoreticalAdapters verifies Cursor is the only theoretical adapter.
+// Antigravity was promoted to production following successful native end-to-end validation.
 func TestHarness_Adapters_TheoreticalAdapters(t *testing.T) {
-	theoretical := []string{"cursor", "antigravity"}
+	theoretical := []string{"cursor"}
 	adapters := harness.Adapters()
 	index := make(map[string]harness.Adapter, len(adapters))
 	for _, a := range adapters {
@@ -349,7 +352,7 @@ func TestHarness_Adapters_TheoreticalAdapters(t *testing.T) {
 			t.Errorf("%s.Support = %q; want 'theoretical'", id, a.Support)
 		}
 	}
-	for _, id := range []string{"claude", "codex"} {
+	for _, id := range []string{"claude", "codex", "antigravity"} {
 		if index[id].Support == "theoretical" {
 			t.Errorf("%s must not remain theoretical", id)
 		}

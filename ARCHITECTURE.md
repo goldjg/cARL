@@ -10,7 +10,7 @@ cARL is a three-layer system:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Agent Session                           │
-│  (Copilot, Claude, Codex; Cursor/Antigravity unvalidated)   │
+│  (Copilot, Claude, Codex, Antigravity; Cursor unvalidated)  │
 └──────────────────────┬──────────────────────────────────────┘
                        │ reads at session start
 ┌──────────────────────▼──────────────────────────────────────┐
@@ -46,9 +46,11 @@ cARL is a three-layer system:
 
 This is the shared adapter loader, not a separate governance authority.
 GitHub Copilot
-reads it directly; the production Claude Code and Codex adapters route their
-agent sessions through it. Cursor and Antigravity use the same shim pattern,
-but have not yet been validated end-to-end in their native harnesses. It
+reads it directly; the production Claude Code, Codex, and Antigravity adapters
+route their agent sessions through it. Antigravity required no adapter
+implementation changes — the existing adapter was successfully validated
+natively. Cursor uses the same shim pattern, but has not yet been validated
+end-to-end in its native harness. It
 defines:
 
 - Repository-local selection/profile/effective-pack hydration
@@ -76,7 +78,7 @@ The five implemented entrypoints are:
 | Claude Code | `CLAUDE.md` | Production |
 | Codex | `AGENTS.md` | Production |
 | Cursor | `.cursor/rules/carl.mdc` | Theoretical — implemented, native harness untested |
-| Antigravity | `.agents/rules/carl.md` | Theoretical — implemented, native harness untested |
+| Antigravity | `.agents/rules/carl.md` | Production — validated natively; no adapter changes required |
 
 Except for Copilot's direct entrypoint, each shim routes to the shared loader.
 `carl harness status` observes detection-file presence and byte-for-byte sync
