@@ -103,7 +103,7 @@ var knownAdapters = []Adapter{
 	{
 		ID:            "antigravity",
 		Name:          "Antigravity",
-		Support:       "theoretical",
+		Support:       "production",
 		DetectionFile: ".agents/rules/carl.md",
 		Files: []AdapterFile{
 			{Path: loaderPath, SourceFile: loaderPath},

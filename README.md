@@ -9,12 +9,13 @@
 [![Release Workflow](https://img.shields.io/github/actions/workflow/status/goldjg/cARL/release.yml?label=release)](https://github.com/goldjg/cARL/actions/workflows/release.yml)
 [![GoReleaser Check](https://img.shields.io/github/actions/workflow/status/goldjg/cARL/goreleaser-check.yml?label=goreleaser%20check)](https://github.com/goldjg/cARL/actions/workflows/goreleaser-check.yml)
 [![License: MIT](https://img.shields.io/github/license/goldjg/cARL)](LICENSE)
+[![JFrog Boost: v0.14.4+ compatible](https://img.shields.io/badge/JFrog%20Boost-v0.14.4%2B%20compatible-blue)](https://github.com/jfrog/boost)
 
 [![GitHub Copilot: production](https://img.shields.io/badge/GitHub%20Copilot-production-brightgreen)](CLI.md#carl-harness-list)
 [![Claude Code: production](https://img.shields.io/badge/Claude%20Code-production-brightgreen)](CLI.md#carl-harness-list)
 [![Codex: production](https://img.shields.io/badge/Codex-production-brightgreen)](CLI.md#carl-harness-list)
 [![Cursor: theoretical](https://img.shields.io/badge/Cursor-theoretical-lightgrey)](CLI.md#carl-harness-list)
-[![Antigravity: theoretical](https://img.shields.io/badge/Antigravity-theoretical-lightgrey)](CLI.md#carl-harness-list)
+[![Antigravity: production](https://img.shields.io/badge/Antigravity-production-brightgreen)](CLI.md#carl-harness-list)
 
 > **"cARL remembers why you made that decision three months ago, because neither you nor your coding agent will."**
 
@@ -47,9 +48,11 @@ If cARL files already exist but `.github/carl/runtime.json` does not, use
 [v1 compatibility promise](COMPATIBILITY.md), and the
 [`v1.0.0-rc.1` readiness evidence](RELEASE_READINESS.md).
 
-The three production-validated harnesses are GitHub Copilot, Claude Code, and
-Codex. Cursor and Antigravity adapters can be generated and synchronised, but
-remain theoretical until native-harness validation exists.
+The four production-validated harnesses are GitHub Copilot, Claude Code, Codex,
+and Antigravity. Antigravity required no adapter implementation changes — the
+existing adapter was successfully validated natively. Cursor adapters can be
+generated and synchronised, but remain theoretical until native-harness
+validation exists.
 
 ---
 
@@ -113,10 +116,11 @@ Agent frameworks (LangChain, AutoGen, CrewAI, etc.) are code. They orchestrate a
 
 cARL is behavioural governance. It does not execute code. It shapes how an
 agent reasons, plans, and acts inside an existing coding-agent harness.
-GitHub Copilot, Claude Code, and Codex are production-supported. No new
-runtime dependencies. No code to run. Cursor and Antigravity adapters are
-implemented and synchronised, but remain theoretical until they are tested
-end-to-end in their native harnesses.
+GitHub Copilot, Claude Code, Codex, and Antigravity are production-supported.
+Antigravity required no adapter implementation changes — the existing adapter
+was successfully validated natively. No new runtime dependencies. No code to
+run. Cursor adapters are implemented and synchronised, but remain theoretical
+until they are tested end-to-end in their native harnesses.
 
 | | Agent Frameworks | cARL |
 |---|---|---|
@@ -125,6 +129,71 @@ end-to-end in their native harnesses.
 | **Target** | New agent applications | Existing coding agents (Copilot, Claude Code, Codex, Cursor, Antigravity) |
 | **Concern** | Orchestration and tooling | Behavioural governance and discipline |
 | **Language coupling** | Yes | Language-agnostic |
+
+## JFrog Boost compatibility
+
+cARL supports JFrog Boost v0.14.4+ when `.github/carl/**` is excluded from
+Boost file optimisation. Path-ignore support is available from JFrog Boost
+v0.14.4 onward. See the [JFrog Boost repository](https://github.com/jfrog/boost)
+and [JFrog Boost documentation](https://boost.jfrog.com/) for Boost setup and
+its other capabilities.
+
+cARL defines governance and policy; Boost optimises agent context and tool
+output, helping reduce token and context use through capabilities such as CLI
+filtering and file optimisation. The `.github/carl/**` directory contains
+cARL's canonical governance and control-plane artefacts. They must remain
+authoritative and must not be rewritten or transformed by a context
+optimisation layer. Harness adapters, including
+`.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`,
+`.cursor/rules/carl.mdc`, and `.agents/rules/carl.md`, are projections/loaders,
+not the canonical source of governance truth. Excluding `.github/carl/**`
+creates a clear ownership boundary: cARL owns its governance artefacts, while
+Boost can continue optimising the rest of the repository.
+
+You do **not** need to disable JFrog Boost globally. Configure the path ignore
+in `~/.boost/config.toml`:
+
+```toml
+[feature_flags."boost-path-ignore"]
+user = true
+
+[ignore]
+optimize = [
+  ".github/carl/**"
+]
+```
+
+File optimisation itself can remain enabled:
+
+```toml
+[feature_flags."boost-files-optimization"]
+user = true
+```
+
+Boost path matching is repo-relative, so `.github/carl/**` protects the
+canonical cARL directory in each repository while leaving the rest of each
+repository available for optimisation. You can continue to use Boost's normal
+CLI filtering, file optimisation, MCP optimisation, code indexing, and other
+capabilities.
+
+From inside a cARL-enabled repository, run `boost doctor` to verify the
+effective configuration. The output should include concepts like:
+
+```text
+Path ignore ([ignore] optimize)
+-----------------------------
+repo root: /path/to/repo
+  optimize: .github/carl/**
+
+Feature flags (effective)
+---------------------------
+boost-files-optimization: true
+boost-path-ignore: true
+```
+
+This is an optional interoperability configuration, not a runtime dependency:
+cARL does not depend on JFrog Boost, and Boost is not part of cARL's trust
+boundary or policy engine.
 
 ---
 
@@ -549,8 +618,8 @@ See [CLI.md](CLI.md) for command details and
 
 Fork or copy into your GitHub account or organisation. Run
 `carl harness sync` to generate all five adapters from the canonical embedded
-artefacts. Copilot, Claude Code, and Codex are production-supported; Cursor and
-Antigravity are implemented but await native-harness validation.
+artefacts. Copilot, Claude Code, Codex, and Antigravity are production-supported;
+Cursor is implemented but awaits native-harness validation.
 
 ### Copying packs into another repository
 

@@ -1,4 +1,4 @@
-<!-- version: 1.0.1 -->
+<!-- version: 1.0.4 -->
 # Current PR Contract
 
 ## Contract status
@@ -7,197 +7,110 @@ Complete
 
 ## Goal
 
-Establish whether the current `main` branch is genuinely ready for the
-`v1.0.0-rc.1` release candidate, close only demonstrated release-blocking
-gaps, and leave auditable compatibility, lifecycle, distribution, and
-release-pipeline evidence without creating a tag or publishing a release.
-
-## Previous contract status
-
-The enterprise-example adoption contract was completed by PR #44. It is
-historical evidence, not active authority, and is superseded for this task.
-Its durable opt-in and fail-safe adoption semantics remain binding through
-memory, documentation, tests, and current repository behaviour.
+Document cARL's interoperability configuration with JFrog Boost v0.14.4 and
+later, preserving canonical governance artefacts from Boost file optimisation
+while allowing other Boost capabilities to remain enabled. Promote Antigravity
+to production support based on successful native validation and keep CLI,
+tests, and documentation consistent.
 
 ## Non-goals
 
-- No new product capability, command, TUI, policy IR, Pack Phase 7 publishing
-  model, marketplace, or schema redesign.
-- No support-tier promotion without native-harness execution evidence.
-- No tag, GitHub Release, Homebrew publication, or WinGet submission.
-- No change to release secrets or weakening of validation.
-- No byte-for-byte stability promise for human-readable output or prose.
-- No claim that cARL exposes hidden model reasoning or proves perfect
-  instruction compliance.
+- Do not add a runtime or build dependency on JFrog Boost.
+- Do not change cARL policy evaluation or its trust boundary.
+- Do not disable Boost globally or claim a partnership, endorsement,
+  certification, or joint support.
+- Do not modify embedded assets, harness adapters, or unrelated
+  documentation.
 
 ## Approved scope
 
-- Release-readiness governance and prompt-as-code artefacts under
-  `.github/carl/`.
-- A durable v1 compatibility policy.
-- Release-readiness evidence and `v1.0.0-rc.1` prerelease notes.
-- Release-facing documentation: `README.md`, `CLI.md`, `ARCHITECTURE.md`,
-  `DISTRIBUTION.md`, `ROADMAP.md`, and directly related documentation.
-- Tests, scripts, embedded assets, build metadata, GoReleaser configuration,
-  and release workflows only when a demonstrated release blocker requires a
-  narrowly scoped correction.
-- Generated repository map and reconciled durable memory after final file
-  changes.
-- Branch, commit, push, and draft pull-request metadata for this readiness
-  change.
+- `.github/carl/current-pr-contract.md` and `.github/carl/memory.md`.
+- `README.md`, `CLI.md`, and `ARCHITECTURE.md` for Boost compatibility and
+  Antigravity's production support status.
+- `internal/harness/harness.go` and focused tests in
+  `internal/harness/harness_test.go` and `internal/version/version_test.go`
+  for the Antigravity support tier.
+- Create a branch, commit the approved scoped changes, push it, and open a
+  pull request.
+- Preserve unrelated working-tree changes outside these paths.
 
 ## Forbidden scope
 
-- Do not add major commands, a TUI, Pack Phase 7, a marketplace, or a new
-  policy intermediate representation.
-- Do not change a schema unless an observed release blocker cannot be fixed
-  compatibly.
-- Do not weaken validation, path safety, provenance, conflict handling,
-  runtime ownership boundaries, or release failure behaviour.
-- Do not alter secret values or expose secret material.
-- Do not promote Cursor or Antigravity beyond theoretical support without
-  native-harness evidence.
-- Do not rewrite user-owned policy, provenance, memory, or profile state.
-- Do not modify unrelated local files.
-- Do not create or move a tag, publish a GitHub Release, update Homebrew, or
-  submit WinGet manifests.
-
-## Compatibility constraints
-
-- Stable v1 contracts must cover documented commands and semantics, documented
-  exits, schema-versioned JSON, runtime/pack/profile/registry/provenance state,
-  repository-map schema, pack metadata, policy composition, ownership
-  boundaries, and the documented lifecycle commands.
-- Additive JSON fields are compatible unless an individual contract forbids
-  them. Removing a field or changing its meaning requires a schema-version
-  transition.
-- User-owned policy files are never silently replaced. Repair remains limited
-  to declared repairable runtime-owned assets.
-- Intentional breaking changes to stable public contracts require a new major
-  version.
-- Human-readable formatting, undeclared wording/order, documentation prose,
-  compatible bundled pack revisions, implementation details, and explicitly
-  experimental/theoretical behaviour are not byte-for-byte stable.
+- Do not rewrite or transform `.github/carl/**` artefacts beyond this Complete
+  contract and the durable memory correction.
+- Do not change JFrog Boost configuration outside documentation examples.
+- Do not alter cARL's canonical governance authority or harness adapter
+  semantics.
+- Do not rewrite historical completed plans; current support statements in
+  durable memory should reflect user-confirmed production status.
+- Do not stage or commit changes outside the approved scope.
+- Do not change unrelated local files.
 
 ## Architectural constraints
 
-- Use release-equivalent host binaries built with the repository's actual
-  GoReleaser ldflags and `v1.0.0-rc.1` provenance model.
-- Run destructive lifecycle scenarios only in isolated temporary
-  repositories, never in the source repository.
-- Obtain or build the v0.4.3 state from the authoritative tag or release
-  asset; do not simulate upgrade evidence.
-- Preserve exact profile-absent/default-profile parity and the documented
-  fail-safe enterprise adoption sequence.
-- Harness adapters remain thin routes to the shared loader. Local
-  detection/sync evidence is distinct from native-harness production evidence.
-- Repository-map and reconcile output remain deterministic and
-  evidence-scoped.
-- Release-pipeline claims must be classified as statically validated,
-  previously production-proven, or requiring `v1.0.0-rc.1` execution evidence.
+- cARL remains the authority for its governance and policy.
+- `.github/carl/**` contains canonical governance/control-plane artefacts and
+  must not be a Boost file-optimisation target.
+- Harness adapters are projections/loaders, not canonical governance truth.
+- Boost remains an independent optional tool; its path-ignore configuration
+  defines an interoperability boundary, not a runtime integration.
+- Describe Boost path-ignore support as available from v0.14.4 onward.
 
 ## Security constraints
 
-- Use no live customer, tenant, production, or secret data in fixtures.
-- Do not print, inspect, modify, or infer release secret values.
-- Registry checksum claims remain limited to integrity against the configured
-  index, not publisher identity or a signing trust root.
-- Adoption, repair, pack installation, map, reconcile, and harness tests must
-  preserve repository path and symlink trust boundaries.
-- Release automation must fail closed when required Apple credentials are
-  absent and must not report partial publication as complete success.
+- Do not suggest disabling Boost globally.
+- Document the narrow repo-relative `.github/carl/**` optimisation exclusion
+  and retain other Boost features, including normal CLI filtering, file
+  optimisation, MCP optimisation, and code indexing.
+- Do not claim that Boost becomes part of cARL's policy engine or trust
+  boundary.
 
 ## Expected files
 
 - `.github/carl/current-pr-contract.md`
-- `.github/carl/plans/v1.0.0-rc.1-release-readiness.md`
-- `COMPATIBILITY.md`
-- `RELEASE_READINESS.md`
-- `RELEASE_NOTES_v1.0.0-rc.1.md`
 - `README.md`
-- `CLI.md`
-- `ARCHITECTURE.md`
-- `DISTRIBUTION.md`
-- `ROADMAP.md`
-- `.github/carl/memory.md`
-- `.github/carl/repo-map.json`
-- Additional implementation, test, embedded, or release files only when
-  required by a demonstrated blocker and recorded in the readiness evidence.
 
 ## Contract assertions
 
-1. A release-equivalent host binary identifies CLI and bundled-runtime
-   provenance outside a repository and distinguishes CLI, bundled, and
-   repository runtime layers inside one.
-2. Isolated fresh install, adoption, v0.4.3 upgrade, profile, enterprise,
-   harness, map, reconcile, and version scenarios produce the documented
-   results without silently rewriting protected or user-owned state.
-3. The v1 compatibility policy accurately separates stable public contracts,
-   compatible evolution rules, and non-byte-stable implementation/presentation
-   details.
-4. Repository validation, release configuration, retry logic, workflow YAML,
-   canonical/embedded parity, adapter routing, and generated-map consistency
-   are either proven or recorded with an exact honest limitation.
-5. Release notes and release-facing documentation agree with current
-   behaviour, support tiers, distribution paths, upgrade steps, and evidence
-   limitations.
+1. cARL supports JFrog Boost v0.14.4+ when `.github/carl/**` is excluded from
+   file optimisation, with the requested config and `boost doctor` guidance.
+2. Antigravity is production in the adapter registry, tests, CLI output, and
+   current documentation; Cursor remains theoretical.
+3. The PR contains only the approved Boost interoperability and Antigravity
+   production-support changes.
 
 ## Validation requirements
 
-- Build an RC binary with the exact host equivalent of GoReleaser metadata.
-- Execute and preserve results for every lifecycle scenario in the linked plan.
-- Run `gofmt` verification, `go test -count=1 ./...`, `go vet ./...`,
-  `go build ./cmd/carl`, `git diff --check`, GoReleaser config validation,
-  release retry-script syntax/tests, workflow YAML parsing, parity/routing/map
-  checks, and stale-claim searches.
-- Run `go test -race ./...` when supported; otherwise record the exact reason.
-- Validate the full tag-to-release flow statically without publishing.
-- Re-run relevant validation after every release-blocking correction.
+- Inspect the final diff and preserve pre-existing edits.
+- Run `git diff --check`.
+- Validate Markdown links and required configuration/output examples.
+- Run any existing Markdown/docs validator if available; do not add tooling
+  for this documentation-only change.
+- Run `go test ./internal/harness ./internal/version`.
+- Verify only the approved files are staged and included in the PR.
 
 ## Stop conditions
 
-Stop and report if:
-
-- exact v0.4.3 state cannot be obtained or executed;
-- a required fix needs a new feature, unsupported schema break, weakened
-  validation, or user-owned-state rewrite;
-- release evidence would require creating a tag or publishing externally;
-- a requested support-tier claim lacks native-harness evidence;
-- unrelated working-tree changes overlap required files;
-- a required remote mutation other than the requested branch push/draft PR is
-  needed.
+- Stop if a required change would modify runtime behaviour, embedded assets,
+  harness adapter semantics, or files outside the approved scope.
+- Stop if JFrog Boost's documented path-ignore support or version threshold
+  conflicts with the user-provided configuration requirements.
 
 ## Escalation triggers
 
-- Any demonstrated blocker requiring release-workflow, GoReleaser,
-  trust-boundary, schema, embedded-runtime, or public CLI-contract changes.
-- Any ambiguity about whether a file is runtime-owned or user-owned.
-- Any need to clean up a partially published external release.
-- Authentication or permission failure that prevents the requested branch
-  push or draft PR.
+- Any need to expand beyond the approved documentation and contract files.
+- Any ambiguity about whether canonical cARL artefacts should be excluded
+  from a broader Boost optimisation mode.
 
 ## cARL/docs update expectation
 
-Required. Establish the compatibility contract, active plan, evidence report,
-release notes, reconciled release documentation, durable memory update, and
-generated map. Mark this contract complete only after validation and draft PR
-creation, or leave it active with the exact delivery blocker recorded.
+Update this contract to scope the task, the README with durable Boost
+interoperability guidance, and `.github/carl/memory.md` to reflect the
+user-confirmed Antigravity production-support status. No other canonical
+governance artefacts need changes because the Boost configuration is an
+optional interoperability boundary, not a cARL policy or runtime change.
 
 ## Context reset notes
 
-This contract governs only `v1.0.0-rc.1` readiness. Findings must be classified
-as BLOCKER, RC EXIT CRITERION, FOLLOW-UP, or NON-ISSUE. Do not carry transient
-host-only evidence forward as a cross-platform guarantee.
-
-## Completion evidence
-
-Completed on 2026-07-26. The compatibility policy, lifecycle and upgrade
-matrix, release-equivalent build evidence, pipeline corrections, documentation
-reconciliation, release notes, generated map, and validation record are
-captured in `RELEASE_READINESS.md`. The readiness change was originally
-published in draft PR #45 without creating a tag, release, or package-manager
-publication. After PR #45 merged, native Ubuntu Linux amd64 validation against
-the exact `v1.0.0-rc.1` tagged commit
-`4f6e30bbf3fd4de230ee60524d266a9533e6a224` completed the race gate:
-`go test -race -count=1 ./...` exited zero with Go 1.24.0, GCC 13.3.0,
-`CGO_ENABLED=1`, and no data races reported.
+This contract covers the JFrog Boost compatibility documentation and
+Antigravity production support change. PR #48 was opened after validation.

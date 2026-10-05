@@ -1,4 +1,4 @@
-<!-- version: 2.4.0 -->
+<!-- version: 2.4.1 -->
 # Durable Architectural Truth Cache
 
 This cache stores durable project truths that should persist beyond a
@@ -10,9 +10,9 @@ cARL (Cognitive Agent Runtime Layer) is a reusable governance and
 instruction layer for AI coding agents. It provides modular instruction
 packs, durable memory artefacts, harness-specific shared-loader adapters, and
 cARLv2 cognition governance for consistent, secure, maintainable, and governed
-AI-assisted development. GitHub Copilot, Claude Code, and Codex are proven
-production harnesses. Cursor and Antigravity have implemented and synchronised
-adapters but remain theoretical until native-harness validation is performed.
+AI-assisted development. GitHub Copilot, Claude Code, Codex, and Antigravity
+are proven production harnesses. Cursor has an implemented and synchronised
+adapter but remains theoretical until native-harness validation is performed.
 
 Strategic direction: cARL is evolving towards policy-as-code for AI coding
 agents (closest analogy: Open Policy Agent, applied to coding agents,
@@ -221,9 +221,9 @@ Harness adapters bridge cARL canonical artefacts to agent context injection mech
 
 `carl harness list` shows all known adapters with support tier:
 
-- `copilot`, `claude`, and `codex` — `production`;
-- `cursor` and `antigravity` — `theoretical`: adapter is implemented and
-  synchronised, but has not been validated end-to-end in its native harness.
+- `copilot`, `claude`, `codex`, and `antigravity` — `production`;
+- `cursor` — `theoretical`: adapter is implemented and synchronised, but has
+  not been validated end-to-end in its native harness.
 
 `carl harness status` reports both detection-file presence and sync health by
 comparing adapter file bytes against the canonical embedded source. It
@@ -262,9 +262,9 @@ A shim harness is locally healthy only when both the shared loader
 and synced. Production validation is a separate end-to-end evidence claim.
 
 Maintainer field validation has proven the shared-loader shim workflow for
-Copilot, Claude Code, and Codex. Claude's `CLAUDE.md` shim is sufficient for the
-current production baseline; a `/carl` skill is not a prerequisite. Cursor and
-Antigravity are the outstanding native-harness validation targets.
+Copilot, Claude Code, Codex, and Antigravity. Claude's `CLAUDE.md` shim is
+sufficient for the current production baseline; a `/carl` skill is not a
+prerequisite. Cursor is the remaining native-harness validation target.
 
 `harness.Command` accepts an `Artifacts` dependency using the same interface pattern as `repair`, `doctor`, and `status`.
 
