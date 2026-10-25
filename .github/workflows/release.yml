@@ -59,6 +59,11 @@ concurrency:
 permissions:
   contents: write
 
+env:
+  # Keep independent of the checked-out tag's go.mod for manual old-tag runs.
+  GO_VERSION: '1.26.10'
+  GOTOOLCHAIN: local
+
 jobs:
 
   release:
@@ -115,7 +120,15 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Verify Go compiler
+        run: |
+          go version
+          if [ "$(go env GOVERSION)" != "go${GO_VERSION}" ]; then
+            echo "::error::Expected Go ${GO_VERSION}; refusing an unexpected compiler."
+            exit 1
+          fi
 
       - name: Check required release secrets
         env:

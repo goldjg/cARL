@@ -339,7 +339,7 @@ brew untrust goldjg/carl
 brew untap goldjg/carl
 ```
 
-#### Build from source (requires Go 1.24+)
+#### Build from source (requires Go 1.26.10+)
 
 ```sh
 go install github.com/goldjg/carl/cmd/carl@latest

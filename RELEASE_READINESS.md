@@ -1,6 +1,10 @@
 <!-- version: 1.0.1 -->
 # v1.0.0-rc.1 Release Readiness
 
+This is historical validation evidence, not the current compiler requirement.
+Current source builds require Go 1.26.10 or later and releases pin 1.26.10; see
+[DISTRIBUTION.md](DISTRIBUTION.md#compiler-security-baseline).
+
 ## Decision
 
 The repository is ready to create the `v1.0.0-rc.1` tag after this readiness
