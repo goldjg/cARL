@@ -240,11 +240,48 @@ winget install goldjg.cARL
 
 ### Build from source
 
-Requires Go 1.24+:
+Requires Go 1.26.10+:
 
 ```sh
 go install github.com/goldjg/carl/cmd/carl@latest
 ```
+
+### Compiler security baseline
+
+CI, snapshot, and release workflows pin Go 1.26.10, verify the actual compiler,
+and set `GOTOOLCHAIN=local` to prevent implicit toolchain switching. The release
+pin is independent of the checked-out tag's `go.mod`, including manual runs of
+older tags. Re-running a historical workflow revision still uses its historical
+configuration; use the updated workflow for patched builds.
+
+GoReleaser builds also set `GOTOOLCHAIN=local`; local packaging requires a
+Go 1.26.10 compiler on `PATH`. Ordinary source builds may use Go's automatic
+toolchain download. The patch-level `go` directive enforces the source minimum,
+so a redundant `toolchain` suggestion is unnecessary. Update `go.mod` and both
+workflow `GO_VERSION` pins together when raising the baseline.
+
+Go 1.26.10 includes the `crypto/x509` fix for
+[CVE-2026-111943 / GO-2026-6809](https://pkg.go.dev/vuln/GO-2026-6809)
+and earlier standard-library security fixes, including those in Go 1.26.9.
+A newer major is not automatically patched: Go 1.27 needs at least 1.27.3.
+The five supported OS/architecture targets, static `CGO_ENABLED=0` packaging,
+and installation/bootstrap behaviour are unchanged. The embedded memory mirror
+also carries the already-canonical Antigravity production-support statements
+from PR #48; no other embedded assets change.
+
+The Go 1.26 line is intentionally retained for macOS 12 Monterey compatibility;
+Go 1.27 requires macOS 13 Ventura. Go 1.26 requires Linux kernel 3.2+,
+Windows 10+/Server 2016+, and macOS 12+. macOS 11, supported by Go 1.24, is no
+longer supported. A newer local Go major may raise the OS minimum; use the
+release baseline for macOS 12 builds.
+
+Existing v1.0.1 archives for all five platforms were inspected with
+`go version -m`: they contain Go 1.24.13, not the patched compiler. Both Linux
+deb packages contain the same binaries as their corresponding archives.
+Changing `go.mod` does not patch these downloads or installed copies. A new
+release must rebuild all archives and deb/rpm/apk packages and update
+Homebrew, WinGet, caches, and internal mirrors. Inspect an extracted binary
+with `go version -m /path/to/carl` before treating it as patched.
 
 ---
 

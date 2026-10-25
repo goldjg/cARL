@@ -41,7 +41,9 @@ extract `carl.exe`, and add it to your `PATH`.
 
 ### Build from source
 
-Requires Go 1.24 or later.
+Requires Go 1.26.10 or later. Pre-built binaries do not require Go to be
+installed; their embedded standard library is updated only by rebuilding and
+replacing the binary.
 
 ```sh
 git clone https://github.com/goldjg/cARL.git

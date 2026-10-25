@@ -17,6 +17,7 @@ retry:
 
 before:
   hooks:
+    - go version
     # go mod verify confirms the module cache matches go.sum without mutating
     # the working tree. go mod tidy is intentionally omitted here: run it
     # locally before tagging so the release build stays deterministic.
@@ -30,6 +31,7 @@ builds:
     env:
       # Static binaries: no CGO.
       - CGO_ENABLED=0
+      - GOTOOLCHAIN=local
     goos:
       - linux
       - windows
