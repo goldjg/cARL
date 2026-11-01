@@ -283,6 +283,83 @@ func TestDoctor_DriftedArtefact(t *testing.T) {
 	}
 }
 
+func TestDoctor_ManagedTrustBoundaryDriftRecommendsExtension(t *testing.T) {
+	dir := t.TempDir()
+	const managedPath = ".github/carl/trust-boundaries.md"
+	const extensionPath = ".github/carl/trust-boundaries.repository.md"
+	canonical := []byte("# Canonical trust boundaries\n")
+	arts := newFakeArts(map[string][]byte{managedPath: canonical})
+	rt := &manifest.Runtime{
+		RuntimeVersion:   "1.0.0",
+		Source:           "goldjg/cARL",
+		SourceTag:        "v1.0.0",
+		SourceCommit:     "abc123",
+		InstalledAt:      time.Now(),
+		ManagedArtifacts: []string{managedPath},
+	}
+	writeRuntime(t, dir, rt, arts)
+	writeHarnessAdapters(t, dir, arts)
+	target := filepath.Join(dir, filepath.FromSlash(managedPath))
+	if err := os.WriteFile(target, append(canonical, []byte("\nProject rule.\n")...), 0644); err != nil {
+		t.Fatal(err)
+	}
+	extension := filepath.Join(dir, filepath.FromSlash(extensionPath))
+	if err := os.WriteFile(extension, []byte("# Project rules\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	output := captureStdout(t, func() {
+		if err := doctor.New(arts).RunInDir(dir); err != nil {
+			t.Fatalf("RunInDir: %v", err)
+		}
+	})
+	for _, want := range []string{
+		"WARNING",
+		managedPath + " — artefact has drifted from its canonical version",
+		"preserve project-specific rules in " + extensionPath,
+		"run `carl repair` to restore the managed baseline",
+		extensionPath + " — repository-owned extension is present and is not a managed artefact",
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("doctor output missing %q:\n%s", want, output)
+		}
+	}
+}
+
+func TestDoctor_UnsafeRepositoryTrustBoundaryExtension(t *testing.T) {
+	dir := t.TempDir()
+	arts := newFakeArts(nil)
+	rt := &manifest.Runtime{
+		RuntimeVersion:   "1.0.0",
+		Source:           "goldjg/cARL",
+		ManagedArtifacts: []string{},
+	}
+	writeRuntime(t, dir, rt, arts)
+	extension := filepath.Join(dir, ".github", "carl", "trust-boundaries.repository.md")
+	if err := os.MkdirAll(filepath.Dir(extension), 0755); err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(t.TempDir(), "outside.md")
+	if err := os.WriteFile(outside, []byte("# Outside\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, extension); err != nil {
+		t.Skipf("symlink creation unavailable: %v", err)
+	}
+
+	output := captureStdout(t, func() {
+		if err := doctor.New(arts).RunInDir(dir); err != nil {
+			t.Fatalf("RunInDir: %v", err)
+		}
+	})
+	if !strings.Contains(output, "extension path is unsafe at inspection time; do not read unless revalidated immediately before use") {
+		t.Fatalf("doctor did not reject symlinked extension: %s", output)
+	}
+	if !strings.Contains(output, "`carl status` is a point-in-time advisory check") {
+		t.Fatalf("doctor did not describe the advisory path check: %s", output)
+	}
+}
+
 // Contract assertion 5: doctor never returns a non-nil error when findings exist —
 // it always returns nil (diagnostics complete successfully even with issues).
 func TestDoctor_AlwaysReturnsSuccess(t *testing.T) {

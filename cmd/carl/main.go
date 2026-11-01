@@ -16,7 +16,7 @@
 //	plan       Discover, validate, and summarise plans in .github/carl/plans/
 //	reconcile  Update repository-specific memory sections from current repo-map data
 //	repair     Restore modified managed cARL artefacts to their canonical state
-//	status     Report whether the installed cARL runtime is healthy, missing, or drifted
+//	status     Report whether the installed cARL runtime is healthy, incomplete, drifted, or unsafe
 //	trace      Trace the effective pack-level policy evaluation
 //	version    Show CLI, bundled runtime, and repository runtime version information
 package main

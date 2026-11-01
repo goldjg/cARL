@@ -11,6 +11,7 @@ import (
 	"github.com/goldjg/carl/internal/harness"
 	"github.com/goldjg/carl/internal/manifest"
 	"github.com/goldjg/carl/internal/repair"
+	"github.com/goldjg/carl/internal/trustboundary"
 )
 
 // Artifacts provides read access to the embedded canonical runtime files.
@@ -36,7 +37,7 @@ func (c *Command) Name() string { return "status" }
 
 // Synopsis returns a short description.
 func (c *Command) Synopsis() string {
-	return "Report whether the installed cARL runtime is healthy, missing, or drifted"
+	return "Report whether the installed cARL runtime is healthy, incomplete, drifted, or unsafe"
 }
 
 // Run executes `carl status` in the current working directory.
@@ -104,6 +105,21 @@ func (c *Command) RunInDir(rootDir string) error {
 	}
 	fmt.Println()
 
+	extension, err := trustboundary.Inspect(rootDir)
+	if err != nil {
+		return fmt.Errorf("inspect repository trust-boundary extension: %w", err)
+	}
+	fmt.Println("Repository Trust-Boundary Extension:")
+	switch {
+	case extension.InvalidReason != "":
+		fmt.Printf("  invalid at inspection time: %s — %s\n", trustboundary.ExtensionPath, extension.InvalidReason)
+	case extension.Present:
+		fmt.Printf("  present: %s (repository-owned; not managed)\n", trustboundary.ExtensionPath)
+	default:
+		fmt.Println("  none (optional)")
+	}
+	fmt.Println()
+
 	harnessHealth, err := harness.Inspect(rootDir, c.arts)
 	if err != nil {
 		return fmt.Errorf("inspect harness adapters: %w", err)
@@ -118,13 +134,16 @@ func (c *Command) RunInDir(rootDir string) error {
 	fmt.Printf("  Production:       %s\n", strings.Join(harness.ProductionAdapterIDs(), ", "))
 	fmt.Println()
 
-	fmt.Printf("Status:           %s\n", overallStatus(missing, drifted))
+	fmt.Printf("Status:           %s\n", overallStatus(missing, drifted, extension.InvalidReason != ""))
 	return nil
 }
 
-// overallStatus derives the status label from the classification results.
-// Missing artefacts (Incomplete) take precedence over content drift (Drifted).
-func overallStatus(missing, drifted []string) string {
+// overallStatus prioritizes extension path safety, then missing and drifted
+// managed artefacts. Extension checks are advisory point-in-time diagnostics.
+func overallStatus(missing, drifted []string, extensionInvalid bool) string {
+	if extensionInvalid {
+		return "Unsafe"
+	}
 	if len(missing) > 0 {
 		return "Incomplete"
 	}

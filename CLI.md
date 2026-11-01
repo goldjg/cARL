@@ -1,4 +1,4 @@
-<!-- version: 1.10.0 -->
+<!-- version: 1.10.1 -->
 # cARL CLI Reference
 
 The `carl` CLI installs and manages the cARL governance runtime inside a repository.
@@ -85,6 +85,34 @@ the runtime manifest last. Run `carl doctor` afterward to inspect drift and
 invoke `carl repair` separately if canonical repairable content is wanted.
 `memory.md` remains protected from repair.
 
+#### Repository-owned trust-boundary extension
+
+Consumers may add project-specific trust-boundary requirements in the
+optional `.github/carl/trust-boundaries.repository.md` file. Keep the
+cARL-managed `.github/carl/trust-boundaries.md` canonical; the extension is
+not embedded, listed in `runtime.json`, or overwritten by repair. cARL does
+not discover other Markdown files in `.github/carl/`.
+
+The shared loader directs supported harnesses to read the extension only from
+this fixed path after re-checking immediately before reading that it is a
+regular file and `.github` and `.github/carl` are not symlinks. `carl doctor`
+and `carl status` report point-in-time path state only; they do not mediate
+agent reads or prevent path replacement between inspection and read. The check
+is advisory, not a guarantee. Passing inspection grants no authority. The file
+is additive: it may tighten repository controls but cannot weaken system
+instructions, core invariants, or grant tool/execution authority. Conflicting
+high-trust requirements must be reviewed; the CLI does not parse natural
+language to prove semantic compatibility.
+
+Older installed runtimes whose loader predates this feature will not apply the
+extension. To migrate an existing project, review `git diff` or commit first,
+then copy and review project-authored rules from managed `trust-boundaries.md`
+into the repository-owned file before running `carl repair` with the updated
+runtime. Explicit repair overwrites local edits to managed files without a
+backup or prompt. Overwritten content is recoverable only from version control
+or the operator's own copy. Repair still reports drift and restores canonical
+bytes; migration is manual and reviewable.
+
 **Output (success)**
 
 ```
@@ -119,12 +147,24 @@ carl repair
 2. Compares each managed artefact against its embedded canonical version
    (byte-for-byte).
 3. Reports any files that differ or are missing (drift).
-4. Overwrites drifted files with their canonical versions.
+4. If managed trust-boundary guidance drifted, warns before restoration to
+   preserve project rules in `.github/carl/trust-boundaries.repository.md`.
+5. Overwrites drifted files with their canonical versions when repair was
+   explicitly invoked.
+
+`carl repair` overwrites local edits to managed files and does not create a
+backup or prompt for acknowledgement. Review `git diff` or commit first.
+Overwritten content is recoverable only from version control or the operator's
+own copy. Before repairing managed trust-boundary drift, manually review and
+move project-specific rules into the repository-owned extension; repair does
+not migrate prose automatically.
 
 **Protected files** — the following are never overwritten by `repair`:
 
 - `.github/carl/memory.md` — per-repository state managed by humans and agents
 - `.github/carl/runtime.json` — managed exclusively by `carl init`
+- `.github/carl/trust-boundaries.repository.md` — repository-owned and not
+  listed as a managed artefact
 
 **Output (no drift)**
 
@@ -167,11 +207,18 @@ carl doctor
    is absent, reports it as an ERROR and suggests `carl init`.
 2. Detects and categorises findings as ERROR, WARNING, or INFO:
    - **ERROR** — missing runtime manifest, unreadable manifest, artefact absent from disk
-   - **WARNING** — artefact content differs from its canonical version (drifted), or a harness adapter is missing/drifted
+   - **WARNING** — managed artefact content differs from its canonical version
+     (canonical content drift), a repository-owned extension path is unsafe
+     at inspection time, or a harness adapter is missing/drifted
    - **INFO** — runtime health and production harness support
 3. For each finding, provides a suggested remediation action.
+   Trust-boundary drift guidance names the fixed extension path; valid
+   repository-owned extension content is reported separately from managed
+   artefacts. Missing extensions are optional for older repositories.
 4. Exits with code `0` regardless of whether issues are found — the command is
    diagnostic only and never modifies any files.
+   The extension-path warning is advisory and point-in-time; it does not
+   mediate a later agent read or guarantee that the path has not changed.
 
 **Protected files** — the following are never inspected for drift:
 
@@ -220,7 +267,8 @@ INFO    production harnesses: copilot, claude, codex, antigravity
 
 ### `carl status`
 
-Reports whether the installed cARL runtime is healthy, missing, or drifted.
+Reports managed-artifact health and whether the optional trust-boundary
+extension path is unsafe at inspection time.
 
 **Usage**
 
@@ -237,7 +285,15 @@ carl status
    drifted (present but content differs).
 4. Inspects harness adapters and reports a separate summary of detected, missing,
    drifted, healthy, and production adapters.
-5. Reports overall runtime status: `Healthy`, `Drifted`, or `Incomplete`.
+5. Inspects the optional repository-owned trust-boundary extension path.
+   This is a point-in-time advisory check; it does not mediate later reads or
+   prevent the path changing after inspection.
+6. Reports overall status in precedence order: `Unsafe`, `Incomplete`,
+   `Drifted`, then `Healthy`. `Unsafe` takes precedence so an invalid
+   extension path is not hidden by managed-artifact findings. Missing and
+   drifted managed-artifact lists remain separate and unchanged.
+7. Retains the existing diagnostic exit behavior; findings do not change the
+   command's exit code.
 
 **Protected files** — the following are never reported as missing or drifted:
 
@@ -263,6 +319,9 @@ Missing Artefacts:
 
 Drifted Artefacts:
   none
+
+Repository Trust-Boundary Extension:
+  none (optional)
 
 Harness Summary:
   Detected adapters: 5
@@ -294,6 +353,11 @@ Harness Summary:
 Status:           Incomplete
 ```
 
+If the optional extension is invalid, `Status` is `Unsafe`, even when managed
+files are also missing or drifted; those two managed-artifact lists are still
+reported separately. An absent or valid extension leaves managed status
+unchanged.
+
 **Output (no runtime installed)**
 
 ```
@@ -304,9 +368,24 @@ No cARL runtime installed.
 
 | Status | Meaning |
 |---|---|
-| `Healthy` | All managed repairable artefacts are present and match their canonical versions |
-| `Drifted` | All artefacts present, but one or more differ from their canonical versions; run `carl repair` |
+| `Unsafe` | Extension path is not a regular, non-symlink path at inspection time; this point-in-time diagnostic does not guarantee a later read is safe |
 | `Incomplete` | One or more managed artefacts are absent from disk; run `carl repair` |
+| `Drifted` | All managed artefacts are present, but one or more differ from their canonical versions; run `carl repair` |
+| `Healthy` | All managed repairable artefacts are present and match their canonical versions, and the optional extension is absent or has a valid path at inspection time |
+
+`Unsafe` takes precedence over `Incomplete`, which takes precedence over
+`Drifted`; `Healthy` is reported only when none apply. An unsafe extension is
+not reflected in the managed missing/drifted lists. `carl status` remains
+diagnostic and does not change its exit-code behavior.
+
+An invalid extension example has a separate path diagnostic and final status:
+
+```
+Repository Trust-Boundary Extension:
+  invalid at inspection time: .github/carl/trust-boundaries.repository.md — extension is not a regular file
+
+Status:           Unsafe
+```
 
 ---
 

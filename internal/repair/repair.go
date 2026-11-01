@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/goldjg/carl/internal/manifest"
+	"github.com/goldjg/carl/internal/trustboundary"
 )
 
 // protectedArtifacts lists paths that must never be overwritten by repair.
@@ -78,6 +79,13 @@ func (c *Command) RunInDir(rootDir string) error {
 		fmt.Printf("  %s\n", f)
 	}
 	fmt.Println()
+
+	for _, f := range drifted {
+		if f == trustboundary.ManagedPath {
+			fmt.Printf("WARNING: `carl repair` will overwrite local edits to this managed file and does not back them up. Review `git diff` or commit first; recover overwritten content only from version control or your own copy. Move project-specific rules to %s before continuing.\n\n", trustboundary.ExtensionPath)
+			break
+		}
+	}
 
 	fmt.Println("Repairing...")
 	for _, f := range drifted {

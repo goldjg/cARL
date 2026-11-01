@@ -1,7 +1,128 @@
 <!-- version: 1.0.5 -->
 # Current PR Contract
 
-## Contract status
+## Active contract — governance extension and drift hardening
+
+The completed Go 1.26.10 compiler-policy contract below is superseded for this
+task only. Its recorded validation is historical evidence, not current scope.
+
+### Goal
+
+Give consumers a documented, repository-owned additive trust-boundary
+extension point while preserving canonical managed assets, integrity checks,
+repair safety, and the existing runtime manifest contract.
+
+### Approved scope
+
+- This contract and `.github/carl/plans/managed-trust-boundary-extension.md`.
+- The shared loader and core cARL instruction pack, canonical trust-boundary
+  guidance, and their required embedded mirrors.
+- `cmd/carl/main.go`, `internal/status/`, and focused doctor/repair
+  diagnostics and regression tests using disposable repositories, including
+  the status classification for invalid extension paths.
+- `CLI.md`, `ARCHITECTURE.md`, `COMPATIBILITY.md`, `README.md`, and durable
+  memory where needed to document ownership, precedence, migration, and limits.
+- No new secure-read API, repair backup, prompt, or exit-code change. Document
+  point-in-time advisory checks and preserve existing explicit-overwrite
+  semantics.
+- Focused branch, commit, push, and PR as requested. No merge or release.
+- No changes to Kredoxi or any other consumer repository.
+
+### Plan
+
+1. Reproduce managed trust-boundary drift in a disposable install fixture.
+2. Establish `.github/carl/trust-boundaries.repository.md` as one optional,
+   fixed-path, repository-owned extension; do not add a manifest reference or
+   treat arbitrary Markdown as active governance.
+3. Update shared-loader/core-pack guidance with additive precedence,
+   fixed-path/symlink safeguards, conflict handling, point-in-time advisory
+   limits, and model-adherence limitations; keep embedded mirrors byte-identical.
+4. Report invalid extension paths as `Unsafe` ahead of `Incomplete` and
+   `Drifted`, without changing managed lists or exit behavior.
+5. Improve repair warnings while retaining explicit overwrite/canonical
+   restoration behavior and adding no backup or prompt.
+6. Add regression tests, update durable documentation/memory, validate, and
+   submit without merging or releasing.
+
+### Constraints and contract assertions
+
+- Core/system security invariants remain authoritative and cannot be weakened
+  by repository prose. Repository rules may add stricter requirements.
+- PR contracts scope execution but cannot authorize forbidden system behavior.
+  Conflicting high-trust requirements require stop and review.
+- The extension uses a fixed repository-relative path, is optional for
+  compatibility, is not user-path-configured, and must be a regular file
+  reached without symlinked path components at the time of reading; agents
+  must re-check immediately before reading.
+- Extension prose is untrusted repository content: it grants no tool,
+  execution, deployment, or task-scope authority. Natural-language conflict
+  detection remains an agent/human responsibility, not a CLI guarantee.
+- Doctor/status inspection is point-in-time and advisory: it does not mediate
+  later agent reads or prevent path replacement. A secure-read helper is only
+  a future option for consumers that actually use it.
+- Preserve `runtime.json`, exact-byte drift comparison, pack composition, and
+  harness adapter authority. Do not edit harness shims directly when they
+  route through the shared loader.
+- A clean install is healthy; modifying managed
+  `.github/carl/trust-boundaries.md` remains detectable as drift.
+- The extension is not managed, does not alter canonical hashes, and remains
+  byte-for-byte intact through repair and adoption/upgrade-style fixtures.
+- Doctor/status report an unsafe extension path; status precedence is
+  `Unsafe` > `Incomplete` > `Drifted` > `Healthy`. Managed missing/drifted
+  lists remain unchanged and no command exit codes change. `carl status` has
+  no structured-output interface; only its human-readable status label changes.
+- Repair warns that explicit repair overwrites local edits without a backup;
+  operators review `git diff` or commit and retain their own copy first.
+- An absent extension preserves legacy behavior; runtime manifest and pack
+  composition semantics remain unchanged.
+- No repair backup is introduced in this PR. Whether to add one later remains
+  an owner decision because it introduces side-effect files, naming and
+  idempotence questions, symlink-safety requirements, and possible confusion
+  with active extension files.
+
+### Validation and reconciliation
+
+- Focused install/status/doctor/repair/embedded tests and `go test ./...`.
+- `go test -race ./...` where supported, `go vet ./...`, `gofmt` checks,
+  `git diff --check`, documentation link checks, harness sync, and relevant
+  governance/asset parity checks.
+- Use only temporary fixture repositories. Report platform/tool-permission,
+  scanner, or native OS gaps honestly.
+- Update trust-boundary guidance, memory, loader/core pack, embedded mirrors,
+  architecture/CLI/compatibility docs, and this contract/plan because durable
+  ownership and hydration behavior change. Do not alter invariants, runtime
+  manifest, selected packs, or unrelated assets without direct justification.
+- Stop on unexpected worktree changes, required runtime schema change,
+  unresolved trust hierarchy, or evidence that existing consumer behavior
+  would be silently weakened. Do not guess or automatically migrate prose.
+
+### Validation outcome
+
+Review findings were verified. Before the fix, a disposable fixture with a
+directory at `.github/carl/trust-boundaries.repository.md` produced an
+`invalid` diagnostic followed by `Status: Healthy`. After the fix, the same
+fixture reports `Status: Unsafe` and exits successfully. Regression tests
+confirm absent and valid extension paths remain `Healthy`; directory,
+symlinked-extension, and symlinked-parent cases report `Unsafe`; and unsafe
+status takes precedence over simultaneous managed missing/drifted findings
+without changing those lists.
+
+On Windows with Go 1.27.3, `go test ./...`, `go vet ./...`, `gofmt` checks,
+`git diff --check`, embedded canonical/mirror parity, harness sync, and local
+Markdown link/anchor validation passed. Harness sync processed all five
+generated adapters and left no shim diffs. The updated plan passes `carl plan`
+without warnings; that command still reports six warnings from other
+pre-existing plan files. Local Windows symlink creation is denied, so
+symlink-specific Go regression tests skipped; the non-regular directory case
+passed, and a disposable Windows junction fixture was independently
+classified `Unsafe`. Race tests remain unavailable because `CGO_ENABLED=0`
+and no C compiler is installed. No structured status output or exit-code
+behavior changed.
+
+The PR's prior CI run passed before these review commits. Verify CI again after
+the updated head is pushed. No merge or release is authorized.
+
+## Superseded historical contract (completed)
 
 Complete implementation and available local validation
 

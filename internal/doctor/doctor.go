@@ -11,6 +11,7 @@ import (
 	"github.com/goldjg/carl/internal/harness"
 	"github.com/goldjg/carl/internal/manifest"
 	"github.com/goldjg/carl/internal/repair"
+	"github.com/goldjg/carl/internal/trustboundary"
 )
 
 // Level classifies the severity of a diagnostic finding.
@@ -127,10 +128,33 @@ func (c *Command) diagnose(rootDir string) ([]Finding, error) {
 	}
 
 	for _, f := range drifted {
+		message := fmt.Sprintf("%s — artefact has drifted from its canonical version", f)
+		action := "run `carl repair`"
+		if f == trustboundary.ManagedPath {
+			action = fmt.Sprintf("preserve project-specific rules in %s, then run `carl repair` to restore the managed baseline", trustboundary.ExtensionPath)
+		}
 		findings = append(findings, Finding{
 			Level:   LevelWarning,
-			Message: fmt.Sprintf("%s — artefact has drifted from its canonical version", f),
-			Action:  "run `carl repair`",
+			Message: message,
+			Action:  action,
+		})
+	}
+
+	extension, err := trustboundary.Inspect(rootDir)
+	if err != nil {
+		return nil, fmt.Errorf("inspect repository trust-boundary extension: %w", err)
+	}
+	switch {
+	case extension.InvalidReason != "":
+		findings = append(findings, Finding{
+			Level:   LevelWarning,
+			Message: fmt.Sprintf("%s — extension path is unsafe at inspection time; do not read unless revalidated immediately before use: %s", trustboundary.ExtensionPath, extension.InvalidReason),
+			Action:  "resolve the path and re-check immediately before reading; `carl status` is a point-in-time advisory check",
+		})
+	case extension.Present:
+		findings = append(findings, Finding{
+			Level:   LevelInfo,
+			Message: fmt.Sprintf("%s — repository-owned extension is present and is not a managed artefact", trustboundary.ExtensionPath),
 		})
 	}
 

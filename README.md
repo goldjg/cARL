@@ -1,4 +1,4 @@
-<!-- version: 1.7.0 -->
+<!-- version: 1.7.1 -->
 
 ![](cARL.png)
 
@@ -368,6 +368,38 @@ Adoption installs only missing bundled artefacts and creates `runtime.json`
 last. Follow it with `carl doctor`, and run `carl repair` only when you
 explicitly want drifted repairable files restored to bundled canonical
 content. Repository `memory.md` remains protected.
+`carl repair` overwrites local edits to managed files without backing them up
+or prompting. Review `git diff` or commit first; overwritten content is
+recoverable only from version control or your own copy.
+
+### Add repository trust boundaries
+
+Keep project-specific trust-boundary rules in
+`.github/carl/trust-boundaries.repository.md`, not in the cARL-managed
+`.github/carl/trust-boundaries.md`. The extension is an optional,
+repository-owned Markdown file: cARL does not embed it, add it to
+`runtime.json`, or overwrite it during repair. Only this fixed path is
+recognized; other Markdown files in `.github/carl/` are not implicitly active.
+
+The shared loader used by supported harness adapters tells agents to apply
+this extension additively. It cannot weaken system instructions or core
+invariants or grant tool, execution, deployment, or task-scope authority.
+Review its prose for conflicts; cARL checks path shape, not semantic policy or
+model adherence. Run `carl doctor` or `carl status` for a point-in-time
+path-safety diagnostic. Neither command mediates a later agent read or
+guarantees the path has not changed; re-check immediately before reading.
+Passing inspection grants no authority, and extension content cannot grant
+tools, execution, deployment, or scope or weaken core invariants. `carl status`
+reports `Unsafe` when the extension path is invalid at inspection time;
+otherwise the absent or valid optional extension does not alter status.
+
+If existing project rules are currently in the managed file, review `git diff`
+or commit first, then copy and review them into the extension before running
+`carl repair`. Repair will still report the managed-file drift and overwrite
+it with canonical bytes; it does not back up or migrate the local content.
+Overwritten content is recoverable only from version control or your own copy.
+An older runtime whose shared loader predates this guidance does not know to
+apply the extension; update the runtime first.
 
 ### 3. Verify the installation
 
@@ -413,7 +445,9 @@ canonical state:
 carl repair
 ```
 
-> `memory.md` and `runtime.json` are protected and are never overwritten by `repair`.
+> `memory.md`, `runtime.json`, and repository-owned files outside
+> `runtime.json`'s `managedArtifacts` (including
+> `trust-boundaries.repository.md`) are not overwritten by `repair`.
 
 ### 5. Diagnose issues
 
@@ -581,10 +615,11 @@ carl reconcile
 ```
 
 `init --adopt` preserves existing files, installs missing bundled artefacts,
-and creates the new manifest last. `repair` is a separate explicit choice that
-updates only declared repairable runtime-owned assets; memory and user-owned
-policy/provenance remain protected. Keep the old manifest backup until the
-upgrade is reviewed.
+and creates the new manifest last. `repair` is a separate explicit choice that overwrites local edits to declared
+repairable runtime-owned assets; it does not back them up or prompt. Review
+`git diff` or commit first, and keep your own copy of changes you need.
+Unmanaged memory and user-owned policy/provenance remain protected. Keep the
+old manifest backup until the upgrade is reviewed.
 
 ---
 
@@ -595,8 +630,9 @@ upgrade is reviewed.
   `spctl --assess --type execute --verbose /path/to/carl`. Re-download from the
   official release if validation fails; do not bypass Gatekeeper for an
   unverified binary.
-- **Runtime drift:** run `carl doctor`, review every finding, and use
-  `carl repair` only for runtime-owned assets you intend to restore.
+- **Runtime drift:** run `carl doctor`, review every finding, and inspect
+  `git diff` or commit before `carl repair`; it overwrites local edits to
+  managed files without a backup. Keep a copy of any content you need.
 - **Adoption deadlock:** if ordinary `init` reports existing artefacts and no
   runtime manifest exists, use `carl init --adopt`; do not delete
   repository-specific memory or user policy to force installation.

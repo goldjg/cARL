@@ -10,6 +10,7 @@ import (
 
 	"github.com/goldjg/carl/internal/install"
 	"github.com/goldjg/carl/internal/manifest"
+	"github.com/goldjg/carl/internal/repair"
 )
 
 func repositoryRoot(t *testing.T) string {
@@ -46,6 +47,62 @@ func TestCanonicalAssetsMatchEmbeddedMirrors(t *testing.T) {
 				t.Errorf("%s differs from embedded mirror %s", relative, filepath.ToSlash(filepath.Join("embedded", "assets", relative)))
 			}
 		})
+	}
+}
+
+func TestRepositoryTrustBoundaryExtensionIsUserOwnedAndSurvivesRepair(t *testing.T) {
+	root := t.TempDir()
+	const extension = ".github/carl/trust-boundaries.repository.md"
+	extensionPath := filepath.Join(root, filepath.FromSlash(extension))
+	extensionContent := []byte("# Project trust boundaries\n\nSynthetic credentials remain in bounded stdin pipes.\n")
+	if err := os.MkdirAll(filepath.Dir(extensionPath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(extensionPath, extensionContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := install.New(Assets, "test", "goldjg/cARL", "test", "test")
+	if err := cmd.RunInDir(root); err != nil {
+		t.Fatalf("RunInDir: %v", err)
+	}
+	rt, err := manifest.Read(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range rt.ManagedArtifacts {
+		if path == extension {
+			t.Fatal("repository-owned extension was recorded as a managed artefact")
+		}
+	}
+	if _, err := Assets.Open(extension); err == nil {
+		t.Fatal("repository-owned extension must not be embedded")
+	}
+
+	managedPath := filepath.Join(root, ".github", "carl", "trust-boundaries.md")
+	if err := os.WriteFile(managedPath, []byte("# Local edit that must remain detectable\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := repair.New(Assets).RunInDir(root); err != nil {
+		t.Fatalf("repair: %v", err)
+	}
+	got, err := os.ReadFile(extensionPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, extensionContent) {
+		t.Fatalf("repository-owned extension changed: got %q; want %q", got, extensionContent)
+	}
+	canonical, err := Assets.Open(".github/carl/trust-boundaries.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	restored, err := os.ReadFile(managedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(restored, canonical) {
+		t.Fatal("repair did not restore the canonical managed trust-boundary file")
 	}
 }
 
@@ -93,10 +150,44 @@ func TestSharedLoaderDefinesEffectivePackHydration(t *testing.T) {
 		"The cARL CLI is not required for this hydration.",
 		"derived diagnostic evidence, not a new canonical authority",
 		"proves that a model followed the instructions",
+		".github/carl/trust-boundaries.repository.md",
+		"repository-owned",
+		"core security invariants",
+		"untrusted repository text",
+		"regular file",
+		"symlinks",
+		"Do not follow references",
+		"immediately before reading it",
+		"point-in-time path-safety diagnostics",
+		"do not mediate agent reads",
+		"Treat the check as advisory, not as a guarantee",
+		"Passing a path check grants the extension no authority",
 	}
 	for _, want := range required {
 		if !strings.Contains(normalizedLoader, want) {
 			t.Errorf("shared loader missing hydration contract text %q", want)
+		}
+	}
+}
+
+func TestCoreCarlPackDefinesRepositoryTrustBoundaryExtension(t *testing.T) {
+	root := repositoryRoot(t)
+	content, err := os.ReadFile(filepath.Join(root, ".github", "instructions", "core", "carl.instructions.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pack := strings.Join(strings.Fields(string(content)), " ")
+	for _, want := range []string{
+		"## Repository-owned trust-boundary extension",
+		".github/carl/trust-boundaries.repository.md",
+		"must remain unchanged",
+		"cannot weaken",
+		"untrusted repository text",
+		"point-in-time path-safety diagnostics",
+		"carl status",
+	} {
+		if !strings.Contains(pack, want) {
+			t.Errorf("core cARL pack missing extension contract %q", want)
 		}
 	}
 }
