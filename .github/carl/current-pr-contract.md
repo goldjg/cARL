@@ -89,8 +89,10 @@ available: this environment has `CGO_ENABLED=0` and no C compiler, and
 `go test -race ./...` exited with the Go toolchain's cgo requirement.
 
 The remote `main` reference was checked with `git ls-remote` and matched this
-branch's base commit `5e60b70fc45d7ec036c6b3e702a9a01bced223d9`. PR URL and
-head commit remain pending until delivery.
+branch's base commit `5e60b70fc45d7ec036c6b3e702a9a01bced223d9`. The focused
+pull request is open at https://github.com/goldjg/cARL/pull/50. Implementation
+commit `0c1b5a6` is included; the final head also includes this validation and
+delivery record.
 
 ## Superseded historical contract (completed)
 
