@@ -1,4 +1,4 @@
-<!-- version: 1.7.0 -->
+<!-- version: 1.7.1 -->
 
 ![](cARL.png)
 
@@ -369,6 +369,28 @@ last. Follow it with `carl doctor`, and run `carl repair` only when you
 explicitly want drifted repairable files restored to bundled canonical
 content. Repository `memory.md` remains protected.
 
+### Add repository trust boundaries
+
+Keep project-specific trust-boundary rules in
+`.github/carl/trust-boundaries.repository.md`, not in the cARL-managed
+`.github/carl/trust-boundaries.md`. The extension is an optional,
+repository-owned Markdown file: cARL does not embed it, add it to
+`runtime.json`, or overwrite it during repair. Only this fixed path is
+recognized; other Markdown files in `.github/carl/` are not implicitly active.
+
+The shared loader used by supported harness adapters tells agents to apply
+this extension additively. It cannot weaken system instructions or core
+invariants or grant tool, execution, deployment, or task-scope authority.
+Review its prose for conflicts; cARL checks path shape, not semantic policy or
+model adherence. Run `carl doctor` or `carl status` to check that the path is
+a regular file without symlinked parent components.
+
+If existing project rules are currently in the managed file, copy and review
+them into the extension before running `carl repair`. Repair will still report
+the managed-file drift and restore canonical bytes; it will not migrate or
+classify prose automatically. An older runtime whose shared loader predates
+this guidance does not know to apply the extension; update the runtime first.
+
 ### 3. Verify the installation
 
 ```sh
@@ -413,7 +435,9 @@ canonical state:
 carl repair
 ```
 
-> `memory.md` and `runtime.json` are protected and are never overwritten by `repair`.
+> `memory.md`, `runtime.json`, and repository-owned files outside
+> `runtime.json`'s `managedArtifacts` (including
+> `trust-boundaries.repository.md`) are not overwritten by `repair`.
 
 ### 5. Diagnose issues
 

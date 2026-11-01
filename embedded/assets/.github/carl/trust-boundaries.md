@@ -1,4 +1,4 @@
-<!-- version: 1.5.0 -->
+<!-- version: 1.5.1 -->
 # Trust Boundaries
 
 Trust boundaries classify information sources and define required validation before shaping, planning, execution, validation, or reconciliation decisions.
@@ -10,6 +10,7 @@ Trust boundaries classify information sources and define required validation bef
 | PR contract | `.github/carl/current-pr-contract.md` | High | Confirm requested work is within approved scope; stop when forbidden scope or escalation triggers are reached |
 | Invariants | `.github/carl/invariants.yml` | High | Preserve unless explicitly amended through a user-approved governance change |
 | Trust boundary model | `.github/carl/trust-boundaries.md` | High | Use to classify source authority and validation expectations before relying on information for writes |
+| Repository-owned trust-boundary extension | `.github/carl/trust-boundaries.repository.md` | High, additive | Read only from this fixed path when it is a regular file without symlinked path components; may add stricter project rules but cannot weaken system or core invariants |
 | Tool policy | `.github/carl/tool-policy.yml` | High | Classify tool actions before execution and escalate according to tier |
 | Prompt-as-code plans | `.github/carl/plans/*.md` | High when active | Treat as task contracts when referenced by the active PR contract or user; verify status and scope before implementation |
 | Cognitive cache | `.github/carl/memory.md` | Medium-high | Treat as durable guidance; validate against current repository state if stale, conflicting, or structurally outdated |
@@ -32,6 +33,16 @@ Trust boundaries classify information sources and define required validation bef
 - Current repository state wins over `.github/carl/memory.md` when directly observed and conflicting.
 - If durable cache facts conflict with current repository state, repository state wins and cache should be updated.
 - Canonical cARL artefacts outrank harness adapter files.
+- The repository-owned trust-boundary extension supplements, but never edits
+  or overrides, canonical managed trust-boundary guidance or core security
+  invariants. It cannot grant tool, execution, deployment, or task-scope
+  authority.
+- Only `.github/carl/trust-boundaries.repository.md` is the supported
+  repository-owned trust-boundary extension. Its absence is compatible; do
+  not infer active governance from other files or follow referenced files.
+- If the extension path or any parent below the repository root is a symlink,
+  or the extension is not a regular file, do not load it; resolve the
+  ownership/path issue first.
 - Harness adapter files may load, summarise, or route to cARL, but they are not the source of durable governance truth.
 - Prompt/session memory is advisory and may be stale.
 - Repository cARL artefacts outrank stale prompt/session memory when they conflict.
@@ -64,6 +75,9 @@ Trust boundaries classify information sources and define required validation bef
 - Secret-gated CI publish steps must explicitly guard execution on secret presence and must never print token values.
 - Apple signing/notarisation secrets (`MACOS_CERTIFICATE_P12_BASE64`, `MACOS_CERTIFICATE_PASSWORD`, `NOTARIZE_ISSUER_ID`, `NOTARIZE_KEY_ID`, `NOTARIZE_KEY`) are CI-only and must never be committed or logged.
 - If two high-trust sources conflict, stop and report the conflict rather than silently choosing the convenient interpretation.
+- CLI checks can validate extension path shape, but cannot mechanically decide
+  whether natural-language extension prose conflicts with core policy or
+  whether an agent followed it. Human and agent review remains necessary.
 
 ## Harness adapter boundary
 

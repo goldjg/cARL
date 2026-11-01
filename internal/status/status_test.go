@@ -268,6 +268,47 @@ func TestStatus_DriftedArtefact(t *testing.T) {
 	}
 }
 
+func TestStatus_TrustBoundaryExtensionSeparateFromManagedDrift(t *testing.T) {
+	dir := t.TempDir()
+	const managedPath = ".github/carl/trust-boundaries.md"
+	const extensionPath = ".github/carl/trust-boundaries.repository.md"
+	canonical := []byte("# Canonical trust boundaries\n")
+	arts := newFakeArts(map[string][]byte{managedPath: canonical})
+	rt := &manifest.Runtime{
+		RuntimeVersion:   "1.0.0",
+		Source:           "goldjg/cARL",
+		SourceTag:        "v1.0.0",
+		SourceCommit:     "abc123",
+		InstalledAt:      time.Now(),
+		ManagedArtifacts: []string{managedPath},
+	}
+	writeRuntime(t, dir, rt, arts)
+	writeHarnessAdapters(t, dir, arts)
+	managed := filepath.Join(dir, filepath.FromSlash(managedPath))
+	if err := os.WriteFile(managed, append(canonical, []byte("\nProject-only rule.\n")...), 0644); err != nil {
+		t.Fatal(err)
+	}
+	extension := filepath.Join(dir, filepath.FromSlash(extensionPath))
+	if err := os.WriteFile(extension, []byte("# Repository rules\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	output := captureStdout(t, func() {
+		if err := status.New("1.0.0", arts).RunInDir(dir); err != nil {
+			t.Fatalf("RunInDir: %v", err)
+		}
+	})
+	if !strings.Contains(output, "Drifted Artefacts:\n  "+managedPath) {
+		t.Fatalf("managed baseline drift not reported: %s", output)
+	}
+	if !strings.Contains(output, "present: "+extensionPath+" (repository-owned; not managed)") {
+		t.Fatalf("repository-owned extension not distinguished: %s", output)
+	}
+	if !strings.Contains(output, "Status:           Drifted") {
+		t.Fatalf("managed drift should remain drifted: %s", output)
+	}
+}
+
 // Contract assertion 5: memory.md and runtime.json are never reported as
 // missing or drifted.
 func TestStatus_ProtectedArtefactsIgnored(t *testing.T) {

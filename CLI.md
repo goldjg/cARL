@@ -1,4 +1,4 @@
-<!-- version: 1.10.0 -->
+<!-- version: 1.10.1 -->
 # cARL CLI Reference
 
 The `carl` CLI installs and manages the cARL governance runtime inside a repository.
@@ -85,6 +85,28 @@ the runtime manifest last. Run `carl doctor` afterward to inspect drift and
 invoke `carl repair` separately if canonical repairable content is wanted.
 `memory.md` remains protected from repair.
 
+#### Repository-owned trust-boundary extension
+
+Consumers may add project-specific trust-boundary requirements in the
+optional `.github/carl/trust-boundaries.repository.md` file. Keep the
+cARL-managed `.github/carl/trust-boundaries.md` canonical; the extension is
+not embedded, listed in `runtime.json`, or overwritten by repair. cARL does
+not discover other Markdown files in `.github/carl/`.
+
+The shared loader directs supported harnesses to read the extension only from
+this fixed path when it is a regular file and `.github` and `.github/carl` are
+not symlinks. `carl doctor` and `carl status` report the path state. The file
+is additive: it may tighten repository controls but cannot weaken system
+instructions, core invariants, or grant tool/execution authority. Conflicting
+high-trust requirements must be reviewed; the CLI does not parse natural
+language to prove semantic compatibility.
+
+Older installed runtimes whose loader predates this feature will not apply the
+extension. To migrate an existing project, review and copy project-authored
+rules from managed `trust-boundaries.md` into the repository-owned file before
+running `carl repair` with the updated runtime. Repair still reports drift and
+restores canonical bytes; migration is manual and reviewable.
+
 **Output (success)**
 
 ```
@@ -119,12 +141,17 @@ carl repair
 2. Compares each managed artefact against its embedded canonical version
    (byte-for-byte).
 3. Reports any files that differ or are missing (drift).
-4. Overwrites drifted files with their canonical versions.
+4. If managed trust-boundary guidance drifted, warns before restoration to
+   preserve project rules in `.github/carl/trust-boundaries.repository.md`.
+5. Overwrites drifted files with their canonical versions when repair was
+   explicitly invoked.
 
 **Protected files** — the following are never overwritten by `repair`:
 
 - `.github/carl/memory.md` — per-repository state managed by humans and agents
 - `.github/carl/runtime.json` — managed exclusively by `carl init`
+- `.github/carl/trust-boundaries.repository.md` — repository-owned and not
+  listed as a managed artefact
 
 **Output (no drift)**
 
@@ -167,9 +194,14 @@ carl doctor
    is absent, reports it as an ERROR and suggests `carl init`.
 2. Detects and categorises findings as ERROR, WARNING, or INFO:
    - **ERROR** — missing runtime manifest, unreadable manifest, artefact absent from disk
-   - **WARNING** — artefact content differs from its canonical version (drifted), or a harness adapter is missing/drifted
+   - **WARNING** — managed artefact content differs from its canonical version
+     (canonical content drift), a repository-owned extension path is unsafe,
+     or a harness adapter is missing/drifted
    - **INFO** — runtime health and production harness support
 3. For each finding, provides a suggested remediation action.
+   Trust-boundary drift guidance names the fixed extension path; valid
+   repository-owned extension content is reported separately from managed
+   artefacts. Missing extensions are optional for older repositories.
 4. Exits with code `0` regardless of whether issues are found — the command is
    diagnostic only and never modifies any files.
 

@@ -1,4 +1,4 @@
-<!-- version: 2.4.1 -->
+<!-- version: 2.4.2 -->
 # Durable Architectural Truth Cache
 
 This cache stores durable project truths that should persist beyond a
@@ -70,6 +70,31 @@ artefact, installs only missing bundled artefacts, and creates the manifest
 last. Ordinary `carl init` retains collision-safe failure. Adoption establishes
 future repair ownership, but repair continues to protect `memory.md` and
 `runtime.json`.
+
+## Governance ownership and trust-boundary extension
+
+The canonical managed `.github/carl/trust-boundaries.md` remains byte-integrity
+checked and repairable. Consumers add project-specific trust rules only in the
+optional fixed-path `.github/carl/trust-boundaries.repository.md`; it is not
+embedded or listed in `runtime.json`, and repair preserves it. Existing edits
+to the managed baseline remain real drift. Before repairing such drift,
+consumers manually review and move project-specific rules into the extension;
+cARL does not infer or automatically migrate prose.
+
+The extension is additive and cannot weaken system instructions or core
+security invariants, grant tool/execution authority, or expand an active PR
+contract. It must be a regular file reached without symlinked path components.
+Only that fixed path is active; other files in `.github/carl/` are not
+implicitly authoritative. CLI checks path shape, not semantic prose conflicts
+or model adherence. Older loaders ignore this feature until upgraded.
+
+Classify artefacts by ownership, not directory: bundled files recorded in
+`runtime.json` are upstream-managed except explicit protected state; repository
+authored memory/contracts/selection and the trust-boundary extension are
+user-owned; repo maps, generated memory sections, pack explanations, and
+harness outputs are derived and not independent policy authorities. Notable
+exceptions include seeded-but-protected `memory.md`, init-managed-but-protected
+`runtime.json`, and inactive managed examples such as `profiles.example.json`.
 
 ## Release infrastructure
 

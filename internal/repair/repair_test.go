@@ -2,6 +2,7 @@ package repair_test
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,6 +40,7 @@ func newFakeArtifacts() *fakeArtifacts {
 			".github/copilot-instructions.md":                []byte("# Instructions"),
 			".github/carl/memory.md":                         []byte("# Memory"),
 			".github/carl/invariants.yml":                    []byte("invariants: []"),
+			".github/carl/trust-boundaries.md":               []byte("# Canonical trust boundaries\n"),
 			".github/instructions/core/carl.instructions.md": []byte("# carl pack"),
 		},
 	}
@@ -91,6 +93,79 @@ func TestRepair_RestoresDriftedFile(t *testing.T) {
 	if string(got) != "# Instructions" {
 		t.Errorf("restored content = %q; want %q", got, "# Instructions")
 	}
+}
+
+func TestRepairTrustBoundaryDriftWarnsAndPreservesRepositoryExtension(t *testing.T) {
+	arts := newFakeArtifacts()
+	dir := installedDir(t, arts)
+	managedPath := filepath.Join(dir, filepath.FromSlash(trustBoundaryPath))
+	projectRule := []byte("\nProject-only boundary: synthetic credentials stay on bounded stdin pipes.\n")
+	managedContent, err := os.ReadFile(managedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(managedPath, append(managedContent, projectRule...), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	extensionPath := filepath.Join(dir, filepath.FromSlash(repositoryTrustBoundaryPath))
+	extensionContent := []byte("# Project trust boundaries\n\nSynthetic credentials only.\n")
+	if err := os.WriteFile(extensionPath, extensionContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	rc := repair.New(arts)
+	output := captureStdout(t, func() {
+		if err := rc.RunInDir(dir); err != nil {
+			t.Fatalf("RunInDir: %v", err)
+		}
+	})
+	if !strings.Contains(output, repositoryTrustBoundaryPath) {
+		t.Fatalf("repair warning missing extension path: %q", output)
+	}
+
+	gotManaged, err := os.ReadFile(managedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotManaged) != string(arts.files[trustBoundaryPath]) {
+		t.Errorf("managed trust boundaries not restored to canonical bytes")
+	}
+	gotExtension, err := os.ReadFile(extensionPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotExtension) != string(extensionContent) {
+		t.Errorf("repository extension changed during repair: got %q; want %q", gotExtension, extensionContent)
+	}
+}
+
+const (
+	trustBoundaryPath           = ".github/carl/trust-boundaries.md"
+	repositoryTrustBoundaryPath = ".github/carl/trust-boundaries.repository.md"
+)
+
+func captureStdout(t *testing.T, run func()) string {
+	t.Helper()
+	old := os.Stdout
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = writer
+	run()
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = old
+	output, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := reader.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return string(output)
 }
 
 // TestRepair_RestoresMissingFile verifies that a deleted managed artefact is

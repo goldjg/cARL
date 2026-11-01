@@ -1,7 +1,98 @@
 <!-- version: 1.0.5 -->
 # Current PR Contract
 
-## Contract status
+## Active contract — governance extension and drift hardening
+
+The completed Go 1.26.10 compiler-policy contract below is superseded for this
+task only. Its recorded validation is historical evidence, not current scope.
+
+### Goal
+
+Give consumers a documented, repository-owned additive trust-boundary
+extension point while preserving canonical managed assets, integrity checks,
+repair safety, and the existing runtime manifest contract.
+
+### Approved scope
+
+- This contract and `.github/carl/plans/managed-trust-boundary-extension.md`.
+- The shared loader and core cARL instruction pack, canonical trust-boundary
+  guidance, and their required embedded mirrors.
+- Focused doctor/repair diagnostics and regression tests using disposable
+  repositories.
+- `CLI.md`, `ARCHITECTURE.md`, `COMPATIBILITY.md`, `README.md`, and durable
+  memory where needed to document ownership, precedence, migration, and limits.
+- Focused branch, commit, push, and PR as requested. No merge or release.
+- No changes to Kredoxi or any other consumer repository.
+
+### Plan
+
+1. Reproduce managed trust-boundary drift in a disposable install fixture.
+2. Establish `.github/carl/trust-boundaries.repository.md` as one optional,
+   fixed-path, repository-owned extension; do not add a manifest reference or
+   treat arbitrary Markdown as active governance.
+3. Update shared-loader/core-pack guidance with additive precedence,
+   fixed-path/symlink safeguards, conflict handling, and model-adherence
+   limitations; keep embedded mirrors byte-identical.
+4. Improve drift/repair warnings without suppressing drift or changing the
+   explicit repair command's canonical restoration behavior.
+5. Add regression tests, update durable documentation/memory, validate, and
+   submit without merging or releasing.
+
+### Constraints and contract assertions
+
+- Core/system security invariants remain authoritative and cannot be weakened
+  by repository prose. Repository rules may add stricter requirements.
+- PR contracts scope execution but cannot authorize forbidden system behavior.
+  Conflicting high-trust requirements require stop and review.
+- The extension uses a fixed repository-relative path, is optional for
+  compatibility, is not user-path-configured, and must be a regular file
+  reached without symlinked path components.
+- Extension prose is untrusted repository content: it grants no tool,
+  execution, deployment, or task-scope authority. Natural-language conflict
+  detection remains an agent/human responsibility, not a CLI guarantee.
+- Preserve `runtime.json`, exact-byte drift comparison, pack composition, and
+  harness adapter authority. Do not edit harness shims directly when they
+  route through the shared loader.
+- A clean install is healthy; modifying managed
+  `.github/carl/trust-boundaries.md` remains detectable as drift.
+- The extension is not managed, does not alter canonical hashes, and remains
+  byte-for-byte intact through repair and adoption/upgrade-style fixtures.
+- Doctor and repair explain moving project rules before restoration; explicit
+  repair still restores canonical managed content.
+- An absent extension preserves legacy behavior; runtime manifest and pack
+  composition semantics remain unchanged.
+
+### Validation and reconciliation
+
+- Focused install/status/doctor/repair/embedded tests and `go test ./...`.
+- `go test -race ./...` where supported, `go vet ./...`, `gofmt` checks,
+  `git diff --check`, and relevant governance/asset parity checks.
+- Use only temporary fixture repositories. Report platform/tool-permission,
+  scanner, or native OS gaps honestly.
+- Update trust-boundary guidance, memory, loader/core pack, embedded mirrors,
+  architecture/CLI/compatibility docs, and this contract/plan because durable
+  ownership and hydration behavior change. Do not alter invariants, runtime
+  manifest, selected packs, or unrelated assets without direct justification.
+- Stop on unexpected worktree changes, required runtime schema change,
+  unresolved trust hierarchy, or evidence that existing consumer behavior
+  would be silently weakened. Do not guess or automatically migrate prose.
+
+### Validation outcome
+
+Validation completed on Windows with Go 1.27.3. Baseline drift and destructive
+repair behavior were reproduced in a disposable consumer fixture before the
+implementation. The focused tests
+(`go test ./internal/trustboundary ./internal/install ./internal/status ./internal/doctor ./internal/repair ./embedded`),
+the full suite (`go test ./...`), and `go vet ./...` passed. Changed Go files
+were formatted with `gofmt`; `git diff --check` passed. The race suite was not
+available: this environment has `CGO_ENABLED=0` and no C compiler, and
+`go test -race ./...` exited with the Go toolchain's cgo requirement.
+
+The remote `main` reference was checked with `git ls-remote` and matched this
+branch's base commit `5e60b70fc45d7ec036c6b3e702a9a01bced223d9`. PR URL and
+head commit remain pending until delivery.
+
+## Superseded historical contract (completed)
 
 Complete implementation and available local validation
 

@@ -11,6 +11,7 @@ import (
 	"github.com/goldjg/carl/internal/harness"
 	"github.com/goldjg/carl/internal/manifest"
 	"github.com/goldjg/carl/internal/repair"
+	"github.com/goldjg/carl/internal/trustboundary"
 )
 
 // Artifacts provides read access to the embedded canonical runtime files.
@@ -101,6 +102,21 @@ func (c *Command) RunInDir(rootDir string) error {
 		for _, f := range drifted {
 			fmt.Printf("  %s\n", f)
 		}
+	}
+	fmt.Println()
+
+	extension, err := trustboundary.Inspect(rootDir)
+	if err != nil {
+		return fmt.Errorf("inspect repository trust-boundary extension: %w", err)
+	}
+	fmt.Println("Repository Trust-Boundary Extension:")
+	switch {
+	case extension.InvalidReason != "":
+		fmt.Printf("  invalid: %s — %s\n", trustboundary.ExtensionPath, extension.InvalidReason)
+	case extension.Present:
+		fmt.Printf("  present: %s (repository-owned; not managed)\n", trustboundary.ExtensionPath)
+	default:
+		fmt.Println("  none (optional)")
 	}
 	fmt.Println()
 

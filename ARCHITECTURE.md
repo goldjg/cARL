@@ -1,4 +1,4 @@
-<!-- version: 1.9.0 -->
+<!-- version: 1.9.1 -->
 # cARL — Architecture Overview
 
 ---
@@ -337,6 +337,32 @@ continue to read the unchanged inventory fields and ignore the additive graph.
 
 Templates and data artefacts used by cARLv2 packs. These are not instruction-pack logic — they are the runtime state that makes governance durable across sessions.
 
+### Ownership model
+
+- **Upstream-managed:** canonical runtime assets embedded by cARL and listed
+  under `runtime.json` `managedArtifacts`. These are versioned and integrity
+  checked; `carl repair` restores their bundled bytes. The canonical
+  `trust-boundaries.md` is in this category.
+- **Repository-owned:** project-authored governance that must survive runtime
+  repair and upgrades. This includes the optional fixed-path
+  `trust-boundaries.repository.md`, active PR contracts, memory, pack/profile/
+  registry selections, and installed-pack provenance. Repository-owned
+  requirements supplement, but cannot weaken, system instructions or core
+  security invariants.
+- **Generated or derived:** repo maps and their generated memory section,
+  effective-pack explanations/traces, and harness adapter outputs. These are
+  evidence or adapters derived from authoritative inputs, not independent
+  governance authorities. Some adapter files are also listed as managed
+  runtime assets and are restored from their canonical source.
+
+Exceptions are explicit: `memory.md` is seeded as a managed asset by init but
+is protected from repair as repository state; `runtime.json` is created by
+init and is also protected from repair. `profiles.example.json` and other
+examples are managed reference content, not active policy. User-owned
+`packs.json`, `profiles.json`, `registries.json`, and `installed-packs.json`
+are not inferred from directory presence and are not overwritten as bundled
+assets. No other Markdown file under `.github/carl/` is implicitly active.
+
 | Artefact | Purpose |
 |---|---|
 | `memory.md` | Durable architectural truth cache: purpose, invariants, trust boundaries, field findings, open questions |
@@ -344,6 +370,7 @@ Templates and data artefacts used by cARLv2 packs. These are not instruction-pac
 | `current-pr-contract.template.md` | Blank template — copy to `current-pr-contract.md` at the start of each new PR |
 | `invariants.yml` | Machine-readable invariant set: secrets policy, scope discipline, security baseline, plan-first, dependency approval |
 | `trust-boundaries.md` | Trust boundary classification table and crossing rules |
+| `trust-boundaries.repository.md` | Optional repository-owned additive trust-boundary extension; fixed path, not installed or managed by cARL |
 | `tool-policy.yml` | Tier 0/1/2 tool permission policy |
 | `profiles.example.json` | Bundled inactive, cloneable `default` profile for the complete shipped pack baseline |
 | `profiles.json` | User-owned named profiles, defaults, role/task overlays, and active context (created only when configured) |
