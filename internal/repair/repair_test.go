@@ -120,8 +120,16 @@ func TestRepairTrustBoundaryDriftWarnsAndPreservesRepositoryExtension(t *testing
 			t.Fatalf("RunInDir: %v", err)
 		}
 	})
-	if !strings.Contains(output, repositoryTrustBoundaryPath) {
-		t.Fatalf("repair warning missing extension path: %q", output)
+	for _, want := range []string{
+		"`carl repair` will overwrite local edits",
+		"does not back them up",
+		"Review `git diff` or commit first",
+		"recover overwritten content only from version control or your own copy",
+		repositoryTrustBoundaryPath,
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("repair warning missing %q: %q", want, output)
+		}
 	}
 
 	gotManaged, err := os.ReadFile(managedPath)

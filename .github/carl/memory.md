@@ -83,10 +83,23 @@ cARL does not infer or automatically migrate prose.
 
 The extension is additive and cannot weaken system instructions or core
 security invariants, grant tool/execution authority, or expand an active PR
-contract. It must be a regular file reached without symlinked path components.
-Only that fixed path is active; other files in `.github/carl/` are not
-implicitly authoritative. CLI checks path shape, not semantic prose conflicts
-or model adherence. Older loaders ignore this feature until upgraded.
+contract. It must be a regular file reached without symlinked path components;
+agents re-check immediately before reading. Doctor/status are point-in-time
+advisory path diagnostics only: they do not mediate later reads or prevent
+replacement after inspection. Passing the check grants no authority. Only
+that fixed path is active; other files in `.github/carl/` are not implicitly
+authoritative. CLI checks path shape, not semantic prose conflicts or model
+adherence. A secure-read helper would only enforce path handling for
+consumers that use it. Older loaders ignore this feature until upgraded.
+
+`carl status` reports `Unsafe` for an invalid extension path, ahead of
+`Incomplete` and `Drifted`, without changing the separate managed-artifact
+lists or exit behavior. Explicit `carl repair` overwrites local edits to
+managed files and creates no backup; operators should review `git diff` or
+commit first and keep their own copy. A future non-destructive repair backup
+is an owner decision because it introduces side-effect files, naming and
+idempotence questions, symlink-safety requirements, and a risk of being
+mistaken for an active extension.
 
 Classify artefacts by ownership, not directory: bundled files recorded in
 `runtime.json` are upstream-managed except explicit protected state; repository

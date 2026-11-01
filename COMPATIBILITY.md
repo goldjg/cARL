@@ -38,7 +38,10 @@ implementation, diagnostic sentence, or line of output is frozen.
   they do not understand.
 - Removing a field or changing the meaning of an existing field requires a
   schema-version transition.
-- User-owned policy and provenance files are never silently replaced.
+- Unmanaged user-owned policy and provenance files are not overwritten by
+  `repair`. Explicit `carl repair` overwrites local edits to declared managed
+  files without a backup or prompt; users should review `git diff` or commit
+  first and keep a copy of content they need.
 - Runtime repair remains limited to declared repairable runtime-owned assets.
   Protected memory and runtime-manifest state retain their documented
   boundaries.
@@ -49,6 +52,11 @@ implementation, diagnostic sentence, or line of output is frozen.
   guidance. Before repairing existing trust-boundary drift, manually review
   and copy any project-specific rules into the extension. There is no
   automatic prose migration.
+- `carl status` reports `Unsafe` when the optional extension path is invalid at
+  inspection time. This takes precedence over `Incomplete` and `Drifted` but
+  does not alter the separate managed-artifact lists or command exit behavior.
+  An absent or valid optional extension does not alter status. Doctor/status
+  path checks are point-in-time diagnostics, not mediated or race-free reads.
 - Compatible bundled policy-pack revisions may clarify or strengthen guidance
   without changing pack identity or composition semantics.
 - Intentional breaking changes to stable public contracts require a new major

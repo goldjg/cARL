@@ -22,8 +22,9 @@ type ExtensionState struct {
 	InvalidReason string
 }
 
-// Inspect checks that the optional extension is a regular file reached
-// without symlinked path components. The repository root itself is trusted.
+// Inspect performs a point-in-time check that the optional extension is a
+// regular file reached without symlinked path components. It does not open the
+// file or mediate later reads; the repository root itself is trusted.
 func Inspect(rootDir string) (ExtensionState, error) {
 	root, err := filepath.Abs(rootDir)
 	if err != nil {

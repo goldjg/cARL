@@ -17,10 +17,14 @@ repair safety, and the existing runtime manifest contract.
 - This contract and `.github/carl/plans/managed-trust-boundary-extension.md`.
 - The shared loader and core cARL instruction pack, canonical trust-boundary
   guidance, and their required embedded mirrors.
-- Focused doctor/repair diagnostics and regression tests using disposable
-  repositories.
+- `cmd/carl/main.go`, `internal/status/`, and focused doctor/repair
+  diagnostics and regression tests using disposable repositories, including
+  the status classification for invalid extension paths.
 - `CLI.md`, `ARCHITECTURE.md`, `COMPATIBILITY.md`, `README.md`, and durable
   memory where needed to document ownership, precedence, migration, and limits.
+- No new secure-read API, repair backup, prompt, or exit-code change. Document
+  point-in-time advisory checks and preserve existing explicit-overwrite
+  semantics.
 - Focused branch, commit, push, and PR as requested. No merge or release.
 - No changes to Kredoxi or any other consumer repository.
 
@@ -31,11 +35,13 @@ repair safety, and the existing runtime manifest contract.
    fixed-path, repository-owned extension; do not add a manifest reference or
    treat arbitrary Markdown as active governance.
 3. Update shared-loader/core-pack guidance with additive precedence,
-   fixed-path/symlink safeguards, conflict handling, and model-adherence
-   limitations; keep embedded mirrors byte-identical.
-4. Improve drift/repair warnings without suppressing drift or changing the
-   explicit repair command's canonical restoration behavior.
-5. Add regression tests, update durable documentation/memory, validate, and
+   fixed-path/symlink safeguards, conflict handling, point-in-time advisory
+   limits, and model-adherence limitations; keep embedded mirrors byte-identical.
+4. Report invalid extension paths as `Unsafe` ahead of `Incomplete` and
+   `Drifted`, without changing managed lists or exit behavior.
+5. Improve repair warnings while retaining explicit overwrite/canonical
+   restoration behavior and adding no backup or prompt.
+6. Add regression tests, update durable documentation/memory, validate, and
    submit without merging or releasing.
 
 ### Constraints and contract assertions
@@ -46,10 +52,14 @@ repair safety, and the existing runtime manifest contract.
   Conflicting high-trust requirements require stop and review.
 - The extension uses a fixed repository-relative path, is optional for
   compatibility, is not user-path-configured, and must be a regular file
-  reached without symlinked path components.
+  reached without symlinked path components at the time of reading; agents
+  must re-check immediately before reading.
 - Extension prose is untrusted repository content: it grants no tool,
   execution, deployment, or task-scope authority. Natural-language conflict
   detection remains an agent/human responsibility, not a CLI guarantee.
+- Doctor/status inspection is point-in-time and advisory: it does not mediate
+  later agent reads or prevent path replacement. A secure-read helper is only
+  a future option for consumers that actually use it.
 - Preserve `runtime.json`, exact-byte drift comparison, pack composition, and
   harness adapter authority. Do not edit harness shims directly when they
   route through the shared loader.
@@ -57,16 +67,25 @@ repair safety, and the existing runtime manifest contract.
   `.github/carl/trust-boundaries.md` remains detectable as drift.
 - The extension is not managed, does not alter canonical hashes, and remains
   byte-for-byte intact through repair and adoption/upgrade-style fixtures.
-- Doctor and repair explain moving project rules before restoration; explicit
-  repair still restores canonical managed content.
+- Doctor/status report an unsafe extension path; status precedence is
+  `Unsafe` > `Incomplete` > `Drifted` > `Healthy`. Managed missing/drifted
+  lists remain unchanged and no command exit codes change. `carl status` has
+  no structured-output interface; only its human-readable status label changes.
+- Repair warns that explicit repair overwrites local edits without a backup;
+  operators review `git diff` or commit and retain their own copy first.
 - An absent extension preserves legacy behavior; runtime manifest and pack
   composition semantics remain unchanged.
+- No repair backup is introduced in this PR. Whether to add one later remains
+  an owner decision because it introduces side-effect files, naming and
+  idempotence questions, symlink-safety requirements, and possible confusion
+  with active extension files.
 
 ### Validation and reconciliation
 
 - Focused install/status/doctor/repair/embedded tests and `go test ./...`.
 - `go test -race ./...` where supported, `go vet ./...`, `gofmt` checks,
-  `git diff --check`, and relevant governance/asset parity checks.
+  `git diff --check`, documentation link checks, harness sync, and relevant
+  governance/asset parity checks.
 - Use only temporary fixture repositories. Report platform/tool-permission,
   scanner, or native OS gaps honestly.
 - Update trust-boundary guidance, memory, loader/core pack, embedded mirrors,
@@ -79,20 +98,29 @@ repair safety, and the existing runtime manifest contract.
 
 ### Validation outcome
 
-Validation completed on Windows with Go 1.27.3. Baseline drift and destructive
-repair behavior were reproduced in a disposable consumer fixture before the
-implementation. The focused tests
-(`go test ./internal/trustboundary ./internal/install ./internal/status ./internal/doctor ./internal/repair ./embedded`),
-the full suite (`go test ./...`), and `go vet ./...` passed. Changed Go files
-were formatted with `gofmt`; `git diff --check` passed. The race suite was not
-available: this environment has `CGO_ENABLED=0` and no C compiler, and
-`go test -race ./...` exited with the Go toolchain's cgo requirement.
+Review findings were verified. Before the fix, a disposable fixture with a
+directory at `.github/carl/trust-boundaries.repository.md` produced an
+`invalid` diagnostic followed by `Status: Healthy`. After the fix, the same
+fixture reports `Status: Unsafe` and exits successfully. Regression tests
+confirm absent and valid extension paths remain `Healthy`; directory,
+symlinked-extension, and symlinked-parent cases report `Unsafe`; and unsafe
+status takes precedence over simultaneous managed missing/drifted findings
+without changing those lists.
 
-The remote `main` reference was checked with `git ls-remote` and matched this
-branch's base commit `5e60b70fc45d7ec036c6b3e702a9a01bced223d9`. The focused
-pull request is open at https://github.com/goldjg/cARL/pull/50. Implementation
-commit `0c1b5a6` is included; the final head also includes this validation and
-delivery record.
+On Windows with Go 1.27.3, `go test ./...`, `go vet ./...`, `gofmt` checks,
+`git diff --check`, embedded canonical/mirror parity, harness sync, and local
+Markdown link/anchor validation passed. Harness sync processed all five
+generated adapters and left no shim diffs. The updated plan passes `carl plan`
+without warnings; that command still reports six warnings from other
+pre-existing plan files. Local Windows symlink creation is denied, so
+symlink-specific Go regression tests skipped; the non-regular directory case
+passed, and a disposable Windows junction fixture was independently
+classified `Unsafe`. Race tests remain unavailable because `CGO_ENABLED=0`
+and no C compiler is installed. No structured status output or exit-code
+behavior changed.
+
+The PR's prior CI run passed before these review commits. Verify CI again after
+the updated head is pushed. No merge or release is authorized.
 
 ## Superseded historical contract (completed)
 

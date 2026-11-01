@@ -352,8 +352,11 @@ func TestDoctor_UnsafeRepositoryTrustBoundaryExtension(t *testing.T) {
 			t.Fatalf("RunInDir: %v", err)
 		}
 	})
-	if !strings.Contains(output, "repository-owned extension is unsafe and must not be loaded") {
+	if !strings.Contains(output, "extension path is unsafe at inspection time; do not read unless revalidated immediately before use") {
 		t.Fatalf("doctor did not reject symlinked extension: %s", output)
+	}
+	if !strings.Contains(output, "`carl status` is a point-in-time advisory check") {
+		t.Fatalf("doctor did not describe the advisory path check: %s", output)
 	}
 }
 

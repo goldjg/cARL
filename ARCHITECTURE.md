@@ -348,7 +348,10 @@ Templates and data artefacts used by cARLv2 packs. These are not instruction-pac
   `trust-boundaries.repository.md`, active PR contracts, memory, pack/profile/
   registry selections, and installed-pack provenance. Repository-owned
   requirements supplement, but cannot weaken, system instructions or core
-  security invariants.
+  security invariants. `carl status` reports an invalid extension path as
+  `Unsafe`, ahead of managed `Incomplete` and `Drifted` states, without
+  changing the separate managed-artifact lists or exit behavior. This is a
+  point-in-time advisory diagnostic, not mediation of later reads.
 - **Generated or derived:** repo maps and their generated memory section,
   effective-pack explanations/traces, and harness adapter outputs. These are
   evidence or adapters derived from authoritative inputs, not independent
@@ -362,6 +365,9 @@ examples are managed reference content, not active policy. User-owned
 `packs.json`, `profiles.json`, `registries.json`, and `installed-packs.json`
 are not inferred from directory presence and are not overwritten as bundled
 assets. No other Markdown file under `.github/carl/` is implicitly active.
+Explicit `carl repair` overwrites local edits to managed files without a
+backup or prompt; operators should review `git diff` or commit first and keep
+their own copy.
 
 | Artefact | Purpose |
 |---|---|

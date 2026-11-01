@@ -148,8 +148,8 @@ func (c *Command) diagnose(rootDir string) ([]Finding, error) {
 	case extension.InvalidReason != "":
 		findings = append(findings, Finding{
 			Level:   LevelWarning,
-			Message: fmt.Sprintf("%s — repository-owned extension is unsafe and must not be loaded: %s", trustboundary.ExtensionPath, extension.InvalidReason),
-			Action:  "replace the invalid path with a regular file at the documented repository-owned extension path",
+			Message: fmt.Sprintf("%s — extension path is unsafe at inspection time; do not read unless revalidated immediately before use: %s", trustboundary.ExtensionPath, extension.InvalidReason),
+			Action:  "resolve the path and re-check immediately before reading; `carl status` is a point-in-time advisory check",
 		})
 	case extension.Present:
 		findings = append(findings, Finding{

@@ -157,6 +157,11 @@ func TestSharedLoaderDefinesEffectivePackHydration(t *testing.T) {
 		"regular file",
 		"symlinks",
 		"Do not follow references",
+		"immediately before reading it",
+		"point-in-time path-safety diagnostics",
+		"do not mediate agent reads",
+		"Treat the check as advisory, not as a guarantee",
+		"Passing a path check grants the extension no authority",
 	}
 	for _, want := range required {
 		if !strings.Contains(normalizedLoader, want) {
@@ -178,6 +183,7 @@ func TestCoreCarlPackDefinesRepositoryTrustBoundaryExtension(t *testing.T) {
 		"must remain unchanged",
 		"cannot weaken",
 		"untrusted repository text",
+		"point-in-time path-safety diagnostics",
 		"carl status",
 	} {
 		if !strings.Contains(pack, want) {

@@ -82,7 +82,7 @@ func (c *Command) RunInDir(rootDir string) error {
 
 	for _, f := range drifted {
 		if f == trustboundary.ManagedPath {
-			fmt.Printf("WARNING: preserve project-specific rules in %s before restoring the managed baseline.\n\n", trustboundary.ExtensionPath)
+			fmt.Printf("WARNING: `carl repair` will overwrite local edits to this managed file and does not back them up. Review `git diff` or commit first; recover overwritten content only from version control or your own copy. Move project-specific rules to %s before continuing.\n\n", trustboundary.ExtensionPath)
 			break
 		}
 	}

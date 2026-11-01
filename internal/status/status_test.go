@@ -98,6 +98,16 @@ func writeHarnessAdapters(t *testing.T, dir string, arts *fakeArts) {
 	}
 }
 
+func runStatus(t *testing.T, dir string, arts *fakeArts) string {
+	t.Helper()
+	output := captureStdout(t, func() {
+		if err := status.New("1.0.0", arts).RunInDir(dir); err != nil {
+			t.Fatalf("RunInDir: %v", err)
+		}
+	})
+	return output
+}
+
 // captureStdout redirects os.Stdout for the duration of f and returns
 // everything written to it.
 func captureStdout(t *testing.T, f func()) string {
@@ -306,6 +316,127 @@ func TestStatus_TrustBoundaryExtensionSeparateFromManagedDrift(t *testing.T) {
 	}
 	if !strings.Contains(output, "Status:           Drifted") {
 		t.Fatalf("managed drift should remain drifted: %s", output)
+	}
+}
+
+func TestStatus_ValidTrustBoundaryExtensionIsHealthy(t *testing.T) {
+	dir := t.TempDir()
+	arts := newFakeArts(nil)
+	writeRuntime(t, dir, &manifest.Runtime{
+		RuntimeVersion:   "1.0.0",
+		Source:           "goldjg/cARL",
+		ManagedArtifacts: []string{},
+	}, arts)
+	writeHarnessAdapters(t, dir, arts)
+	extension := filepath.Join(dir, filepath.FromSlash(".github/carl/trust-boundaries.repository.md"))
+	if err := os.WriteFile(extension, []byte("# Project rules\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	output := runStatus(t, dir, arts)
+	if !strings.Contains(output, "Status:           Healthy") {
+		t.Fatalf("valid optional extension should remain Healthy: %s", output)
+	}
+}
+
+func TestStatus_NonRegularTrustBoundaryExtensionIsUnsafe(t *testing.T) {
+	dir := t.TempDir()
+	arts := newFakeArts(nil)
+	writeRuntime(t, dir, &manifest.Runtime{
+		RuntimeVersion:   "1.0.0",
+		Source:           "goldjg/cARL",
+		ManagedArtifacts: []string{},
+	}, arts)
+	writeHarnessAdapters(t, dir, arts)
+	extension := filepath.Join(dir, filepath.FromSlash(".github/carl/trust-boundaries.repository.md"))
+	if err := os.Mkdir(extension, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	output := runStatus(t, dir, arts)
+	if !strings.Contains(output, "Status:           Unsafe") {
+		t.Fatalf("non-regular extension should be Unsafe: %s", output)
+	}
+}
+
+func TestStatus_SymlinkedTrustBoundaryExtensionIsUnsafe(t *testing.T) {
+	dir := t.TempDir()
+	arts := newFakeArts(nil)
+	writeRuntime(t, dir, &manifest.Runtime{
+		RuntimeVersion:   "1.0.0",
+		Source:           "goldjg/cARL",
+		ManagedArtifacts: []string{},
+	}, arts)
+	writeHarnessAdapters(t, dir, arts)
+	outside := filepath.Join(t.TempDir(), "outside.md")
+	if err := os.WriteFile(outside, []byte("# Outside\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	extension := filepath.Join(dir, filepath.FromSlash(".github/carl/trust-boundaries.repository.md"))
+	if err := os.Symlink(outside, extension); err != nil {
+		t.Skipf("symlink creation unavailable: %v", err)
+	}
+
+	output := runStatus(t, dir, arts)
+	if !strings.Contains(output, "Status:           Unsafe") {
+		t.Fatalf("symlinked extension should be Unsafe: %s", output)
+	}
+}
+
+func TestStatus_SymlinkedTrustBoundaryParentIsUnsafe(t *testing.T) {
+	dir := t.TempDir()
+	backing := t.TempDir()
+	arts := newFakeArts(nil)
+	writeRuntime(t, backing, &manifest.Runtime{
+		RuntimeVersion:   "1.0.0",
+		Source:           "goldjg/cARL",
+		ManagedArtifacts: []string{},
+	}, arts)
+	if err := os.Symlink(filepath.Join(backing, ".github"), filepath.Join(dir, ".github")); err != nil {
+		t.Skipf("symlink creation unavailable: %v", err)
+	}
+
+	output := runStatus(t, dir, arts)
+	if !strings.Contains(output, "Status:           Unsafe") {
+		t.Fatalf("symlinked parent should be Unsafe: %s", output)
+	}
+}
+
+func TestStatus_UnsafeExtensionTakesPrecedenceOverManagedDrift(t *testing.T) {
+	dir := t.TempDir()
+	const managedPath = ".github/carl/invariants.yml"
+	const missingPath = ".github/carl/tool-policy.yml"
+	arts := newFakeArts(map[string][]byte{
+		managedPath: []byte("canonical"),
+		missingPath: []byte("canonical"),
+	})
+	writeRuntime(t, dir, &manifest.Runtime{
+		RuntimeVersion:   "1.0.0",
+		Source:           "goldjg/cARL",
+		ManagedArtifacts: []string{managedPath, missingPath},
+	}, arts)
+	writeHarnessAdapters(t, dir, arts)
+	managed := filepath.Join(dir, filepath.FromSlash(managedPath))
+	if err := os.WriteFile(managed, []byte("locally modified"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(dir, filepath.FromSlash(missingPath))); err != nil {
+		t.Fatal(err)
+	}
+	extension := filepath.Join(dir, filepath.FromSlash(".github/carl/trust-boundaries.repository.md"))
+	if err := os.Mkdir(extension, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	output := runStatus(t, dir, arts)
+	if !strings.Contains(output, "Missing Artefacts:\n  "+missingPath) {
+		t.Fatalf("managed missing list changed when extension is unsafe: %s", output)
+	}
+	if !strings.Contains(output, "Drifted Artefacts:\n  "+managedPath) {
+		t.Fatalf("managed drift list changed when extension is unsafe: %s", output)
+	}
+	if !strings.Contains(output, "Status:           Unsafe") {
+		t.Fatalf("unsafe extension should take precedence over incomplete and drifted: %s", output)
 	}
 }
 
